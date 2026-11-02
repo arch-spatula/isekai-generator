@@ -8,3 +8,4 @@
 
 - [개인화 이세계 Action RPG 생성 프롬프트 설계](2026-09-24-personalized-action-rpg-concept-prompt.md)
 - [게임 개발 결과물의 아티팩트 정의](2026-11-02-game-development-artifacts.md)
+- [Orrery 계산 엔진의 단계적 Lua 포팅](2026-11-02-orrery-core-lua-port.md)

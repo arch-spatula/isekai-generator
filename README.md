@@ -22,9 +22,22 @@ just shell
 just          # 사용 가능한 명령 보기
 just shell    # Nix 개발 셸 진입
 just versions # 개발 도구 버전 확인
+just report   # 전달한 출생정보의 전체 명식 보고서 출력
+just test     # 자동화 테스트 실행
 ```
 
 `just`가 설치되어 있지 않은 환경에서는 `nix develop`로 직접 진입할 수 있습니다.
+
+명식 보고서는 저장소에 고정된 개인 프로필을 사용하지 않습니다. 생년월일시, 성별, 좌표와
+타임존을 실행할 때 전달해야 합니다.
+
+```bash
+just report -- \
+  --year <year> --month <month> --day <day> \
+  --hour <hour> --minute <minute> --gender <M|F> \
+  --latitude <latitude> --longitude <longitude> \
+  --timezone <IANA timezone> [--flow-year <year>]
+```
 
 ## 크레딧
 
