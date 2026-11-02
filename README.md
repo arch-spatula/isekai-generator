@@ -26,8 +26,37 @@ just versions # 개발 도구 버전 확인
 
 `just`가 설치되어 있지 않은 환경에서는 `nix develop`로 직접 진입할 수 있습니다.
 
+## 크레딧
+
+이 프로젝트의 사주팔자·자미두수·네이탈 차트 계산에는 [Orrery의 `@orrery/core`](https://github.com/rath/orrery/tree/main/packages/core)를 사용할 예정입니다. Orrery가 밝힌 계산 엔진의 계보와 기반 기술은 다음과 같습니다.
+
+- 사주 만세력: 고영창님의 Perl [진짜만세력](https://afnmp3.homeip.net/~kohyc/calendar/cal20000.html)을 김정균님이 [PHP로 포팅](https://github.com/OOPS-ORG-PHP/Lunar)하고, 황장호가 2018년 11월 Java와 Python으로 옮겨 사용하다가 2026년 2월 Claude Code(Opus 4.6)를 통해 TypeScript로 포팅했습니다.
+- 자미두수 명반: [`lunar-javascript`](https://www.npmjs.com/package/lunar-javascript)를 기반으로 Claude(Opus 4.5)가 중국어 문헌을 조사하며 구현했습니다.
+- 점성술 출생차트: [Swiss Ephemeris](https://www.astro.com/swisseph/)의 Moshier 이론을 순수 TypeScript로 포팅했습니다.
+
 ## 라이선스
 
 Copyright (C) 2026 김상현
 
 이 프로젝트는 [GNU Affero General Public License v3.0 only](LICENSE)에 따라 배포됩니다.
+
+### 쉽게 설명하면
+
+할 수 있는 일:
+
+- 개인적으로 자유롭게 사용하고 수정할 수 있습니다.
+- 소스 코드를 읽고 공부할 수 있습니다.
+- 수정한 버전을 다른 사람에게 배포할 수 있습니다.
+
+지켜야 할 일:
+
+- 수정하거나 이 코드를 포함한 프로그램을 배포할 때는 전체를 AGPL-3.0으로 공개해야 합니다.
+- 웹 서비스처럼 네트워크를 통해 제공하는 경우에도 이용자가 해당 버전의 소스 코드를 받을 수 있어야 합니다.
+- 변경한 사실을 표시하고 기존 저작권 및 라이선스 고지를 유지해야 합니다.
+
+할 수 없는 일:
+
+- 이 코드를 포함하거나 수정한 서비스를 소스 비공개 상태로 제공할 수 없습니다.
+- AGPL 코드를 MIT나 Apache 같은 더 허용적인 라이선스로 바꾸어 배포할 수 없습니다.
+
+한 줄로 말하면, 자유롭게 사용하고 고칠 수 있지만 배포하거나 서비스로 제공하는 버전의 소스도 같은 AGPL-3.0 조건으로 공개해야 합니다.
