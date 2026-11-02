@@ -6,4 +6,9 @@
 
 multi agent workflow라고 불러야 할지 multi agent orchestration라고 불러야 할지는 잘 모르겠지만 어째는 본인만이 경험할 수 있는 게임을 생성해주는 레포입니다. 사실 가능할지도 잘 모르겠습니다. 거의 AI 프롬프트질 차력쇼 레포라고 말 할 수 있을 것 같습니다.
 
+## 라이선스
+
+Copyright (C) 2026 김상현
+
+이 프로젝트는 [GNU Affero General Public License v3.0 only](LICENSE)에 따라 배포됩니다.
 
