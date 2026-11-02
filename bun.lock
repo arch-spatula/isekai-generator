@@ -1,0 +1,17 @@
+{
+  "lockfileVersion": 2,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "isekai-generator",
+      "dependencies": {
+        "@orrery/core": "^0.5.0",
+      },
+    },
+  },
+  "packages": {
+    "@orrery/core": ["@orrery/core@0.5.0", "", { "dependencies": { "lunar-javascript": "^1.7.7" } }, "sha512-haEKvlGTKd7X8AyGfcj8Dp/WOhEhXWnC3e/d1MXTL/mx0+beH0wvEdgsoE2H7+VDrtc3x/k2Y4TD/z3/lRX5mg=="],
+
+    "lunar-javascript": ["lunar-javascript@1.7.7", "", {}, "sha512-u/KYiwPIBo/0bT+WWfU7qO1d+aqeB90Tuy4ErXenr2Gam0QcWeezUvtiOIyXR7HbVnW2I1DKfU0NBvzMZhbVQw=="],
+  }
+}
