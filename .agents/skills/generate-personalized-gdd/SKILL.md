@@ -1,6 +1,6 @@
 ---
 name: generate-personalized-gdd
-description: Generate a versioned personalized Action RPG GDD from conversational birth details using Saju, Zi Wei Dou Shu, and Western natal-chart output. Use when Codex should interview the user for missing chart inputs, create an experimental Korean GDD in light or deep mode, preserve prior artifact versions, and isolate generation from both the current conversation and earlier GDDs.
+description: Generate a versioned personalized Action RPG GDD from conversational birth details using Saju, Zi Wei Dou Shu, and Western natal-chart output. Use when Codex should interview the user for missing chart inputs, resolve a city-level birthplace by default, create an experimental Korean GDD in light or deep mode, preserve prior artifact versions, and isolate generation from both the current conversation and earlier GDDs.
 ---
 
 # Generate a personalized GDD
@@ -13,9 +13,11 @@ Act as an input adapter. Never ask the user to fill out a CLI argument template.
 
 1. Extract details already stated in natural language.
 2. Ask one focused follow-up question at a time for missing required information.
-3. Accept a place name or street address. Resolve its latitude, longitude, and IANA timezone with available lookup tools, then confirm the resolved values when the place is ambiguous.
-4. Normalize ordinary gender answers to the CLI values `M` or `F`; this is format conversion, not inference.
-5. Do not infer a missing birth date, exact birth time, gender, or ambiguous birthplace. Unknown birth time is unsupported.
+3. Treat a city or county name as sufficient birthplace detail. Resolve it to the representative coordinates of that municipality and its IANA timezone, then proceed without asking the user to confirm the coordinates.
+4. Also accept a birth hospital, street address, or more specific place when the user volunteers one. Resolve that location instead, but never ask for hospital-level detail when a municipality is available.
+5. Ask for clarification only when the place itself is ambiguous, such as names shared across countries or regions. Do not treat the geographic size of a municipality as ambiguity.
+6. Normalize ordinary gender answers to the CLI values `M` or `F`; this is format conversion, not inference.
+7. Do not infer a missing birth date, exact birth time, gender, or ambiguous birthplace. Unknown birth time is unsupported.
 
 Required birth details are year, month, day, hour, minute, gender, latitude, longitude, and timezone.
 
@@ -28,7 +30,7 @@ Use these defaults unless the user overrides them:
 
 The Western natal chart follows Orrery/sky.told.me: tropical zodiac, geocentric positions, mean lunar node, and Placidus houses by default. Supported house-system overrides are the codes accepted by `scripts/chart-report.ts`.
 
-Refuse unsupported modes or chart options. Before generation, briefly confirm any values resolved from a place lookup and any non-default choices; do not make the user repeat already supplied facts.
+Refuse unsupported modes or chart options. Before generation, briefly confirm only non-default choices and any clarification made for an ambiguous place. Do not read back automatically resolved coordinates or make the user repeat already supplied facts.
 
 ## Allocate the artifact version
 
