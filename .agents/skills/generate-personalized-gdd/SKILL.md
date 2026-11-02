@@ -1,68 +1,91 @@
 ---
 name: generate-personalized-gdd
-description: Generate a personalized Action RPG GDD from the birth-chart arguments accepted by scripts/chart-report.ts. Use when Codex needs to turn Saju, Zi Wei Dou Shu, and natal-chart output into the 22-section GDD defined by docs/prompts/personalized-action-rpg-concept.md, in either light or deep mode, while isolating the generation from the current conversation with fresh subagents.
+description: Generate a versioned personalized Action RPG GDD from conversational birth details using Saju, Zi Wei Dou Shu, and Western natal-chart output. Use when Codex should interview the user for missing chart inputs, create an experimental Korean GDD in light or deep mode, preserve prior artifact versions, and isolate generation from both the current conversation and earlier GDDs.
 ---
 
 # Generate a personalized GDD
 
-Generate one Markdown GDD without passing the current conversation to either generation agent.
+Collect birth details conversationally, then generate and validate one versioned Markdown GDD without exposing either generation agent to the current conversation or earlier artifacts.
 
-## Inputs
+## Collect inputs
 
-Accept:
+Act as an input adapter. Never ask the user to fill out a CLI argument template.
 
-- `mode`: `light` (default) or `deep`
-- every required option accepted by `scripts/chart-report.ts`: `year`, `month`, `day`, `hour`, `minute`, `gender`, `latitude`, `longitude`, and `timezone`
-- optional chart options: `flow-year`, `jasi-method`, and `house-system`
-- optional `output`; default to `artifacts/personalized-action-rpg-gdd.md`
+1. Extract details already stated in natural language.
+2. Ask one focused follow-up question at a time for missing required information.
+3. Accept a place name or street address. Resolve its latitude, longitude, and IANA timezone with available lookup tools, then confirm the resolved values when the place is ambiguous.
+4. Normalize ordinary gender answers to the CLI values `M` or `F`; this is format conversion, not inference.
+5. Do not infer a missing birth date, exact birth time, gender, or ambiguous birthplace. Unknown birth time is unsupported.
 
-Do not support an unknown birth time. If any required time component is missing, stop and explain that an exact birth time is currently required.
+Required birth details are year, month, day, hour, minute, gender, latitude, longitude, and timezone.
 
-Refuse an unsupported mode or chart option. Do not infer missing birth data. If the output already exists, ask before replacing it.
+Use these defaults unless the user overrides them:
 
-## Orchestration
+- `mode`: `light`
+- `flow-year`: current calendar year
+- `jasi-method`: `unified`
+- `house-system`: `P` (Placidus)
 
-1. Resolve the repository root containing both `scripts/chart-report.ts` and `docs/prompts/personalized-action-rpg-concept.md`.
-2. Launch a coordinator subagent with `fork_turns="none"`. Use a lightweight model for this coordinator.
-3. Give the coordinator only:
-   - the normalized skill inputs;
-   - the repository root;
-   - the absolute path of this skill;
-   - the workflow below.
-4. Never include the user's other messages, a conversation summary, inferred preferences, or conclusions from the parent agent.
-5. Have the coordinator perform the remaining steps. Do not generate the GDD in the parent conversation.
+The Western natal chart follows Orrery/sky.told.me: tropical zodiac, geocentric positions, mean lunar node, and Placidus houses by default. Supported house-system overrides are the codes accepted by `scripts/chart-report.ts`.
+
+Refuse unsupported modes or chart options. Before generation, briefly confirm any values resolved from a place lookup and any non-default choices; do not make the user repeat already supplied facts.
+
+## Allocate the artifact version
+
+Store every GDD in the existing artifact layout:
+
+`artifacts/v<version>/docs/GDD/personalized-action-rpg-concept.md`
+
+Accept an optional semantic `version`. If omitted, run:
+
+`bun <skill-path>/scripts/resolve-output.ts <repository-root>`
+
+This starts at `v0.1.0` and otherwise increments the greatest existing version's patch number. If the user supplies a version, pass it after the repository root. Never overwrite or reuse an existing version directory. Do not accept a free-form output path.
+
+## Orchestrate in isolation
+
+1. Resolve the repository root containing `scripts/chart-report.ts` and `docs/prompts/personalized-action-rpg-concept.md`.
+2. Resolve the versioned output path before launching an agent.
+3. Launch a coordinator subagent with `fork_turns="none"` and a lightweight model.
+4. Give the coordinator only the normalized inputs, repository root, absolute skill path, resolved output path and version, and the workflow below.
+5. Never include other user messages, a conversation summary, inferred preferences, conclusions, or any previous GDD content.
+6. Do not generate the GDD in the parent conversation.
 
 ## Coordinator workflow
 
-1. Run `bun scripts/chart-report.ts` with the supplied chart options and capture stdout. Treat failure as a final input error; do not repair or guess an input.
-2. Read `docs/prompts/personalized-action-rpg-concept.md` in full.
-3. Read the selected mode contract:
+1. Do not list, search, open, or summarize `artifacts/` except to create the already resolved output directory. Never inspect a previous GDD.
+2. Run `bun scripts/chart-report.ts` with every normalized chart option explicitly supplied, including the defaults. Capture stdout. Treat failure as a final input error; do not repair or guess an input.
+3. Read `docs/prompts/personalized-action-rpg-concept.md` in full.
+4. Read the selected mode contract:
    - `light`: `references/light-mode.md`
    - `deep`: `references/deep-mode.md`
-4. Launch a writer subagent with `fork_turns="none"`:
+5. Create the resolved output directory.
+6. Launch a writer subagent with `fork_turns="none"`:
    - `light`: use a lightweight model.
    - `deep`: use a deep-reasoning model.
-5. Give the writer only the full concept prompt, the chart report, the selected mode contract, the output path, and these rules:
-   - use the chart systems only as creative seeds, never as real-world prediction;
-   - write all 22 required sections in Korean;
+7. Give the writer only the full concept prompt, chart report, selected mode contract, and resolved output path. Include these rules:
+   - use chart systems only as creative seeds, never as real-world prediction;
+   - write the completed document in Korean without imposing a fixed outline;
+   - do not list, search, read, or reference any file under `artifacts/` other than writing the exact resolved output path;
+   - do not use or imitate any earlier GDD version;
    - write the completed GDD directly to the output path;
    - return only the output path and a one-sentence completion status.
-6. Run `bun <skill-path>/scripts/validate-gdd.ts <output>`.
-7. If validation reports missing or empty sections, send that exact failure list back to the same writer once and ask it to repair the file. Validate once more.
-8. If the second validation fails, return the validation error without silently rewriting the GDD. If it passes, return the output path and selected mode.
+8. Run `bun <skill-path>/scripts/validate-gdd.ts <output>`.
+9. If validation reports an empty document, send that exact failure back to the same writer once and ask it to repair only the current output. Validate once more.
+10. If the second validation fails, return the validation error without silently rewriting the GDD. If it passes, return the output path, version, and selected mode.
 
-The coordinator must not summarize, polish, or otherwise rewrite a valid writer result.
+The coordinator must not summarize, polish, or rewrite a valid writer result.
 
 ## Model mapping
 
-When the runtime exposes the repository's current model identifiers, use:
+When available, use:
 
 - coordinator: `gpt-5.6-terra` with low reasoning
 - light writer: `gpt-5.6-terra` with low reasoning
 - deep writer: `gpt-5.6-sol` with high reasoning
 
-If an identifier is unavailable, choose the closest lightweight or deep-reasoning model exposed by the runtime and report the substitution in the completion status.
+If an identifier is unavailable, choose the closest exposed lightweight or deep-reasoning model and report the substitution.
 
-## Completion
+## Complete
 
-Report the mode, the validated artifact path, and whether a model substitution occurred. Do not reproduce the birth arguments or chart report in the final response.
+Report the mode, version, validated artifact path, and whether a model substitution occurred. Do not reproduce birth arguments or the chart report.

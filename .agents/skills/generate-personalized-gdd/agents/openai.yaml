@@ -1,4 +1,4 @@
 interface:
   display_name: "Personalized Action RPG GDD"
-  short_description: "격리된 에이전트로 22개 섹션의 개인화 GDD 생성"
-  default_prompt: "Use $generate-personalized-gdd to create a 22-section personalized Action RPG GDD from my chart-report arguments."
+  short_description: "대화형 입력으로 버전별 개인화 GDD 생성"
+  default_prompt: "Use $generate-personalized-gdd to interview me for my birth details and create a versioned personalized Action RPG GDD."

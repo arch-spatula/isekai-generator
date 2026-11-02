@@ -14,6 +14,9 @@
           nodejs_24
           bun
           just
+          (python3.withPackages (pythonPackages: [
+            pythonPackages.pyyaml
+          ]))
         ];
       };
     };
