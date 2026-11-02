@@ -10,3 +10,4 @@
 - [게임 개발 결과물의 아티팩트 정의](2026-11-02-game-development-artifacts.md)
 - [Orrery 계산 엔진의 단계적 Lua 포팅](2026-11-02-orrery-core-lua-port.md)
 - [게임 핵심 서사의 8단계 구조 채택](2026-11-03-eight-stage-story-structure.md)
+- [게임을 개인화된 서사 전달 매체로 정의](2026-11-03-game-as-narrative-medium.md)
