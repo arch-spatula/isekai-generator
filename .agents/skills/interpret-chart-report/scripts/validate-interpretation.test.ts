@@ -11,7 +11,7 @@ const items = domains.map((domain, index) => `### I-${String(index + 1).padStart
 작동 사슬: 자율성을 지키려는 욕구 → 먼저 기준을 세우는 행동 → 통제적인 환경과 마찰 → 혼자 책임을 떠안는 반복 결과
 양면성: 강점: 스스로 방향을 정하고 끝까지 추진한다. | 취약점: 도움을 늦게 요청해 부담이 누적될 수 있다.
 조건: 역할과 권한이 분명할 때 강점이 살아나며, 기준이 자주 바뀌거나 간섭이 심한 환경에서는 경직되기 쉽다.
-근거: S-01, Z-01`).join('\n')
+근거: S-01, Z-01, N-01`).join('\n')
 
 const valid = `# 통합 차트 해석
 ## 해석 원칙
@@ -54,7 +54,7 @@ const specialistIds = {
 }
 
 describe('isValidInterpretation', () => {
-  test('accepts the ordered evidence-bearing contract without creative motifs', () => {
+  test('accepts the ordered evidence-bearing interpretation contract', () => {
     expect(isValidInterpretation(valid, specialistIds)).toBe(true)
   })
 
@@ -94,6 +94,13 @@ describe('isValidInterpretation', () => {
     expect(isValidInterpretation(valid.replace(/^양면성:.+$/m, '양면성: 강점만 드러난다.'), specialistIds)).toBe(false)
   })
 
+  test('rejects an integrated item that preselects creative material', () => {
+    expect(isValidInterpretation(valid.replace(
+      /(### I-01[\s\S]*?)^근거:/m,
+      '$1창작 시드: 현실의 관리 역할을 판타지 직업과 능력으로 바꾸는 창작 재료다.\n근거:',
+    ), specialistIds)).toBe(false)
+  })
+
   test('rejects missing persistence and change over time', () => {
     expect(isValidInterpretation(valid.replace(/^변화:.+\n/m, ''), specialistIds)).toBe(false)
   })
@@ -102,8 +109,8 @@ describe('isValidInterpretation', () => {
     expect(isValidInterpretation(valid.replace(/^해석:.+$/m, '해석: 보존과 변화가 함께 요구된다.'), specialistIds)).toBe(false)
   })
 
-  test('rejects a deprecated disclaimer section', () => {
-    expect(isValidInterpretation(`${valid}\n## 불확실성과 금지된 단정`, specialistIds)).toBe(false)
+  test('rejects responsibility-avoidance language', () => {
+    expect(isValidInterpretation(`${valid}\n이 해석은 미래를 예언하지 않는다.`, specialistIds)).toBe(false)
   })
 
   test('rejects non-sequential interpretation IDs', () => {
@@ -124,7 +131,7 @@ describe('isValidInterpretation', () => {
 
   test('accepts a system-specific item backed by that system alone', () => {
     const systemSpecific = valid.replace(/(### I-01[\s\S]*?)관계: 일관/, '$1관계: 고유')
-      .replace(/(### I-01[\s\S]*?근거:) S-01, Z-01/, '$1 S-01')
+      .replace(/(### I-01[\s\S]*?근거:) S-01, Z-01, N-01/, '$1 S-01')
     expect(isValidInterpretation(systemSpecific, specialistIds)).toBe(true)
   })
 
@@ -134,8 +141,13 @@ describe('isValidInterpretation', () => {
   })
 
   test('rejects a cross-system relationship backed by only one system', () => {
-    const singleSystem = valid.replace(/(### I-01[\s\S]*?근거:) S-01, Z-01/, '$1 S-01')
+    const singleSystem = valid.replace(/(### I-01[\s\S]*?근거:) S-01, Z-01, N-01/, '$1 S-01')
     expect(isValidInterpretation(singleSystem, specialistIds)).toBe(false)
+  })
+
+  test('rejects an uncited specialist item', () => {
+    const withUncitedItem = { ...specialistIds, Z: new Set(['Z-01', 'Z-02']) }
+    expect(isValidInterpretation(valid, withUncitedItem)).toBe(false)
   })
 
   test('rejects an ID placed in the wrong specialist source', () => {

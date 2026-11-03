@@ -29,6 +29,8 @@ const REQUIRED_DOMAINS = [
   '시기운',
 ] as const
 
+const RESPONSIBILITY_AVOIDANCE = /예언(?:이|을|하지)|예측(?:이 아니다|하지)|단정하지|진단하지|확정하지|면책|주의 문구/
+
 type System = 'S' | 'Z' | 'N'
 type SpecialistIds = Readonly<Record<System, ReadonlySet<string>>>
 
@@ -51,7 +53,7 @@ function section(markdown: string, heading: string, nextHeading: string): string
 /** Return whether an interpretation follows the handoff contract. */
 export function isValidInterpretation(markdown: string, specialistIds?: SpecialistIds): boolean {
   if (markdown.trim().length === 0) return false
-  if (markdown.includes('## 불확실성과 금지된 단정')) return false
+  if (RESPONSIBILITY_AVOIDANCE.test(markdown)) return false
   let priorIndex = -1
   for (const heading of REQUIRED_HEADINGS) {
     const index = markdown.indexOf(heading)
@@ -97,6 +99,7 @@ export function isValidInterpretation(markdown: string, specialistIds?: Speciali
   if (matches.length === 0) return false
 
   const coveredDomains = new Set<string>()
+  const coveredSpecialistIds = new Set<string>()
   const itemsAreValid = matches.every((match, index) => {
     if (match[1] !== `I-${String(index + 1).padStart(2, '0')}`) return false
     const blockStart = match.index + match[0].length
@@ -111,6 +114,7 @@ export function isValidInterpretation(markdown: string, specialistIds?: Speciali
     const duality = block.match(/^양면성:\s*(\S.+)$/m)?.[1]
     const condition = block.match(/^조건:\s*(\S.+)$/m)?.[1]
     if (domain != null) coveredDomains.add(domain)
+    for (const id of citedIds(evidence?.[1] ?? '')) coveredSpecialistIds.add(id)
     return domain != null
       && REQUIRED_DOMAINS.includes(domain as typeof REQUIRED_DOMAINS[number])
       && linkedDomain != null
@@ -121,11 +125,16 @@ export function isValidInterpretation(markdown: string, specialistIds?: Speciali
       && operationChain != null && (operationChain.match(/→/g)?.length ?? 0) >= 3
       && duality != null && /강점:\s*\S.{15,}\|\s*취약점:\s*\S.{15,}/.test(duality)
       && condition != null && condition.length >= 30
+      && !/^창작 시드:/m.test(block)
       && evidence != null
       && hasValidEvidence(evidence[1], specialistIds, relationship?.[1] === '고유' ? 1 : 2)
       && (relationship?.[1] !== '고유' || new Set(citedIds(evidence[1]).map(id => id[0])).size === 1)
   })
-  return itemsAreValid && REQUIRED_DOMAINS.every(domain => coveredDomains.has(domain))
+  const allSpecialistIdsAreCovered = specialistIds == null || Object.values(specialistIds)
+    .every(ids => [...ids].every(id => coveredSpecialistIds.has(id)))
+  return itemsAreValid
+    && REQUIRED_DOMAINS.every(domain => coveredDomains.has(domain))
+    && allSpecialistIdsAreCovered
 }
 
 if (import.meta.main) {

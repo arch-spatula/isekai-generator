@@ -17,11 +17,19 @@ Do not list, search, read, or reference any other artifact. Do not use conversat
 
 ## Design
 
-Use the interpretation as the primary design brief. Use its common core, system-specific insights, cross-domain operation structure, dual conditions, and temporal changes as the whole-person context. Select relevant interpretation items, extract creative motifs from them, and decide how those motifs become game design. Consult the chart report only to verify cited evidence and avoid drift. If the interpretation and report conflict, preserve the ambiguity rather than silently reinterpreting the chart.
+Use the interpretation as the primary design brief. Use its common core, system-specific insights, cross-domain operation structure, dual conditions, and temporal changes as the whole-person context. Select relevant interpretation items, extract their underlying motives, conflicts, decision patterns, and growth paths, and decide how those abstractions become game design. Consult the chart report only to verify cited evidence and avoid drift. If the interpretation and report conflict, preserve the ambiguity rather than silently reinterpreting the chart.
 
-Use the chart-derived interpretation as a creative seed and translate it directly into game-design language. Write the completed document in Korean without imposing a fixed outline. Do not append the chart report or the complete interpretation; they remain separate source artifacts. Do not include divination disclaimers, cautionary prefaces, personality-diagnosis caveats, or statements denying that the game predicts the future.
+Do not directly turn a real-world occupation, work procedure, document, contract, accounting practice, management tool, or similar surface noun from the interpretation into the protagonist's job, power, weapon, world law, or dominant mechanic. Such material may appear as a secondary setting detail only when the concept has an independent genre reason for it and it does not dominate the protagonist, combat, progression, economy, world, and ending at once.
+
+Choose an independently compelling Action RPG player fantasy before applying personalization. Define the player's core action verbs, combat identity, and diegetic source of power, then personalize that fantasy with the interpretation's underlying behavior patterns. The concept should remain appealing when the chart vocabulary is removed and become distinct when the interpretation is applied again.
+
+Make power growth causally legible. Establish the power's origin, first manifestation, initial capabilities and limits, practiced mastery, expansion events, late-game scale, cost or risk, and credible enemy or world responses. Keep combat-power growth distinct from character and relationship growth. Do not replace becoming stronger with merely accepting more responsibility, delegating authority, or managing resources.
+
+Use multiple interpretation domains without allowing one surface metaphor to monopolize the protagonist, combat, progression, economy, world structure, relationships, and ending. Write the completed document in Korean without imposing a fixed outline. Do not append the chart report or the complete interpretation; they remain separate source artifacts.
 
 After each major personalized design choice, add both `설계 모티프: <phrase>` and `해석 근거: <IDs>`. Create the motif in this stage; do not require it to appear in the interpretation. Cite one or more existing interpretation item IDs such as `I-01, I-03`. Keep these provenance lines concise.
+
+Before writing, silently review the concept: reject direct job-to-magic translation, vague non-action gameplay, unexplained power escalation, power suppression presented as depth, and a single metaphor occupying most major systems. Do not include this review or hidden reasoning in the GDD.
 
 Write directly to the exact output path.
 

@@ -1,3 +1,3 @@
 # Light interpretation contract
 
-Keep the integration concise. Select the strongest specialist-supported relationships while representing consistency, added specificity, and genuine conflicts when present. Preserve uncertainty and do not fill space with generic descriptions.
+Keep the integration concise while citing every specialist item. Group compatible IDs into strong relationships, preserve system-specific material as `고유`, and represent consistency, added specificity, and genuine conflicts without generic filler.

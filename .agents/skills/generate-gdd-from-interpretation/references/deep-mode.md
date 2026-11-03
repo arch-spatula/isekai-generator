@@ -1,3 +1,3 @@
 # Deep design contract
 
-Explore the interpretation items and tensions in depth, derive creative motifs, and then choose the document's content and structure. Produce a cohesive, detailed concept without exposing chain-of-thought, discarded drafts, or internal deliberation.
+Explore the interpretation items and tensions in depth, abstract them away from their ordinary-life surface nouns, and then choose the document's content and structure. Deepen the causal links among player fantasy, combat verbs, power origin, limits, mastery, expansion, opposition, relationships, and world response. Produce a cohesive, detailed concept without exposing chain-of-thought, discarded drafts, or internal deliberation.

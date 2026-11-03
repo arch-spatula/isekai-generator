@@ -1,6 +1,6 @@
 ---
 name: interpret-chart-report
-description: Integrate separate Saju, Zi Wei Dou Shu, and Western natal specialist interpretations into a Korean chart-interpretation.md that distinguishes consistent, specificity-adding, and conflicting readings. Use after three isolated specialist interpretation agents and before personalized GDD design.
+description: Integrate separate Saju, Zi Wei Dou Shu, and Western natal specialist interpretations into a Korean chart-interpretation.md that preserves every specialist item, system-specific resolution, cross-system relationship, and reusable creative seed. Use after three isolated specialist interpretation agents and before personalized GDD design.
 ---
 
 # Integrate specialist interpretations
@@ -17,14 +17,14 @@ Do not read `chart-report.md`, list or search other artifacts, or use conversati
 
 ## Interpret
 
-Use the specialist documents as creative interpretation sources for downstream game design. Keep the synthesis bounded by their evidence and do not add real-world event forecasts or advice. Do not write disclaimers, cautionary prefaces, or a section explaining these boundaries in the artifact. Clearly separate:
+Use the specialist documents as a complete interpretation-source set. Preserve every specialist item and organize it without flattening system-specific structures. Clearly separate:
 
 - interpretations that are consistent across systems;
 - interpretations where one system adds specificity to another;
 - interpretations that conflict or resist reconciliation;
 - non-substitutable interpretations available from only one system;
-- confidence or ambiguity;
-- reusable interpretation items with stable `I-01`-style IDs;
+- alternative manifestations supported by the same evidence;
+  - reusable interpretation items with stable `I-01`-style IDs;
 
 Build one integrated person model instead of stopping at system-by-system comparison:
 
@@ -33,8 +33,11 @@ Build one integrated person model instead of stopping at system-by-system compar
 - connect inner motive, behavior, environmental response, and recurring result across life domains;
 - explain when the same tendency becomes a strength or vulnerability and under which conditions;
 - distinguish traits that remain stable from expressions that change across calculated timing layers.
+- retain Saju's natal structure, relational operations, and long-term changes; Zi Wei Dou Shu's palace roles, star strength and combinations, and nested timing; and natal astrology's psychological functions, life arenas, and aspect dynamics;
+- cite every supplied `S-*`, `Z-*`, and `N-*` specialist item in at least one integrated interpretation item;
+- preserve concrete motives, choices, relationships, pressures, conflicts, and changes as ordinary-life interpretation without choosing creative material for the final game design.
 
-For every interpretation item, write `관계: 일관|구체화|상충|고유`, a concise `해석:` line, a different `연결 영역:`, an evidence-bounded `작동 사슬:`, `양면성:`, `조건:`, and a `근거:` line. Cite IDs from at least two specialist systems for `일관`, `구체화`, and `상충`. For `고유`, cite only the one originating system so the insight remains selectable by downstream work without false cross-system support. Use unique sequential IDs beginning with `I-01`. Do not copy complete specialist documents, extract creative motifs, invent evidence, or resolve contradictions silently.
+For every interpretation item, write `관계: 일관|구체화|상충|고유`, a concise `해석:` line, a different `연결 영역:`, an evidence-bounded `작동 사슬:`, `양면성:`, `조건:`, and a `근거:` line. Cite IDs from at least two specialist systems for `일관`, `구체화`, and `상충`. For `고유`, cite only the one originating system so the insight remains selectable by downstream work without false cross-system support. Use unique sequential IDs beginning with `I-01`. Do not add creative seeds, copy complete specialist documents, invent evidence, or resolve contradictions silently.
 
 Preserve the seven life domains from the specialist documents. Give each integrated item an exact `영역:` label and cover personality, career, wealth, romance and spouse, family and social relationships, health and daily rhythm, and timing at least once. Synthesize concrete conclusions rather than replacing them with abstract cross-system labels.
 
