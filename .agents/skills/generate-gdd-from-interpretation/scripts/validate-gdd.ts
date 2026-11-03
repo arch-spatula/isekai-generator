@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
-/** Return whether the GDD preserves its source report and traces each design motif to interpretation items. */
+/** Return whether the GDD stays separate from its source report and traces each design motif to interpretation items. */
 export function isValidGdd(markdown: string, chartReport: string, interpretation: string): boolean {
   const normalizedReport = chartReport.trim()
   const interpretationIds = new Set(
@@ -17,7 +17,7 @@ export function isValidGdd(markdown: string, chartReport: string, interpretation
   return markdown.trim().length > 0
     && normalizedReport.length > 0
     && interpretation.trim().length > 0
-    && markdown.includes(normalizedReport)
+    && !markdown.includes(normalizedReport)
     && motifsAreTraceable
 }
 
@@ -34,10 +34,10 @@ if (import.meta.main) {
         readFile(interpretationPath, 'utf8'),
       ])
       if (!isValidGdd(gdd, chartReport, interpretation)) {
-        console.error('GDD or source input is empty, the report appendix is incomplete, or a design motif lacks valid interpretation item IDs.')
+        console.error('GDD or source input is empty, the source report is embedded, or a design motif lacks valid interpretation item IDs.')
         process.exitCode = 1
       } else {
-        console.log('Validated interpretation-driven GDD with complete chart report.')
+        console.log('Validated interpretation-driven GDD with separate source report.')
       }
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error))

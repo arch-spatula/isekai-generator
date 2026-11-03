@@ -17,10 +17,10 @@ if (import.meta.main) {
         readFile(interpretationPath, 'utf8'),
       ])
       if (!isValidGdd(gdd, chartReport, interpretation)) {
-        console.error('GDD or source input is empty, the report appendix is incomplete, or a design motif lacks valid interpretation item IDs.')
+        console.error('GDD or source input is empty, the source report is embedded, or a design motif lacks valid interpretation item IDs.')
         process.exitCode = 1
       } else {
-        console.log('Validated interpretation-driven GDD with complete chart report.')
+        console.log('Validated interpretation-driven GDD with separate source report.')
       }
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error))
