@@ -7,7 +7,7 @@ describe('orchestrator GDD contract', () => {
     expect(isValidGdd(
       '# 자유로운 제목\n\n설계 모티프: 경계의 수호자\n해석 근거: I-01',
       '四柱八字\n命宮\n',
-      '# 명식 해석\n\n### I-01\n해석: 보존과 변화의 긴장',
+      '# 통합 차트 해석\n\n### I-01\n해석: 보존과 변화의 긴장',
     )).toBe(true)
   })
 

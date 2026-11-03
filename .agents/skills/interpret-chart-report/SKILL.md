@@ -1,31 +1,32 @@
 ---
 name: interpret-chart-report
-description: Read a calculated chart-report.md and create a separate Korean chart-interpretation.md that distinguishes direct observations, evidence-bearing cross-system interpretation items, conflicts, and uncertainty. Use when Codex needs a chart interpretation artifact without extracting creative motifs, designing a game, or making real-world predictions, either independently or as the second stage of the personalized GDD pipeline.
+description: Integrate separate Saju, Zi Wei Dou Shu, and Western natal specialist interpretations into a Korean chart-interpretation.md that distinguishes consistent, specificity-adding, and conflicting readings. Use after three isolated specialist interpretation agents and before personalized GDD design.
 ---
 
-# Interpret a chart report
+# Integrate specialist interpretations
 
-Interpret one supplied `chart-report.md` into a separate Markdown creative brief. Do not calculate charts or design a GDD.
+Integrate three supplied specialist interpretations. Do not calculate charts, reinterpret them independently, or design a GDD.
 
 ## Inputs
 
-Require absolute paths for the source report, interpretation guidelines, and output interpretation. When invoked by an orchestrator, use the supplied paths exactly. Refuse identical input and output paths, an empty report or guidelines document, or a report missing any of `四柱八字`, `紫微斗數 命盤`, and `Natal Chart`.
+Require absolute paths for `saju-interpretation.md`, `ziwei-interpretation.md`, `natal-interpretation.md`, the interpretation guidelines, and output `chart-interpretation.md`. Use supplied paths exactly and refuse identical paths or empty inputs.
 
 Read the supplied `interpretation-guidelines.md`, `references/interpretation-format.md`, and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
 
-Do not list, search, read, or reference any other artifact. Do not use conversation history, inferred user preferences, or previous interpretations.
+Do not read `chart-report.md`, list or search other artifacts, or use conversation history, inferred preferences, and previous versions.
 
 ## Interpret
 
-Use the chart systems only as creative seeds, never as factual personality diagnosis, advice, fate, or prediction. Clearly separate:
+Use the specialist documents only as creative interpretation sources, never as factual personality diagnosis, advice, fate, or prediction. Clearly separate:
 
-- direct observations traceable to the report;
-- cross-system patterns and tensions;
+- interpretations that are consistent across systems;
+- interpretations where one system adds specificity to another;
+- interpretations that conflict or resist reconciliation;
 - confidence or ambiguity;
 - reusable interpretation items with stable `I-01`-style IDs;
 - claims that the downstream designer must not make.
 
-For every interpretation item, write a concise `해석:` line and cite the relevant report labels or values in a `근거:` line. Use unique sequential IDs beginning with `I-01`. Do not extract creative motifs, invent absent placements, or resolve contradictions silently.
+For every interpretation item, write `관계: 일관|구체화|상충`, a concise `해석:` line, and a `근거:` line citing one or more existing specialist IDs such as `S-01, Z-02, N-03`. Use unique sequential IDs beginning with `I-01`. Do not copy complete specialist documents, extract creative motifs, invent evidence, or resolve contradictions silently.
 
 Follow the exact section contract in `references/interpretation-format.md`. Write the completed Korean document directly to the output path.
 
@@ -33,10 +34,10 @@ Follow the exact section contract in `references/interpretation-format.md`. Writ
 
 Run:
 
-`bun <skill-path>/scripts/validate-interpretation.ts <interpretation-output>`
+`bun <skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
 
 If validation fails, repair only the current output once and validate again. Return failure unchanged after a second failure.
 
 ## Complete
 
-Return only the source path, output path, selected mode, validation result, and a one-sentence status. Do not reproduce the report or interpretation.
+Return only the three source paths, output path, selected mode, validation result, and a one-sentence status. Do not reproduce interpretation content.

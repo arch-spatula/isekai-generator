@@ -1,0 +1,4 @@
+interface:
+  display_name: "Interpret One Chart System"
+  short_description: "사주·자미두수·네이탈 중 한 체계를 심층 해석"
+  default_prompt: "Use $interpret-chart-system to deeply interpret one chart system from my chart report."

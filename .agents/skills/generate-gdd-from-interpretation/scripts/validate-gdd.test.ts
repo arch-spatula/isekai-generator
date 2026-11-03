@@ -7,7 +7,7 @@ describe('isValidGdd', () => {
     expect(isValidGdd(
       '# GDD\n\n설계 모티프: 경계의 수호자\n해석 근거: I-01',
       '四柱八字\n命宮\n',
-      '# 명식 해석\n\n### I-01\n해석: 보존과 변화의 긴장',
+      '# 통합 차트 해석\n\n### I-01\n해석: 보존과 변화의 긴장',
     )).toBe(true)
   })
 
@@ -19,7 +19,7 @@ describe('isValidGdd', () => {
     expect(isValidGdd(
       '# GDD\n\n설계 모티프: 경계의 수호자\n해석 근거: I-02',
       '四柱八字',
-      '# 명식 해석\n\n### I-01',
+      '# 통합 차트 해석\n\n### I-01',
     )).toBe(false)
   })
 
@@ -27,7 +27,7 @@ describe('isValidGdd', () => {
     expect(isValidGdd(
       '# GDD\n\n설계 모티프: 경계의 수호자',
       '四柱八字',
-      '# 명식 해석\n\n### I-01',
+      '# 통합 차트 해석\n\n### I-01',
     )).toBe(false)
   })
 
