@@ -9,9 +9,9 @@ Interpret one supplied `chart-report.md` into a separate Markdown creative brief
 
 ## Inputs
 
-Require an absolute source report path and output interpretation path. When invoked by an orchestrator, use the supplied paths exactly. Refuse identical input and output paths, an empty report, or a report missing any of `四柱八字`, `紫微斗數 命盤`, and `Natal Chart`.
+Require absolute paths for the source report, interpretation guidelines, and output interpretation. When invoked by an orchestrator, use the supplied paths exactly. Refuse identical input and output paths, an empty report or guidelines document, or a report missing any of `四柱八字`, `紫微斗數 命盤`, and `Natal Chart`.
 
-Read the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
+Read the supplied `interpretation-guidelines.md`, `references/interpretation-format.md`, and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
 
 Do not list, search, read, or reference any other artifact. Do not use conversation history, inferred user preferences, or previous interpretations.
 

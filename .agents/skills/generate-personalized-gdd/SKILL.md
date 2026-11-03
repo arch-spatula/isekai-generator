@@ -52,6 +52,7 @@ Use a lightweight model. If the stage reports a missing or ambiguous required in
 After stage 1 succeeds, invoke `$interpret-chart-report` with only:
 
 - exact chart report and interpretation paths;
+- exact `docs/prompts/interpretation-guidelines.md` path;
 - selected mode;
 - absolute skill path.
 
