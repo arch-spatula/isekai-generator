@@ -11,3 +11,4 @@
 - [Orrery 계산 엔진의 단계적 Lua 포팅](2026-11-02-orrery-core-lua-port.md)
 - [게임 핵심 서사의 8단계 구조 채택](2026-11-03-eight-stage-story-structure.md)
 - [게임을 개인화된 서사 전달 매체로 정의](2026-11-03-game-as-narrative-medium.md)
+- [개인화 전투 원형을 후보 비교로 선택](2026-11-03-personalized-combat-archetype-selection.md)
