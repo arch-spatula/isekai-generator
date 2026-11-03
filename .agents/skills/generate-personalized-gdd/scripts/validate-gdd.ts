@@ -1,18 +1,8 @@
 import { readFile } from 'node:fs/promises'
 
-/** Return whether the GDD preserves its source report and cites an interpretation motif. */
-export function isValidGdd(markdown: string, chartReport: string, interpretation: string): boolean {
-  const normalizedReport = chartReport.trim()
-  const citedMotifs = [...markdown.matchAll(/^해석 모티프:\s*(.+)$/gm)]
-    .map(match => match[1].trim())
-    .filter(motif => motif.length > 0)
-  return markdown.trim().length > 0
-    && normalizedReport.length > 0
-    && interpretation.trim().length > 0
-    && markdown.includes(normalizedReport)
-    && citedMotifs.length > 0
-    && citedMotifs.every(motif => interpretation.includes(motif))
-}
+import { isValidGdd } from '../../generate-gdd-from-interpretation/scripts/validate-gdd'
+
+export { isValidGdd }
 
 if (import.meta.main) {
   const [gddPath, chartReportPath, interpretationPath] = process.argv.slice(2)
@@ -27,7 +17,7 @@ if (import.meta.main) {
         readFile(interpretationPath, 'utf8'),
       ])
       if (!isValidGdd(gdd, chartReport, interpretation)) {
-        console.error('GDD or source input is empty, the report appendix is incomplete, or no interpretation motif is traceable.')
+        console.error('GDD or source input is empty, the report appendix is incomplete, or a design motif lacks valid interpretation item IDs.')
         process.exitCode = 1
       } else {
         console.log('Validated interpretation-driven GDD with complete chart report.')

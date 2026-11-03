@@ -1,4 +1,4 @@
 interface:
   display_name: "Interpret Chart Report"
-  short_description: "계산 차트 보고서를 창작용 구조로 해석"
+  short_description: "계산 차트 보고서를 근거 기반 항목으로 해석"
   default_prompt: "Use $interpret-chart-report to interpret my chart report into a structured creative brief."
