@@ -22,10 +22,19 @@ Use the specialist documents as creative interpretation sources for downstream g
 - interpretations that are consistent across systems;
 - interpretations where one system adds specificity to another;
 - interpretations that conflict or resist reconciliation;
+- non-substitutable interpretations available from only one system;
 - confidence or ambiguity;
 - reusable interpretation items with stable `I-01`-style IDs;
 
-For every interpretation item, write `관계: 일관|구체화|상충`, a concise `해석:` line, and a `근거:` line citing one or more existing specialist IDs such as `S-01, Z-02, N-03`. Use unique sequential IDs beginning with `I-01`. Do not copy complete specialist documents, extract creative motifs, invent evidence, or resolve contradictions silently.
+Build one integrated person model instead of stopping at system-by-system comparison:
+
+- identify shared core desires, recurring conflicts, and decision criteria;
+- preserve one non-substitutable insight from each system and cite only that system's IDs;
+- connect inner motive, behavior, environmental response, and recurring result across life domains;
+- explain when the same tendency becomes a strength or vulnerability and under which conditions;
+- distinguish traits that remain stable from expressions that change across calculated timing layers.
+
+For every interpretation item, write `관계: 일관|구체화|상충|고유`, a concise `해석:` line, a different `연결 영역:`, an evidence-bounded `작동 사슬:`, `양면성:`, `조건:`, and a `근거:` line. Cite IDs from at least two specialist systems for `일관`, `구체화`, and `상충`. For `고유`, cite only the one originating system so the insight remains selectable by downstream work without false cross-system support. Use unique sequential IDs beginning with `I-01`. Do not copy complete specialist documents, extract creative motifs, invent evidence, or resolve contradictions silently.
 
 Preserve the seven life domains from the specialist documents. Give each integrated item an exact `영역:` label and cover personality, career, wealth, romance and spouse, family and social relationships, health and daily rhythm, and timing at least once. Synthesize concrete conclusions rather than replacing them with abstract cross-system labels.
 

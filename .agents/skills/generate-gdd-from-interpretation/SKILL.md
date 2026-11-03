@@ -17,7 +17,7 @@ Do not list, search, read, or reference any other artifact. Do not use conversat
 
 ## Design
 
-Use the interpretation as the primary design brief. Select relevant interpretation items, extract creative motifs from them, and decide how those motifs become game design. Consult the chart report only to verify cited evidence and avoid drift. If the interpretation and report conflict, preserve the ambiguity rather than silently reinterpreting the chart.
+Use the interpretation as the primary design brief. Use its common core, system-specific insights, cross-domain operation structure, dual conditions, and temporal changes as the whole-person context. Select relevant interpretation items, extract creative motifs from them, and decide how those motifs become game design. Consult the chart report only to verify cited evidence and avoid drift. If the interpretation and report conflict, preserve the ambiguity rather than silently reinterpreting the chart.
 
 Use the chart-derived interpretation as a creative seed and translate it directly into game-design language. Write the completed document in Korean without imposing a fixed outline. Do not append the chart report or the complete interpretation; they remain separate source artifacts. Do not include divination disclaimers, cautionary prefaces, personality-diagnosis caveats, or statements denying that the game predicts the future.
 
