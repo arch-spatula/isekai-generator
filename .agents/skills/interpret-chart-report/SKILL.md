@@ -17,16 +17,17 @@ Do not read `chart-report.md`, list or search other artifacts, or use conversati
 
 ## Interpret
 
-Use the specialist documents only as creative interpretation sources, never as factual personality diagnosis, advice, fate, or prediction. Clearly separate:
+Use the specialist documents as creative interpretation sources for downstream game design. Keep the synthesis bounded by their evidence and do not add real-world event forecasts or advice. Do not write disclaimers, cautionary prefaces, or a section explaining these boundaries in the artifact. Clearly separate:
 
 - interpretations that are consistent across systems;
 - interpretations where one system adds specificity to another;
 - interpretations that conflict or resist reconciliation;
 - confidence or ambiguity;
 - reusable interpretation items with stable `I-01`-style IDs;
-- claims that the downstream designer must not make.
 
 For every interpretation item, write `관계: 일관|구체화|상충`, a concise `해석:` line, and a `근거:` line citing one or more existing specialist IDs such as `S-01, Z-02, N-03`. Use unique sequential IDs beginning with `I-01`. Do not copy complete specialist documents, extract creative motifs, invent evidence, or resolve contradictions silently.
+
+Preserve the seven life domains from the specialist documents. Give each integrated item an exact `영역:` label and cover personality, career, wealth, romance and spouse, family and social relationships, health and daily rhythm, and timing at least once. Synthesize concrete conclusions rather than replacing them with abstract cross-system labels.
 
 Follow the exact section contract in `references/interpretation-format.md`. Write the completed Korean document directly to the output path.
 

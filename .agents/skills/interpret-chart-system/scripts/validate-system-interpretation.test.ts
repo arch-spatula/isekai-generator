@@ -27,7 +27,12 @@ for (const [system, fixture] of Object.entries(cases)) {
   describe(system, () => {
     const checklist = fixture.report.split('\n').map(row => `- 검토: ${row}`).join('\n')
     const absences = fixture.absent.map(marker => `- 보고서에 없음: ${marker}`).join('\n')
-    const valid = `${fixture.headings.join('\n')}\n${checklist}\n${absences}\n## 전문 해석 항목\n### ${fixture.prefix}-01\n해석: 구조적 긴장\n근거: 보고서 값\n## 한계와 금지된 단정`
+    const domains = ['성격과 기질', '직업과 적성', '재물', '연애와 배우자', '가족과 대인관계', '건강과 생활 리듬', '시기운']
+    const items = domains.map((domain, index) => `### ${fixture.prefix}-${String(index + 1).padStart(2, '0')}
+영역: ${domain}
+해석: 이 영역에서는 차트의 구조를 실제 생활의 선택과 반응 방식으로 연결하여, 강점이 드러나는 조건과 반복해서 마찰이 생길 수 있는 조건을 함께 구체적으로 설명한다.
+근거: 보고서에 기록된 배치와 관계를 함께 사용한 근거`).join('\n')
+    const valid = `${fixture.headings.join('\n')}\n${checklist}\n${absences}\n## 전문 해석 항목\n${items}`
 
     test('accepts the complete specialist contract', () => {
       expect(isValidSystemInterpretation(system as ChartSystem, valid, fixture.report)).toBe(true)
@@ -39,6 +44,18 @@ for (const [system, fixture] of Object.entries(cases)) {
 
     test('rejects an item without evidence', () => {
       expect(isValidSystemInterpretation(system as ChartSystem, valid.replace('근거:', '출처:'), fixture.report)).toBe(false)
+    })
+
+    test('rejects an omitted life domain', () => {
+      expect(isValidSystemInterpretation(system as ChartSystem, valid.replace('영역: 재물', '영역: 성격과 기질'), fixture.report)).toBe(false)
+    })
+
+    test('rejects a shallow interpretation', () => {
+      expect(isValidSystemInterpretation(system as ChartSystem, valid.replace(/^해석:.+$/m, '해석: 구조적 긴장'), fixture.report)).toBe(false)
+    })
+
+    test('rejects a deprecated disclaimer section', () => {
+      expect(isValidSystemInterpretation(system as ChartSystem, `${valid}\n## 한계와 금지된 단정`, fixture.report)).toBe(false)
     })
 
     test('rejects an omitted source row', () => {

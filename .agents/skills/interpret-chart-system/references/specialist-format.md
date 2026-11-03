@@ -1,6 +1,10 @@
 # Specialist interpretation contract
 
-Write in Korean. Use the exact ordered headings from the selected system reference once each. Under the final `## 전문 해석 항목`, write one or more sequential system IDs. Every item must contain `해석:` and `근거:` and may contain `불확실성:`.
+Write in Korean. Use the exact ordered headings from the selected system reference once each. Under the final `## 전문 해석 항목`, write sequential system IDs. Every item must contain one `영역:`, `해석:`, and `근거:` line and may contain `불확실성:`.
+
+Cover each of these exact domain labels at least once: `성격과 기질`, `직업과 적성`, `재물`, `연애와 배우자`, `가족과 대인관계`, `건강과 생활 리듬`, `시기운`. Use separate items when conclusions need different evidence. For each domain, lead with a direct answer and explain concrete manifestations, strengths, weaknesses, suitable conditions, and friction where the evidence supports them. Career items should name plausible roles, work styles, or environments; spouse items should describe partner and relationship patterns; timing items should distinguish natal, decade, annual, and monthly layers actually printed in the source. If a system has no calculated timing layer, say so and give only the static tendency instead of inventing timing.
+
+Each `해석:` must be a substantive reading, not a renamed observation. Phrases such as “축이 작동한다”, “영역이 전면화된다”, or “긴장이 존재한다” are incomplete unless followed by what the person tends to do, experience, seek, avoid, or need in ordinary life.
 
 Cover every printed row or item in the relevant source section. Grouping related rows is allowed only when every member remains identifiable in the evidence. In `## 원문 항목 검토표`, add `- 검토: <source row>` for every non-empty, non-separator source row after trimming and collapsing whitespace. For every conditional marker required by the selected system reference but absent from the source, add `- 보고서에 없음: <marker>`.
 

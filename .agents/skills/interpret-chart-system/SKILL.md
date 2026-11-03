@@ -5,7 +5,7 @@ description: Deeply interpret exactly one chart system from chart-report.md into
 
 # Interpret one chart system
 
-Interpret exactly one supplied chart system. Do not integrate systems, design a game, or make real-world predictions.
+Interpret exactly one supplied chart system. Do not integrate systems or design a game.
 
 ## Inputs
 
@@ -17,7 +17,11 @@ Do not list, search, read, or reference other artifacts. Do not use conversation
 
 Cover every element printed for the selected system, including temporal layers and conditional sections. Do not stop at a headline placement or, for Saju, the natal pillars. If a conditional section is absent, state that it is absent instead of inventing it.
 
-Distinguish direct observations from interpretation. Give each reusable item a unique sequential system ID: `S-01` for Saju, `Z-01` for Zi Wei Dou Shu, or `N-01` for natal. Every item must contain `해석:` and `근거:` lines and may contain `불확실성:`. Use chart systems only as creative seeds, never as factual diagnosis, advice, fate, or prediction.
+Answer the ordinary life questions expected from a full reading. Cover all seven domains required by `references/specialist-format.md`: personality, career, wealth, romance and spouse, family and social relationships, health and daily rhythm, and timing. Translate technical placements into concrete tendencies, strengths, vulnerabilities, suitable conditions, and likely friction. Do not merely restate that a palace, axis, star, ten-god, or aspect is active.
+
+Distinguish direct observations from interpretation. Give each reusable item a unique sequential system ID: `S-01` for Saju, `Z-01` for Zi Wei Dou Shu, or `N-01` for natal. Every item must contain `해석:` and `근거:` lines and may contain `불확실성:` only when the evidence permits multiple readings or has a calculation limitation.
+
+The chart is a creative seed for downstream game design. Keep interpretations bounded by the supplied evidence. Describe traditional predictive tendencies and favorable or burdensome conditions, but do not guarantee a concrete event, diagnose illness, or prescribe consequential action. Treat this as an output rule: do not write disclaimers, cautionary prefaces, or a section explaining these boundaries in the artifact.
 
 Write directly to the exact output path.
 
