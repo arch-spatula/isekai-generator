@@ -38,10 +38,10 @@ Resolve the repository root containing `scripts/chart-report.ts`. Run:
 
 `bun <skill-path>/scripts/run-chart-report.ts <repository-root> <chart-report-output> -- <all chart flags>`
 
-Supply every normalized option explicitly, including defaults. The runner preserves the calculator's stdout unchanged, checks all three chart sections, creates the output directory, and refuses to overwrite an existing report.
+Supply every normalized option explicitly, including defaults. The runner preserves the calculator's stdout unchanged, checks all three chart sections, creates the output directory, and refuses to overwrite an existing report. It also writes a sibling `chart-evidence.json` whose stable content-derived IDs map to the report's semantic rows; decorative separators and section title lines are excluded deterministically.
 
 Treat calculator failure as a final input error. Do not repair, guess, interpret, summarize, or reformat its output. Do not inspect any other artifact version.
 
 ## Complete
 
-Return only the report path, version when available, and a one-sentence calculation status. Do not reproduce the birth arguments or report.
+Return only the report path, evidence manifest path, version when available, and a one-sentence calculation status. Do not reproduce the birth arguments or report.

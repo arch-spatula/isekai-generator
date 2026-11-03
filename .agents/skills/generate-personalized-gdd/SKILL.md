@@ -29,6 +29,7 @@ Resolve the repository root containing `scripts/chart-report.ts`. Run:
 Derive these sibling paths from the returned GDD path:
 
 - `chart-report.md`
+- `chart-evidence.json`
 - `saju-interpretation.md`
 - `ziwei-interpretation.md`
 - `natal-interpretation.md`
@@ -45,7 +46,7 @@ Invoke every agent with `fork_turns="none"`. Tell every agent to read and follow
 Invoke `$generate-chart-report` with only:
 
 - the user-stated birth details and explicit chart options, including defaults;
-- repository root, version, and exact `chart-report.md` output path;
+- repository root, version, and exact `chart-report.md` and sibling `chart-evidence.json` output paths;
 - absolute skill path.
 
 Use a lightweight model. If the stage reports a missing or ambiguous required input, relay one focused question to the user; do not guess. Stop on calculation failure.
@@ -55,7 +56,7 @@ Use a lightweight model. If the stage reports a missing or ambiguous required in
 After stage 1 succeeds, start three `$interpret-chart-system` agents concurrently for `saju`, `ziwei`, and `natal`. Give each agent only:
 
 - its system name;
-- exact chart report and system-specific output paths;
+- exact chart report, evidence manifest, and system-specific output paths;
 - exact `docs/prompts/interpretation-guidelines.md` path;
 - selected mode;
 - absolute skill path.
@@ -97,11 +98,11 @@ Use the closest exposed model if unavailable and report the substitution.
 
 Run all specialist validators, then both final validators:
 
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts saju <saju-output> <chart-report-output>`
+`bun <system-skill-path>/scripts/validate-system-interpretation.ts saju <saju-output> <chart-evidence-output>`
 
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts ziwei <ziwei-output> <chart-report-output>`
+`bun <system-skill-path>/scripts/validate-system-interpretation.ts ziwei <ziwei-output> <chart-evidence-output>`
 
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts natal <natal-output> <chart-report-output>`
+`bun <system-skill-path>/scripts/validate-system-interpretation.ts natal <natal-output> <chart-evidence-output>`
 
 `bun <interpret-skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
 
@@ -111,4 +112,4 @@ Do not silently rewrite a stage's valid result. If final validation fails, retur
 
 ## Complete
 
-Report the mode, version, all six validated artifact paths, and whether a model substitution occurred. Do not reproduce birth arguments, chart content, interpretation, or GDD content.
+Report the mode, version, all seven validated artifact paths, and whether a model substitution occurred. Do not reproduce birth arguments, chart content, interpretation, or GDD content.

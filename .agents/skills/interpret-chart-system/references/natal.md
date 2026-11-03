@@ -1,6 +1,6 @@
 # Natal coverage contract
 
-Use these headings exactly once and in order: `# 네이탈 차트 심층 해석`, `## 계산 전제`, `## 앵글과 하우스`, `## 행성 배치`, `## 주요 애스펙트`, `## 차트 내부 종합`, `## 원문 항목 검토표`, `## 전문 해석 항목`.
+Use these headings exactly once and in order: `# 네이탈 차트 심층 해석`, `## 계산 전제`, `## 앵글과 하우스`, `## 행성 배치`, `## 주요 애스펙트`, `## 차트 내부 종합`, `## 전문 해석 항목`.
 
 Cover the zodiac, position, node, time conversion, actual house system, and boundary rules. Cover every printed angle and house cusp; every printed planet, node, derived point, sign, degree, retrograde marker, and house; and every printed major aspect with its type and orb. Relate planets, signs, houses, angles, and aspect patterns without losing individual evidence.
 

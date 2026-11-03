@@ -6,6 +6,6 @@ Cover each of these exact domain labels at least once: `성격과 기질`, `직�
 
 Each `해석:` must be a substantive reading, not a renamed observation. Phrases such as “축이 작동한다”, “영역이 전면화된다”, or “긴장이 존재한다” are incomplete unless followed by what the person tends to do, experience, seek, avoid, or need in ordinary life. Preserve motives and tensions inside the life interpretation, but do not add a creative seed, game role, fantasy expression, or proposed design element.
 
-Cover every printed row or item in the relevant source section. Grouping related rows is allowed only when every member remains identifiable in the evidence. In `## 원문 항목 검토표`, add `- 검토: <source row>` for every non-empty, non-separator source row after trimming and collapsing whitespace. For every conditional marker required by the selected system reference but absent from the source, add `- 보고서에 없음: <marker>`.
+Cover every evidence item supplied for the selected system. Grouping related evidence is allowed only when every ID remains cited in a `근거:` line. Use only the exact `S-E...`, `Z-E...`, or `N-E...` IDs from `chart-evidence.json`, and cite every supplied ID at least once across the specialist items. Do not reproduce source rows, decorative separators, or a coverage checklist in the interpretation.
 
-The checklist proves coverage but does not replace interpretation. Keep observation separate from interpretation. Do not include another chart system, cross-system synthesis, or a selected game design.
+Evidence-ID coverage does not replace interpretation. Keep observation separate from interpretation. Do not include another chart system, cross-system synthesis, or a selected game design.

@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 
+import { buildEvidenceManifest } from './chart-evidence'
+
 const REQUIRED_SECTIONS = ['四柱八字', '紫微斗數 命盤', 'Natal Chart'] as const
 
 /** Return whether calculator output contains all supported chart systems. */
@@ -29,6 +31,11 @@ export async function runChartReport(
 
   await mkdir(dirname(outputPath), { recursive: true })
   await writeFile(outputPath, stdout, { encoding: 'utf8', flag: 'wx' })
+  await writeFile(
+    join(dirname(outputPath), 'chart-evidence.json'),
+    `${JSON.stringify(buildEvidenceManifest(stdout), null, 2)}\n`,
+    { encoding: 'utf8', flag: 'wx' },
+  )
 }
 
 if (import.meta.main) {
