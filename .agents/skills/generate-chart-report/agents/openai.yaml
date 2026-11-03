@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Chart Report"
+  short_description: "대화형 출생 입력으로 계산 차트 보고서 생성"
+  default_prompt: "Use $generate-chart-report to collect my birth details and generate a calculated chart report."

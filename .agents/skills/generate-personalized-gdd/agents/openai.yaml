@@ -1,4 +1,4 @@
 interface:
   display_name: "Personalized Action RPG GDD"
-  short_description: "대화형 입력으로 버전별 개인화 GDD 생성"
-  default_prompt: "Use $generate-personalized-gdd to interview me for my birth details and create a versioned personalized Action RPG GDD."
+  short_description: "세 단계 격리 파이프라인으로 개인화 GDD 생성"
+  default_prompt: "Use $generate-personalized-gdd to orchestrate a chart report, interpretation, and versioned personalized Action RPG GDD."
