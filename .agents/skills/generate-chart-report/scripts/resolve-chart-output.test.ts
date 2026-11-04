@@ -1,32 +1,18 @@
-import { describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { expect, test } from 'bun:test'
 import { join } from 'node:path'
-
+import { makeRepository } from '../../../../scripts/artifacts/test-fixtures'
+import { readRunManifest } from '../../../../scripts/artifacts/artifact-run'
 import { resolveChartOutput } from './resolve-chart-output'
 
-function makeRoot(): string {
-  return mkdtempSync(join(tmpdir(), 'chart-report-skill-'))
-}
+test('resolveChartOutput reserves a run and returns the existing output layout', () => {
+  const root = makeRepository()
+  const output = resolveChartOutput(root, { mode: 'deep', purpose: 'regression' })
+  expect(output).toBe(join(root, 'artifacts/v0.1.0/docs/GDD/chart-report.md'))
+  expect(readRunManifest(join(root, 'artifacts/v0.1.0'))).toMatchObject({ status: 'allocated', mode: 'deep', purpose: 'regression' })
+  expect(resolveChartOutput(root)).toContain('/v0.1.1/')
+})
 
-describe('resolveChartOutput', () => {
-  test('starts at v0.1.0', () => {
-    expect(resolveChartOutput(makeRoot())).toEndWith(
-      '/artifacts/v0.1.0/docs/GDD/chart-report.md',
-    )
-  })
-
-  test('increments the greatest semantic version patch', () => {
-    const root = makeRoot()
-    mkdirSync(join(root, 'artifacts', 'v0.2.3'), { recursive: true })
-    expect(resolveChartOutput(root)).toEndWith(
-      '/artifacts/v0.2.4/docs/GDD/chart-report.md',
-    )
-  })
-
-  test('refuses an existing requested version', () => {
-    const root = makeRoot()
-    mkdirSync(join(root, 'artifacts', 'v1.0.0'), { recursive: true })
-    expect(() => resolveChartOutput(root, '1.0.0')).toThrow('Artifact version already exists: v1.0.0')
-  })
+test('resolveChartOutput refuses legacy explicit version arguments', () => {
+  const root = makeRepository()
+  expect(() => resolveChartOutput(root, 'v0.2.0' as never)).toThrow()
 })

@@ -26,9 +26,11 @@ Use these defaults unless overridden:
 
 When an orchestrator supplies an absolute `chart-report.md` path, use exactly that path and never allocate another version.
 
-For standalone use, accept an optional semantic version and run:
+For standalone use, accept `purpose` (default `experiment`) and `mode` (default `light`) and run:
 
-`bun <skill-path>/scripts/resolve-chart-output.ts <repository-root> [version]`
+`bun <skill-path>/scripts/resolve-chart-output.ts <repository-root> --purpose <purpose> --mode <mode>`
+
+Allowed purposes are `experiment`, `regression`, `new-profile`, `incident-reproduction`, and `release-candidate`. Allowed modes are `light` and `deep`. The shared allocator reserves one patch in `.agents/artifact-series.json`'s active series and creates `artifact-run.json` with kind `chart-report` and status `allocated`. A dirty `release-candidate` is rejected before reservation. Reject explicit versions / `--version`; never change the active series during generation.
 
 Never overwrite an existing version directory or accept a free-form standalone output path.
 
@@ -40,8 +42,12 @@ Resolve the repository root containing `scripts/chart-report.ts`. Run:
 
 Supply every normalized option explicitly, including defaults. The runner preserves the calculator's stdout unchanged, checks all three chart sections, creates the output directory, and refuses to overwrite an existing report. It also writes a sibling `chart-evidence.json` whose stable content-derived IDs map to the report's semantic rows; decorative separators and section title lines are excluded deterministically.
 
+The runner requires a reserved output path. For a standalone `chart-report` run it records `running` before calculation, then `succeeded` only after report and evidence validation and writes finish successfully. Caught errors record `failed` with a short safe summary; original calculator errors are reported separately. If recording failure also fails, report both errors. In a `personalized-gdd` run, the runner requires the parent to be `running` and leaves its status to the orchestrator.
+
+For a standalone user cancellation before completion, run `bun <repository-root>/scripts/update-artifact-run.ts <version-directory> cancelled`. If input normalization fails after reservation but before the runner starts, record `failed` with stage `chart-input` and a short non-sensitive summary using the same command. Do not store birth details, command arguments, generated content, or raw stderr in manifest errors. Never remove a reserved directory or reuse its version. An abnormal interruption may leave `allocated` or `running`; do not guess its result.
+
 Treat calculator failure as a final input error. Do not repair, guess, interpret, summarize, or reformat its output. Do not inspect any other artifact version.
 
 ## Complete
 
-Return only the report path, evidence manifest path, version when available, and a one-sentence calculation status. Do not reproduce the birth arguments or report.
+Return only the report path, evidence manifest path, artifact version, purpose and final status when standalone (or the parent's current status when orchestrated), and a one-sentence calculation status. On failure or cancellation, report the reserved version, purpose and final status without claiming validated outputs. Do not reproduce the birth arguments or report.

@@ -1,38 +1,18 @@
-import { describe, expect, test } from 'bun:test'
-import { mkdirSync, mkdtempSync } from 'node:fs'
+import { expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { makeRepository } from '../../../../scripts/artifacts/test-fixtures'
+import { readRunManifest } from '../../../../scripts/artifacts/artifact-run'
 import { resolveOutput } from './resolve-output'
 
-function makeRoot(): string {
-  return mkdtempSync(join(tmpdir(), 'personalized-gdd-'))
-}
+test('resolveOutput reserves a run and returns the existing output layout', () => {
+  const root = makeRepository()
+  const output = resolveOutput(root, { mode: 'deep', purpose: 'regression' })
+  expect(output).toBe(join(root, 'artifacts/v0.1.0/docs/GDD/personalized-action-rpg-concept.md'))
+  expect(readRunManifest(join(root, 'artifacts/v0.1.0'))).toMatchObject({ status: 'allocated', mode: 'deep', purpose: 'regression' })
+  expect(resolveOutput(root)).toContain('/v0.1.1/')
+})
 
-describe('resolveOutput', () => {
-  test('starts with the existing v0.1.0 layout', () => {
-    const root = makeRoot()
-    expect(resolveOutput(root)).toEndWith(
-      '/artifacts/v0.1.0/docs/GDD/personalized-action-rpg-concept.md',
-    )
-  })
-
-  test('increments the greatest semantic version patch', () => {
-    const root = makeRoot()
-    mkdirSync(join(root, 'artifacts', 'v0.1.9'), { recursive: true })
-    mkdirSync(join(root, 'artifacts', 'v0.2.0'), { recursive: true })
-    expect(resolveOutput(root)).toEndWith(
-      '/artifacts/v0.2.1/docs/GDD/personalized-action-rpg-concept.md',
-    )
-  })
-
-  test('refuses an existing requested version', () => {
-    const root = makeRoot()
-    mkdirSync(join(root, 'artifacts', 'v1.0.0'), { recursive: true })
-    expect(() => resolveOutput(root, '1.0.0')).toThrow('Artifact version already exists: v1.0.0')
-  })
-
-  test('refuses a malformed requested version', () => {
-    const root = makeRoot()
-    expect(() => resolveOutput(root, 'next')).toThrow('Invalid semantic version: next')
-  })
+test('resolveOutput refuses legacy explicit version arguments', () => {
+  const root = makeRepository()
+  expect(() => resolveOutput(root, 'v0.2.0' as never)).toThrow()
 })

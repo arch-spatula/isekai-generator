@@ -1,58 +1,18 @@
-import { existsSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
+import { allocateRun, parseRunOptions, type RunOptions } from '../../../../scripts/artifacts/artifact-run'
 
-const VERSION_PATTERN = /^v?(\d+)\.(\d+)\.(\d+)$/
-
-type Version = [major: number, minor: number, patch: number]
-
-function parseVersion(value: string): Version | null {
-  const match = VERSION_PATTERN.exec(value)
-  if (match == null) return null
-  return [Number(match[1]), Number(match[2]), Number(match[3])]
-}
-
-function compareVersions(left: Version, right: Version): number {
-  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2]
-}
-
-/** Resolve a new artifact path without reading any previous GDD content. */
-export function resolveOutput(repositoryRoot: string, requestedVersion?: string): string {
-  const artifactsRoot = join(resolve(repositoryRoot), 'artifacts')
-  let version: Version
-
-  if (requestedVersion != null) {
-    const parsed = parseVersion(requestedVersion)
-    if (parsed == null) throw new Error(`Invalid semantic version: ${requestedVersion}`)
-    version = parsed
-  } else {
-    const existing = existsSync(artifactsRoot)
-      ? readdirSync(artifactsRoot, { withFileTypes: true })
-          .filter(entry => entry.isDirectory())
-          .map(entry => parseVersion(entry.name))
-          .filter((entry): entry is Version => entry != null)
-          .sort(compareVersions)
-      : []
-    const latest = existing.at(-1)
-    version = latest == null ? [0, 1, 0] : [latest[0], latest[1], latest[2] + 1]
-  }
-
-  const versionDirectory = join(artifactsRoot, `v${version.join('.')}`)
-  if (existsSync(versionDirectory)) throw new Error(`Artifact version already exists: v${version.join('.')}`)
-
-  return join(versionDirectory, 'docs', 'GDD', 'personalized-action-rpg-concept.md')
+/** Reserve a new run in the active series before returning its output path. */
+export function resolveOutput(repositoryRoot: string, options: RunOptions = {}): string {
+  return join(allocateRun(repositoryRoot, 'personalized-gdd', options), 'docs', 'GDD', 'personalized-action-rpg-concept.md')
 }
 
 if (import.meta.main) {
-  const [repositoryRoot, requestedVersion] = process.argv.slice(2)
-  if (repositoryRoot == null) {
-    console.error('Usage: bun resolve-output.ts <repository-root> [version]')
+  try {
+    const [root, ...args] = process.argv.slice(2)
+    if (!root) throw new Error('Usage: bun resolve-output.ts <repository-root> [--purpose <purpose>] [--mode <mode>]')
+    console.log(resolveOutput(root, parseRunOptions(args)))
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error))
     process.exitCode = 1
-  } else {
-    try {
-      console.log(resolveOutput(repositoryRoot, requestedVersion))
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error))
-      process.exitCode = 1
-    }
   }
 }

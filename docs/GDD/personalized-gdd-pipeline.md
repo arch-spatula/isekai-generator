@@ -46,13 +46,20 @@ flowchart LR
 | 옵션 | 기본값 | 의미 |
 | --- | --- | --- |
 | `mode` | `light` | 전문 해석·통합·GDD의 분량과 깊이 |
+| `purpose` | `experiment` | `regression`, `new-profile`, `incident-reproduction`, `release-candidate`도 허용 |
 | `flow-year` | 실행 연도 | 자미두수 유년 계산 연도 |
 | `jasi-method` | `unified` | 사주 자시 처리 방식 |
 | `house-system` | `P` | 서양 점성술 하우스 시스템 |
 
 ## 버전과 출력
 
-새 시맨틱 버전을 할당하며 기존 버전을 읽거나 덮어쓰지 않는다.
+`.agents/artifact-series.json`의 활성 series 안에서 공용 예약기가 다음 patch를 할당한다.
+차트 단독 생성과 전체 GDD는 같은 번호 순서를 공유한다. 명시적 버전 지정은 받지 않으며
+실패·취소·비정상 종료된 실행의 번호도 재사용하지 않는다. 기존 아티팩트는 변경하지 않는다.
+
+예약은 버전 디렉터리와 `artifact-run.json`을 먼저 생성한다. manifest에는 종류, 목적,
+mode, 기준선 revision, source revision과 dirty 여부, 상태와 시각을 기록한다. 민감한 입력과
+생성 본문은 넣지 않는다. `release-candidate`는 clean working tree에서만 예약한다.
 
 ```text
 artifacts/vX.Y.Z/docs/GDD/
@@ -147,11 +154,37 @@ GDD는 통합 해석의 표면 직업·업무 명사를 옮기지 않고, 그 �
 
 각 전문 문서는 evidence manifest의 해당 체계 ID가 모두 참조됐는지, 존재하지 않는 ID를 사용하지 않았는지, 순차 전문 ID와 `해석:` 계약을 충족하는지 검증한다. Markdown 장식, 공백, 구분선, 원문 행 복사는 검증 대상이 아니다. 통합 문서는 세 비교 분류, 순차 ID, 관계 유형, 서로 다른 두 체계 이상의 실제 전문 ID 참조를 검증한다. 원형 선택 문서는 후보 수, 축 값, 후보 간 거리, 해석 ID, 점수 선택, 지문 유사도와 추가 후보 조건을 검증한다. GDD는 통합 ID 추적성, 원본 보고서 비첨부와 선택 지문 일치를 검증한다.
 
-모든 검증이 성공한 뒤에만 선택 지문을 레지스트리에 등록한다. 실패하거나 취소된 생성은
-등록하지 않는다.
+오케스트레이터는 차트 계산 전에 manifest를 `running`으로 변경한다. 모든 검증과 지문
+등록이 성공한 뒤에만 `succeeded`로 변경한다. 차트 단독 실행에서는 차트 runner가 같은
+상태 전이를 담당하며 GDD 하위 차트 실행에서는 부모 상태를 변경하지 않는다.
+
+포착한 오류는 `failed`, 사용자 취소는 `cancelled`로 기록하며 종료 시각을 남긴다.
+실패 정보에는 단계와 짧은 비민감 요약만 넣는다. 원래 오류와 manifest 갱신 오류가 함께
+발생하면 둘 다 보고한다. 비정상 종료로 남은 `allocated` 또는 `running`은 결과를 추측해
+변경하지 않는다. 예약된 디렉터리는 지우지 않는다. 실패·취소된 생성은 지문을 등록하지 않는다.
 
 전문 에이전트 하나가 실패해도 다른 병렬 작업은 안전하게 완료시킨 뒤 파이프라인을 중단하며 통합을 실행하지 않는다. 각 해석 에이전트는 자기 출력만 한 번 수정해 재검증할 수 있다.
 
 ## 완료 결과
 
-성공 시 모드, 버전, 검증된 여덟 산출물 경로, 모델 대체 여부만 보고한다. 출생 정보와 산출물 본문은 완료 메시지에 복제하지 않는다.
+성공 시 모드, artifact version, purpose, 최종 상태, 검증된 여덟 산출물 경로와 모델 대체
+여부를 보고한다. 출생 정보와 산출물 본문은 완료 메시지에 복제하지 않는다.
+
+## 기준선 승격 운영
+
+승격 조건과 v0.2 관문은 [버전 관리 명세](../spec/artifact-generation-versioning.md)를 따른다.
+일반 생성은 minor를 자동으로 변경하지 않는다. 검증 근거가 준비된 clean working tree에서
+다음 명령을 명시적으로 실행한다.
+
+```bash
+bun scripts/promote-artifact-series.ts <repository-root> <next-series> <decision-path> [known-issue-path ...]
+```
+
+도구는 정확히 다음 minor, 저장소 내부의 근거 문서와 known issue 파일, 기존 대상 series
+부재를 검사하고 설정만 변경한다. 기준선 revision은 승격 직전 HEAD다. 설정을 커밋한 뒤
+별도 `release-candidate` 또는 `regression` 실행으로 새 series의 `.0`을 예약한다.
+승격 도구는 근거 문서의 품질을 자동 판정하지 않으므로 운영자가 명세의 관문을 확인한다.
+
+초기 도입은 `0.1`을 유지하며 설정 작성 당시 HEAD를 기준선으로 기록한다. 자기 커밋의
+hash를 같은 커밋에 넣을 수 없으므로 구현 커밋을 초기 기준선으로 삼으려면 그 커밋 후
+`baselineRevision`을 별도 설정 커밋으로 갱신한다. 과거 실행에는 manifest를 소급 생성하지 않는다.

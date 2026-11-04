@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
+import { failRun, readRunManifest, updateRun } from '../../../../scripts/artifacts/artifact-run'
 
 import { buildEvidenceManifest } from './chart-evidence'
 
@@ -17,6 +18,22 @@ export async function runChartReport(
   chartArguments: string[],
 ): Promise<void> {
   const root = resolve(repositoryRoot)
+  const runDirectory = resolve(dirname(outputPath), '..', '..')
+  const manifest = readRunManifest(runDirectory)
+  if (resolve(outputPath) !== join(root, 'artifacts', manifest.artifactVersion, 'docs', 'GDD', 'chart-report.md')) throw new Error('Chart output must belong to the reserved run')
+  const standalone = manifest.artifactKind === 'chart-report'
+  if (standalone) updateRun(runDirectory, 'running')
+  else if (manifest.status !== 'running') throw new Error('Parent GDD run must be running before chart calculation')
+  try {
+    await calculateChartReport(root, outputPath, chartArguments)
+    if (standalone) updateRun(runDirectory, 'succeeded')
+  } catch (error) {
+    if (standalone) failRun(runDirectory, 'chart-report', 'Chart calculation or evidence validation failed.', error)
+    throw error
+  }
+}
+
+async function calculateChartReport(root: string, outputPath: string, chartArguments: string[]): Promise<void> {
   const processResult = Bun.spawn(
     ['bun', join(root, 'scripts', 'chart-report.ts'), ...chartArguments],
     { cwd: root, stdout: 'pipe', stderr: 'pipe' },
@@ -51,6 +68,9 @@ if (import.meta.main) {
       console.log(outputPath)
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error))
+      if (error instanceof AggregateError) {
+        for (const cause of error.errors) console.error(cause instanceof Error ? cause.message : String(cause))
+      }
       process.exitCode = 1
     }
   }

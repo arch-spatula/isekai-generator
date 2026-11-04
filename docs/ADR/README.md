@@ -12,3 +12,4 @@
 - [게임 핵심 서사의 8단계 구조 채택](2026-11-03-eight-stage-story-structure.md)
 - [게임을 개인화된 서사 전달 매체로 정의](2026-11-03-game-as-narrative-medium.md)
 - [개인화 전투 원형을 후보 비교로 선택](2026-11-03-personalized-combat-archetype-selection.md)
+- [생성 아티팩트 버전을 기준선과 실행 이력으로 구분](2026-11-04-artifact-generation-versioning.md)

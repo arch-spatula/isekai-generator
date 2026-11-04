@@ -9,11 +9,12 @@ Run isolated agents in dependency order. Execute the three specialist interpreta
 
 ## Accept the request
 
-Pass user-stated birth details to the chart stage without inventing a date, exact time, gender, or ambiguous birthplace. Accept optional `mode` and semantic `version`.
+Pass user-stated birth details to the chart stage without inventing a date, exact time, gender, or ambiguous birthplace. Accept optional `mode` and `purpose`. Reject explicit `version` / `--version`; versions are reserved only through the active series allocator.
 
 Use these defaults unless overridden:
 
 - `mode`: `light`
+- `purpose`: `experiment` (also accepts `regression`, `new-profile`, `incident-reproduction`, `release-candidate`)
 - `flow-year`: current calendar year
 - `jasi-method`: `unified`
 - `house-system`: `P`
@@ -24,7 +25,9 @@ Supported modes are `light` and `deep`. Before generation, briefly confirm only 
 
 Resolve the repository root containing `scripts/chart-report.ts`. Run:
 
-`bun <skill-path>/scripts/resolve-output.ts <repository-root> [version]`
+`bun <skill-path>/scripts/resolve-output.ts <repository-root> --purpose <purpose> --mode <mode>`
+
+This command atomically reserves a new version directory and writes `artifact-run.json` with status `allocated`. Read the allocated version from that manifest; never calculate a version yourself. `.agents/artifact-series.json` is the only active-series authority. A dirty `release-candidate` is rejected before consuming a patch. Never promote the series as part of generation.
 
 Derive these sibling paths from the returned GDD path:
 
@@ -41,6 +44,16 @@ Use `<repository-root>/artifacts/registries/combat-concept-fingerprints.json` as
 `bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts init <registry-path>`
 
 Never overwrite or reuse an existing version directory. Do not inspect previous artifact content.
+
+Before starting the chart agent, record the start:
+
+`bun <repository-root>/scripts/update-artifact-run.ts <version-directory> running`
+
+The orchestrator owns this run's status. Subagents use the reserved paths without allocating or finalizing the parent run. On any caught stage error (including registry initialization, final validation, or fingerprint registration), stop dependent work and record:
+
+`bun <repository-root>/scripts/update-artifact-run.ts <version-directory> failed <stage> "<short non-sensitive error summary>"`
+
+Use stage identifiers such as `chart-report`, `saju`, `ziwei`, `natal`, `integration`, `selection`, `gdd`, `final-validation`, or `fingerprint-registration`. Never put raw birth details, generated content, command arguments, or raw calculator stderr in the summary. Report the original error separately. If manifest update also fails, report both errors. On user cancellation, stop dependent work and record `cancelled` with the same command, without a failure object. Let active parallel specialists finish safely before finalizing. Never remove a reserved directory. After an abnormal interruption, leave unfinished status unchanged; do not guess the result or reassign the version.
 
 ## Run isolated stages
 
@@ -131,6 +144,10 @@ After every validation succeeds, register the selected fingerprint exactly once:
 
 `bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts register <registry-path> <version> <concept-brief-output>`
 
+Only after all validators and fingerprint registration succeed, record:
+
+`bun <repository-root>/scripts/update-artifact-run.ts <version-directory> succeeded`
+
 ## Complete
 
-Report the mode, version, all eight validated artifact paths, and whether a model substitution occurred. Do not reproduce birth arguments, chart content, interpretation, concept brief, or GDD content.
+Report the mode, artifact version, purpose, final manifest status, all eight validated artifact paths, and whether a model substitution occurred. On failure or cancellation, report the reserved version, purpose, final status and any errors without claiming unvalidated outputs succeeded. Do not reproduce birth arguments, chart content, interpretation, concept brief, or GDD content.
