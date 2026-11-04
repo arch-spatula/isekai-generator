@@ -1,0 +1,4 @@
+interface:
+  display_name: "Select Gameplay Concept"
+  short_description: "Compare and select a personalized combat archetype"
+  default_prompt: "Use $select-gameplay-concept to compare distinct combat candidates and write a validated gameplay concept brief."

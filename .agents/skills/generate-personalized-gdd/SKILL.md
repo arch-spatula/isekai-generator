@@ -5,7 +5,7 @@ description: Orchestrate a versioned personalized Action RPG GDD through chart c
 
 # Orchestrate a personalized GDD
 
-Run isolated agents in dependency order. Execute the three specialist interpretation agents concurrently. Do not calculate, interpret, integrate, or design in the parent conversation.
+Run isolated agents in dependency order. Execute the three specialist interpretation agents concurrently. Do not calculate, interpret, integrate, select a combat concept, or design in the parent conversation.
 
 ## Accept the request
 
@@ -34,6 +34,11 @@ Derive these sibling paths from the returned GDD path:
 - `ziwei-interpretation.md`
 - `natal-interpretation.md`
 - `chart-interpretation.md`
+- `gameplay-concept-brief.md`
+
+Use `<repository-root>/artifacts/registries/combat-concept-fingerprints.json` as the fingerprint registry. Initialize it before the selection stage with:
+
+`bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts init <registry-path>`
 
 Never overwrite or reuse an existing version directory. Do not inspect previous artifact content.
 
@@ -74,11 +79,21 @@ After all specialists succeed, invoke `$interpret-chart-report` with only:
 
 The integration agent must not receive the chart report, raw birth arguments, or conversation context.
 
-### 4. Generate the GDD
+### 4. Select the gameplay concept
 
-After stage 3 succeeds, invoke `$generate-gdd-from-interpretation` with only:
+After stage 3 succeeds, invoke `$select-gameplay-concept` with only:
 
-- exact chart report, interpretation, and GDD paths;
+- exact integrated interpretation, concept brief output, and fingerprint registry paths;
+- selected mode;
+- absolute skill path.
+
+The selection agent must not receive the chart report, specialist outputs, raw birth arguments, conversation context, or prior GDD content.
+
+### 5. Generate the GDD
+
+After stage 4 succeeds, invoke `$generate-gdd-from-interpretation` with only:
+
+- exact chart report, interpretation, concept brief, and GDD paths;
 - selected mode;
 - absolute skill path.
 
@@ -89,8 +104,8 @@ Use a lightweight model for `light` and a deep-reasoning model for `deep`. The s
 When available, use:
 
 - chart stage: `gpt-5.6-terra`, low reasoning
-- light specialist, integration, and GDD: `gpt-5.6-terra`, low reasoning
-- deep specialist, integration, and GDD: `gpt-5.6-sol`, high reasoning
+- light specialist, integration, selection, and GDD: `gpt-5.6-terra`, low reasoning
+- deep specialist, integration, selection, and GDD: `gpt-5.6-sol`, high reasoning
 
 Use the closest exposed model if unavailable and report the substitution.
 
@@ -106,10 +121,16 @@ Run all specialist validators, then both final validators:
 
 `bun <interpret-skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
 
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output>`
+`bun <selection-skill-path>/scripts/validate-concept-brief.ts <concept-brief-output> <interpretation-output> <registry-path>`
+
+`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-output>`
 
 Do not silently rewrite a stage's valid result. If final validation fails, return the exact error and the stage responsible.
 
+After every validation succeeds, register the selected fingerprint exactly once:
+
+`bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts register <registry-path> <version> <concept-brief-output>`
+
 ## Complete
 
-Report the mode, version, all seven validated artifact paths, and whether a model substitution occurred. Do not reproduce birth arguments, chart content, interpretation, or GDD content.
+Report the mode, version, all eight validated artifact paths, and whether a model substitution occurred. Do not reproduce birth arguments, chart content, interpretation, concept brief, or GDD content.

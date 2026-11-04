@@ -1,4 +1,4 @@
 interface:
   display_name: "Personalized Action RPG GDD"
-  short_description: "세 전문 해석과 통합을 거쳐 개인화 GDD 생성"
-  default_prompt: "Use $generate-personalized-gdd to orchestrate parallel specialist interpretations, integration, and a versioned personalized Action RPG GDD."
+  short_description: "전문 해석·통합·전투 원형 선택을 거쳐 GDD 생성"
+  default_prompt: "Use $generate-personalized-gdd to orchestrate specialist interpretations, integration, combat archetype selection, and a versioned personalized Action RPG GDD."

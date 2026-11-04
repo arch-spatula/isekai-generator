@@ -9,7 +9,7 @@ Design one Action RPG GDD from a supplied interpretation and its source chart re
 
 ## Inputs
 
-Require exact paths for `chart-interpretation.md`, `chart-report.md`, and the GDD output. Read both inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`.
+Require exact paths for `chart-interpretation.md`, `chart-report.md`, `gameplay-concept-brief.md`, and the GDD output. Read all three inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`.
 
 Read `references/design-prompt.md` and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
 
@@ -21,7 +21,7 @@ Use the interpretation as the primary design brief. Use its common core, system-
 
 Do not directly turn a real-world occupation, work procedure, document, contract, accounting practice, management tool, or similar surface noun from the interpretation into the protagonist's job, power, weapon, world law, or dominant mechanic. Such material may appear as a secondary setting detail only when the concept has an independent genre reason for it and it does not dominate the protagonist, combat, progression, economy, world, and ending at once.
 
-Choose an independently compelling Action RPG player fantasy before applying personalization. Define the player's core action verbs, combat identity, and diegetic source of power, then personalize that fantasy with the interpretation's underlying behavior patterns. The concept should remain appealing when the chart vocabulary is removed and become distinct when the interpretation is applied again.
+Use the selected candidate in `gameplay-concept-brief.md` as the fixed combat contract. Preserve its player fantasy, axes, primary verbs, core loop, growth path, weakness, and final fingerprint. Do not choose a different archetype, combine rejected candidates, or rescore the selection. Design the surrounding world, characters, relationships, and presentation from the interpretation without changing that contract.
 
 Make power growth causally legible. Establish the power's origin, first manifestation, initial capabilities and limits, practiced mastery, expansion events, late-game scale, cost or risk, and credible enemy or world responses. Keep combat-power growth distinct from character and relationship growth. Do not replace becoming stronger with merely accepting more responsibility, delegating authority, or managing resources.
 
@@ -33,13 +33,15 @@ Before writing, silently review the concept: reject direct job-to-magic translat
 
 Write directly to the exact output path.
 
+Include exactly one `combat-fingerprint` fenced block containing a JSON object with the seven final fingerprint keys and values copied from the brief. Do not add other keys.
+
 ## Validate
 
 Run:
 
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output>`
+`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-input>`
 
-If validation reports an empty input, an embedded source report, a missing design motif, or an invalid interpretation ID reference, repair only the current GDD once and validate again. Return the second failure unchanged.
+If validation reports an empty input, embedded source content, a missing design motif, an invalid interpretation ID reference, or a fingerprint mismatch, repair only the current GDD once and validate again. Return the second failure unchanged.
 
 ## Complete
 
