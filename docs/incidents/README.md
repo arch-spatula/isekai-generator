@@ -8,4 +8,5 @@
 ## 기록 목록
 
 - [차트 근거 검증 경계선 장애 회고](2026-11-03-chart-evidence-validation.md)
+- [차트 해석 프롬프트 품질 이슈](2026-11-03-interpretation-prompt-quality.md)
 - [개인화 GDD 전투 원형 수렴 이슈](2026-11-03-combat-archetype-convergence.md)
