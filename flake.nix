@@ -11,6 +11,7 @@
     {
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
+          codex
           nodejs_24
           bun
           just

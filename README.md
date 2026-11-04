@@ -14,7 +14,22 @@ Node.js와 Bun은 Nix 개발 셸에서 제공합니다. `just`가 설치되어 �
 just shell
 ```
 
-현재 개발 셸에는 Node.js 24, npm, Bun, just가 포함되어 있습니다. 정확한 버전은 `flake.lock`에 고정됩니다.
+현재 개발 셸에는 Codex CLI, Node.js 24, npm, Bun, just가 포함되어 있습니다. 정확한 버전은 `flake.lock`에 고정됩니다.
+
+이 PC에 전역으로 설치된 Codex 대신 저장소에 고정된 Codex를 사용하려면 개발 셸 안에서 실행합니다.
+
+```bash
+just shell
+codex
+```
+
+셸에 진입하지 않고 바로 실행할 수도 있습니다.
+
+```bash
+nix develop 'path:.' --command codex
+```
+
+두 방법 모두 저장소의 `flake.lock`이 지정한 Codex를 실행합니다. `just versions`로 실제 버전을 확인할 수 있습니다. Codex 인증은 실행 파일과 별개로 사용자 홈의 `~/.codex`에 저장되므로, 같은 사용자 계정에서는 기존 로그인을 그대로 사용합니다. 별도의 `CODEX_HOME`을 지정하거나 다른 사용자 또는 PC에서 실행하면 다시 로그인해야 할 수 있습니다.
 
 반복해서 사용하는 프로젝트 명령은 루트 `justfile`에서 관리합니다. `just shell`로 먼저 진입하지 않아도 각 명령이 필요한 도구를 Nix 개발 셸 안에서 자동으로 실행합니다.
 
