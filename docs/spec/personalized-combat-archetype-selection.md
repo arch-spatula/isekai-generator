@@ -455,11 +455,13 @@ bun validate-concept-brief.ts \
 1. 전문 해석 3개 validator
 2. 통합 해석 validator
 3. concept brief validator
-4. concept brief를 입력받는 GDD validator
-5. 레지스트리 등록
+4. [독립 세계 구조 선택](world-concept-selection.md) validator
+5. 전투·세계 concept brief를 입력받는 GDD validator
+6. 전투·세계 레지스트리 등록
 
 버전 경로 resolver는 GDD 경로와 같은 디렉터리의 `gameplay-concept-brief.md` 경로를
-파생한다. 완료 메시지는 기존 일곱 산출물 대신 여덟 산출물 경로를 보고한다.
+파생한다. 전투 브리프는 여덟 번째 산출물이고, 후속 세계 구조 선택 명세의
+`world-concept-brief.md`를 포함해 완료 메시지는 아홉 산출물 경로를 보고한다.
 
 ## 13. 테스트 계획
 
@@ -493,7 +495,7 @@ bun validate-concept-brief.ts \
 
 ### 13.4 파이프라인 회귀 테스트
 
-- 빈 레지스트리에서 여덟 산출물을 만들고 마지막에 지문 하나를 등록한다.
+- 빈 전투·세계 레지스트리에서 아홉 산출물을 만들고 마지막에 각각 지문을 등록한다.
 - 선택 또는 GDD 검증 실패 시 레지스트리가 변하지 않는다.
 - 같은 통합 해석을 다시 사용해도 후보 선택 근거와 중복 재검토가 수행된다.
 - 다른 통합 해석에서도 최초 네 후보의 구조적 거리가 유지된다.

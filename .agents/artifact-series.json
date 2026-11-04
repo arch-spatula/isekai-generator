@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "activeSeries": "0.1",
-  "baselineRevision": "fc6b3c4457b98c4384c65df9bf9f6616446528b7",
+  "baselineRevision": "d505ac661bc0571aced326f8f0dcb4c6e13120b3",
   "promotedAt": "2026-11-04T14:02:51.000Z",
   "decision": "docs/ADR/2026-11-04-artifact-generation-versioning.md",
   "knownIssues": [

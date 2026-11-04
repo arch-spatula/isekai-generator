@@ -1,8 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 
-import { isValidGdd } from './validate-gdd'
+import { isValidGdd as validateGdd } from './validate-gdd'
+import { serializeWorldBrief, worldStructureFixture } from '../../select-world-concept/scripts/world-fixtures'
+
+function isValidGdd(gdd: string, chart: string, interpretation: string, combat: string): boolean {
+  return validateGdd(gdd, chart, interpretation, combat, serializeWorldBrief())
+}
 
 const conceptBrief = `# Gameplay Concept Brief
+
+## Selection
+
+- selected: C-01
 
 ## Final Fingerprint
 
@@ -14,7 +23,7 @@ const conceptBrief = `# Gameplay Concept Brief
 - mastery: aim
 - risk: focus_break`
 
-const fingerprint = `\n\n\`\`\`combat-fingerprint
+const fingerprint = worldStructureFixture() + `\n\n\`\`\`combat-fingerprint
 {"combatRange":"long","powerMedium":"spell","initiative":"reactive","spaceUse":"swap","combatRhythm":"cycle","mastery":"aim","risk":"focus_break"}
 \`\`\``
 

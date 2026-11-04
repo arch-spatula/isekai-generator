@@ -11,3 +11,7 @@ Treat the selected gameplay concept brief as the fixed combat contract. Develop 
 Every major personalized design choice must be traceable to at least one interpretation item ID. Extract and name the creative motifs yourself instead of expecting the interpretation to provide them. Preserve useful tensions instead of flattening them into generic strengths, and prevent one source-domain metaphor from occupying most major systems. The result must stand as a playable game concept rather than an explanation of divination systems.
 
 Copy the brief's seven-axis final fingerprint into exactly one `combat-fingerprint` JSON code block so deterministic validation can verify the contract.
+
+Treat the separately selected world brief as a fixed spatial contract. Realize its connected spaces, exploration gates, return paths, settlements and combat verb translations rather than selecting a world again. A power's anchor, route or flow is a function, not a requirement for nautical imagery. Keep a local port or a sea simile at its selected role instead of expanding it into the organizing civilization.
+
+Declare the six selected world axes in exactly one `world-structure` JSON block. Each axis has `value` and a concrete `manifestation` in this GDD. Check that prose and declarations agree. Do not use the block as a substitute for designing actual traversable space.

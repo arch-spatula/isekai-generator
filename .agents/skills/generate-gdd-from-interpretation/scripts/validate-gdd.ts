@@ -1,12 +1,29 @@
 import { readFile } from 'node:fs/promises'
 
 import { AXIS_KEYS } from '../../select-gameplay-concept/scripts/fingerprint-registry'
-import { parseFinalFingerprint } from '../../select-gameplay-concept/scripts/validate-concept-brief'
+import { parseFinalFingerprint, parseSelectedCandidateId } from '../../select-gameplay-concept/scripts/validate-concept-brief'
+import { jsonBlock, parseWorldBrief, record, selectedWorld, WORLD_KEYS } from '../../select-world-concept/scripts/world-contract'
+
+/** Validate declared playable world structure, not the presence of maritime words. */
+export function matchesWorldStructure(markdown: string, worldBrief: string): boolean {
+  try {
+    const expected = selectedWorld(parseWorldBrief(worldBrief)).fingerprint
+    const structure = record(jsonBlock(markdown, 'world-structure'), WORLD_KEYS, 'GDD world structure')
+    return WORLD_KEYS.every(key => {
+      const axis = record(structure[key], ['value', 'manifestation'], `GDD ${key}`)
+      return axis.value === expected[key] && typeof axis.manifestation === 'string' && axis.manifestation.trim().length > 0
+    })
+  } catch { return false }
+}
 
 /** Return whether the GDD stays separate from its source report and traces each design motif to interpretation items. */
-export function isValidGdd(markdown: string, chartReport: string, interpretation: string, conceptBrief: string): boolean {
+export function isValidGdd(markdown: string, chartReport: string, interpretation: string, conceptBrief: string, worldBrief: string): boolean {
   const normalizedReport = chartReport.trim()
   const normalizedBrief = conceptBrief.trim()
+  let worldCombatMatches = false
+  try {
+    worldCombatMatches = parseWorldBrief(worldBrief).combatCandidateId === parseSelectedCandidateId(conceptBrief)
+  } catch { worldCombatMatches = false }
   const interpretationIds = new Set(
     [...interpretation.matchAll(/^### (I-\d{2})\s*$/gm)].map(match => match[1]),
   )
@@ -41,23 +58,29 @@ export function isValidGdd(markdown: string, chartReport: string, interpretation
     && !markdown.includes(normalizedBrief)
     && motifsAreTraceable
     && fingerprintMatches
+    && worldCombatMatches
+    && typeof worldBrief === 'string'
+    && worldBrief.trim().length > 0
+    && !markdown.includes(worldBrief.trim())
+    && matchesWorldStructure(markdown, worldBrief)
 }
 
 if (import.meta.main) {
-  const [gddPath, chartReportPath, interpretationPath, conceptBriefPath] = process.argv.slice(2)
-  if (gddPath == null || chartReportPath == null || interpretationPath == null || conceptBriefPath == null) {
-    console.error('Usage: bun validate-gdd.ts <gdd.md> <chart-report.md> <chart-interpretation.md> <gameplay-concept-brief.md>')
+  const [gddPath, chartReportPath, interpretationPath, conceptBriefPath, worldBriefPath] = process.argv.slice(2)
+  if (gddPath == null || chartReportPath == null || interpretationPath == null || conceptBriefPath == null || worldBriefPath == null) {
+    console.error('Usage: bun validate-gdd.ts <gdd.md> <chart-report.md> <chart-interpretation.md> <gameplay-concept-brief.md> <world-concept-brief.md>')
     process.exitCode = 2
   } else {
     try {
-      const [gdd, chartReport, interpretation, conceptBrief] = await Promise.all([
+      const [gdd, chartReport, interpretation, conceptBrief, worldBrief] = await Promise.all([
         readFile(gddPath, 'utf8'),
         readFile(chartReportPath, 'utf8'),
         readFile(interpretationPath, 'utf8'),
         readFile(conceptBriefPath, 'utf8'),
+        readFile(worldBriefPath, 'utf8'),
       ])
-      if (!isValidGdd(gdd, chartReport, interpretation, conceptBrief)) {
-        console.error('GDD or source input is empty, source content is embedded, a motif lacks valid interpretation IDs, or the combat fingerprint differs from the selected concept.')
+      if (!isValidGdd(gdd, chartReport, interpretation, conceptBrief, worldBrief)) {
+        console.error('Invalid GDD: empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
         process.exitCode = 1
       } else {
         console.log('Validated interpretation-driven GDD with separate source report.')
