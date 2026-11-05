@@ -87,6 +87,7 @@ Give each `$interpret-chart-system` agent only:
 - its system name;
 - exact chart report, evidence manifest, and allocated attempt output paths;
 - exact `docs/prompts/interpretation-guidelines.md` path;
+- exact `docs/prompts/<system>-interpretation.md` task prompt path, matching the selected system (`saju`, `ziwei`, or `natal`);
 - selected interpretation mode (`light` or `deep`);
 - absolute skill path;
 - for `repair` only: the exact previous failed output and result paths returned by the manager.

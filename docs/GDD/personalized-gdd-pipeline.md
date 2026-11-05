@@ -21,6 +21,9 @@ flowchart LR
     G[interpretation-guidelines.md] --> S
     G --> Z
     G --> N
+    SP[saju-interpretation.md 과제] --> S
+    ZP[ziwei-interpretation.md 과제] --> Z
+    NP[natal-interpretation.md 과제] --> N
     S --> SM[saju-interpretation.md]
     Z --> ZM[ziwei-interpretation.md]
     N --> NM[natal-interpretation.md]
@@ -86,6 +89,14 @@ artifacts/vX.Y.Z/docs/GDD/
 ## 단계 2: 전문 해석 병렬 실행
 
 세 `interpret-chart-system` 에이전트가 같은 보고서에서 지정된 체계만 읽는다.
+
+에이전트의 역할·입출력·격리·검증 절차는 스킬이 맡고, 해석 질문과 출력 템플릿은
+`docs/prompts/saju-interpretation.md`, `ziwei-interpretation.md`, `natal-interpretation.md`가
+각각 맡는다. 오케스트레이터는 선택 체계에 해당하는 프롬프트의 절대 경로만 전달한다.
+공통 항목 형식·일곱 생활 질문·light/deep 기준은 `interpretation-guidelines.md`를 따른다.
+각 에이전트는 템플릿의 질문을 실제 답으로 교체하며 기존 장 제목·항목 ID·근거 계약을 유지한다.
+체계 고유 요소를 먼저 해석하고 그 결과로 생활 영역별 전문 항목을 종합한 뒤 개인별 부록을
+붙인다. 부록의 중요한 결론도 전문 항목 ID에 연결해 통합 단계에서 추적할 수 있게 한다.
 
 ### 사주팔자
 
