@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "activeSeries": "0.1",
-  "baselineRevision": "d505ac661bc0571aced326f8f0dcb4c6e13120b3",
-  "promotedAt": "2026-11-04T14:02:51.000Z",
-  "decision": "docs/ADR/2026-11-04-artifact-generation-versioning.md",
+  "activeSeries": "0.2",
+  "baselineRevision": "7675e7d6db08f387d589c00e51529c54f94ca82c",
+  "promotedAt": "2026-11-05T02:54:28.526Z",
+  "decision": "docs/ADR/2026-11-05-adopt-artifact-series-0.2.md",
   "knownIssues": [
     "docs/incidents/2026-11-04-maritime-world-setting-convergence.md"
   ]
