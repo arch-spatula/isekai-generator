@@ -22,28 +22,40 @@ const REQUIRED_DOMAINS = [
 
 const RESPONSIBILITY_AVOIDANCE = /예언(?:이|을|하지)|예측(?:이 아니다|하지)|단정하지|진단하지|확정하지|면책|주의 문구/
 
-/** Return whether one specialist interpretation follows its handoff contract. */
-export function isValidSystemInterpretation(system: ChartSystem, markdown: string, manifest?: ChartEvidenceManifest): boolean {
+export type InterpretationDiagnostic = { code: string; line?: number; itemId?: string; message: string }
+
+/** Diagnose failures without copying interpretation text into logs. */
+export function diagnoseSystemInterpretation(system: ChartSystem, markdown: string, manifest?: ChartEvidenceManifest): InterpretationDiagnostic[] {
   const contract = CONTRACTS[system]
-  if (markdown.trim().length === 0) return false
-  if (RESPONSIBILITY_AVOIDANCE.test(markdown)) return false
+  const errors: InterpretationDiagnostic[] = []
+  const add = (code: string, message: string, index?: number, itemId?: string) => {
+    errors.push({ code, message, ...(index == null ? {} : { line: markdown.slice(0, Math.max(0, index)).split('\n').length }), ...(itemId == null ? {} : { itemId }) })
+  }
+  if (markdown.trim().length === 0) add('empty-document', 'Interpretation is empty.')
+  for (const match of markdown.matchAll(new RegExp(RESPONSIBILITY_AVOIDANCE.source, 'g'))) {
+    add('responsibility-avoidance', 'Remove responsibility-avoidance wording and provide evidence-based interpretation.', match.index)
+  }
   let priorIndex = -1
   for (const heading of contract.headings) {
     const index = markdown.indexOf(heading)
-    if (index <= priorIndex || markdown.indexOf(heading, index + heading.length) !== -1) return false
+    if (index <= priorIndex || markdown.indexOf(heading, index + heading.length) !== -1) {
+      add('section-contract', `Required section is missing, duplicated or out of order: ${heading}`, index < 0 ? undefined : index)
+    }
     priorIndex = index
   }
-
-  const items = markdown.slice(markdown.indexOf('## 전문 해석 항목'))
+  const start = markdown.indexOf('## 전문 해석 항목')
+  const items = markdown.slice(start)
   const matches = [...items.matchAll(new RegExp(`^### (${contract.prefix}-\\d{2})\\s*$`, 'gm'))]
-  if (matches.length === 0) return false
+  if (matches.length === 0) add('missing-items', 'No specialist items found.')
   const coveredDomains = new Set<string>()
   const coveredResolutions = new Set<string>()
   const coveredEvidenceIds = new Set<string>()
   const validEvidenceIds = new Set(manifest?.systems[contract.evidenceSystem as EvidenceSystem].map(item => item.id) ?? [])
-  const itemsAreValid = matches.every((match, index) => {
-    if (match[1] !== `${contract.prefix}-${String(index + 1).padStart(2, '0')}`) return false
-    const block = items.slice(match.index + match[0].length, matches[index + 1]?.index ?? items.length)
+  for (const [index, match] of matches.entries()) {
+    const itemId = match[1]
+    const report = (code: string, message: string) => add(code, message, start + match.index!, itemId)
+    if (itemId !== `${contract.prefix}-${String(index + 1).padStart(2, '0')}`) report('item-sequence', 'Specialist IDs must be sequential.')
+    const block = items.slice(match.index! + match[0].length, matches[index + 1]?.index ?? items.length)
     const domain = block.match(/^영역:\s*(.+?)\s*$/m)?.[1]
     const resolution = block.match(/^해상도:\s*(.+?)\s*$/m)?.[1]
     const reading = block.match(/^해석:\s*(\S.+)$/m)?.[1]
@@ -52,34 +64,36 @@ export function isValidSystemInterpretation(system: ChartSystem, markdown: strin
     if (domain != null) coveredDomains.add(domain)
     if (resolution != null) coveredResolutions.add(resolution)
     for (const id of evidenceIds) coveredEvidenceIds.add(id)
-    return domain != null
-      && REQUIRED_DOMAINS.includes(domain as typeof REQUIRED_DOMAINS[number])
-      && resolution != null
-      && (contract.resolutions as readonly string[]).includes(resolution)
-      && reading != null && reading.length >= 80
-      && !/^시드 가치:/m.test(block)
-      && evidenceIds.length > 0
-      && (manifest == null || evidenceIds.every(id => validEvidenceIds.has(id)))
-  })
-  const domainsAreComplete = REQUIRED_DOMAINS.every(domain => coveredDomains.has(domain))
-  const resolutionsAreComplete = contract.resolutions.every(resolution => coveredResolutions.has(resolution))
-  if (!itemsAreValid || !domainsAreComplete || !resolutionsAreComplete || manifest == null) {
-    return itemsAreValid && domainsAreComplete && resolutionsAreComplete
+    if (domain == null || !REQUIRED_DOMAINS.includes(domain as typeof REQUIRED_DOMAINS[number])) report('item-domain', 'Item requires a supported life domain.')
+    if (resolution == null || !(contract.resolutions as readonly string[]).includes(resolution)) report('item-resolution', 'Item requires a supported system resolution.')
+    if (reading == null || reading.length < 80) report('item-reading', 'Item interpretation requires at least 80 characters.')
+    if (/^시드 가치:/m.test(block)) report('creative-preselection', 'Specialist items must not preselect creative material.')
+    if (evidenceIds.length === 0) report('item-evidence', 'Item requires system evidence IDs.')
+    if (manifest != null && evidenceIds.some(id => !validEvidenceIds.has(id))) report('unknown-evidence', 'Item references an unknown system evidence ID.')
   }
-  return [...validEvidenceIds].every(id => coveredEvidenceIds.has(id))
+  for (const domain of REQUIRED_DOMAINS) if (!coveredDomains.has(domain)) add('domain-coverage', `Missing life domain: ${domain}`)
+  for (const resolution of contract.resolutions) if (!coveredResolutions.has(resolution)) add('resolution-coverage', `Missing system resolution: ${resolution}`)
+  if (manifest != null && [...validEvidenceIds].some(id => !coveredEvidenceIds.has(id))) add('evidence-coverage', 'Not all supplied system evidence IDs are cited.')
+  return errors
+}
+
+/** Preserve the boolean API used by existing callers. */
+export function isValidSystemInterpretation(system: ChartSystem, markdown: string, manifest?: ChartEvidenceManifest): boolean {
+  return diagnoseSystemInterpretation(system, markdown, manifest).length === 0
 }
 
 if (import.meta.main) {
   const [system, path, evidencePath] = process.argv.slice(2)
-  if (!(system in CONTRACTS) || path == null || evidencePath == null) {
+  if (!Object.hasOwn(CONTRACTS, system) || path == null || evidencePath == null) {
     console.error('Usage: bun validate-system-interpretation.ts <saju|ziwei|natal> <output.md> <chart-evidence.json>')
     process.exitCode = 2
   } else {
     try {
       const [markdown, evidenceJson] = await Promise.all([readFile(path, 'utf8'), readFile(evidencePath, 'utf8')])
       const manifest = JSON.parse(evidenceJson) as ChartEvidenceManifest
-      if (!isValidSystemInterpretation(system as ChartSystem, markdown, manifest)) {
-        console.error('Specialist interpretation violates its required section or evidence contract.')
+      const errors = diagnoseSystemInterpretation(system as ChartSystem, markdown, manifest)
+      if (errors.length > 0) {
+        console.error(JSON.stringify({ system, errors }, null, 2))
         process.exitCode = 1
       } else {
         console.log(`Validated ${system} specialist interpretation.`)

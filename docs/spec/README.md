@@ -7,5 +7,6 @@
 ## 명세 목록
 
 - [생성 아티팩트 버전 및 기준선 관리](artifact-generation-versioning.md)
+- [전문 해석 실패 기록 및 재시도 작업 계획](specialist-interpretation-recovery.md)
 - [개인화 전투 원형 선택](personalized-combat-archetype-selection.md)
 - [개인화 세계 구조 선택](world-concept-selection.md)

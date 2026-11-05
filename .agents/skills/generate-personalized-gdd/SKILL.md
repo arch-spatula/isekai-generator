@@ -76,15 +76,34 @@ Use a lightweight model. If the stage reports a missing or ambiguous required in
 
 ### 2. Run three specialist interpretations in parallel
 
-After stage 1 succeeds, start three `$interpret-chart-system` agents concurrently for `saju`, `ziwei`, and `natal`. Give each agent only:
+After stage 1 succeeds, run the three systems concurrently, with independent recovery. For each system, before each agent invocation run:
+
+`bun <repository-root>/scripts/manage-specialist-attempt.ts prepare <version-directory> <system>`
+
+This allocates an immutable attempt under `<version-directory>/garbage/attempts/<system>/NNN/` and returns its run-relative output path, attempt number, and `mode` (`generate` or `repair`). Resolve returned paths against the version directory. Never allocate attempts yourself. The shared budget is **three total invocations per system, including initial generation, repairs, and fresh generations**. There is no unlimited flag. A fresh generation also consumes this budget; it is not three additional attempts.
+
+Give each `$interpret-chart-system` agent only:
 
 - its system name;
-- exact chart report, evidence manifest, and system-specific output paths;
+- exact chart report, evidence manifest, and allocated attempt output paths;
 - exact `docs/prompts/interpretation-guidelines.md` path;
-- selected mode;
-- absolute skill path.
+- selected interpretation mode (`light` or `deep`);
+- absolute skill path;
+- for `repair` only: the exact previous failed output and result paths returned by the manager.
 
-They must not receive raw birth arguments, conversation context, or each other's outputs. Wait for all three validations. Stop if any specialist fails.
+Use `fork_turns="none"` for every attempt. Agents must not receive raw birth arguments, conversation context, other systems' outputs, or any other garbage content. Each invocation writes once and validates once; agents must not perform their own repair loop.
+
+After an agent returns, run:
+
+`bun <repository-root>/scripts/manage-specialist-attempt.ts finish <version-directory> <system> <attempt>`
+
+If the agent failed to execute, use `error` in place of `finish`. Do not pass raw stderr or generated text to the manager. `finish` independently runs the full validator, writes the immutable `result.json` **before** another attempt may be prepared, and publishes only passing output to the system's final `docs/GDD/<system>-interpretation.md`. It records the chosen attempt and content hash in `garbage/attempts/<system>/accepted.json`.
+
+The manager's successful exit means the outcome was recorded; inspect its returned `status`. For `validation-failed`, call `prepare` again: the default is policy B, repairing the preserved failed document. For `execution-failed` (including missing output), call `prepare` again to generate fresh from source without reading failed content. Never combine attempts. Preserve all failure documents and logs. A repeated validation failure stays on repair; it does not trigger a fresh generation just to avoid the rule.
+
+On `passed`, keep that system's final output and do not rerun it. Wait until all three systems have passed before integration. If the budget is exhausted or allocation, validation infrastructure, logging, or publication throws an error, stop dependent work, let active parallel specialists finish safely, and record the parent failure under that system's stage. Report the original error. Do not launch another agent when result recording fails. A passed validation with a publication error is a run failure, not successful completion.
+
+Keep the parent run `running` during recovery; only the orchestrator finalizes it. On cancellation, launch no further attempts, let active specialists finish safely, then record `cancelled`. An unfinished attempt or abandoned lock after interruption is not automatically resumed, removed or classified. Never reopen a terminal run. `garbage/` is for recovery tooling only; do not provide it to integration, selection, GDD, or game-development agents.
 
 ### 3. Integrate the specialist interpretations
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { type ChartSystem, isValidSystemInterpretation } from './validate-system-interpretation'
+import { type ChartSystem, isValidSystemInterpretation, diagnoseSystemInterpretation } from './validate-system-interpretation'
 import type { ChartEvidenceManifest } from '../../generate-chart-report/scripts/chart-evidence'
 
 const cases = {
@@ -69,6 +69,21 @@ for (const [system, fixture] of Object.entries(cases)) {
 
     test('rejects a shallow interpretation', () => {
       expect(isValidSystemInterpretation(system as ChartSystem, valid.replace(/^해석:.+$/m, '해석: 구조적 긴장'), manifest)).toBe(false)
+    })
+
+    test('diagnoses responsibility wording with a location and no quoted content', () => {
+      const errors = diagnoseSystemInterpretation(system as ChartSystem, `${valid}\n단정하지 않는다.`, manifest)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toMatchObject({ code: 'responsibility-avoidance', line: valid.split('\n').length + 1 })
+      expect(JSON.stringify(errors)).not.toContain('단정하지')
+    })
+
+    test('diagnoses item and coverage failures', () => {
+      const extra = structuredClone(manifest)
+      extra.systems[fixture.evidenceSystem].push({ id: `${fixture.prefix}-E0000000000000002`, text: 'missing fixture' })
+      const errors = diagnoseSystemInterpretation(system as ChartSystem, valid.replace('근거:', '출처:'), extra)
+      expect(errors).toContainEqual(expect.objectContaining({ code: 'item-evidence', itemId: `${fixture.prefix}-01`, line: expect.any(Number) }))
+      expect(errors.some(error => error.code === 'evidence-coverage')).toBe(true)
     })
 
     test('rejects responsibility-avoidance language', () => {
