@@ -27,7 +27,7 @@ Resolve the repository root containing `scripts/chart-report.ts`. Run:
 
 `bun <skill-path>/scripts/resolve-output.ts <repository-root> --purpose <purpose> --mode <mode>`
 
-This command atomically reserves a new version directory and writes `artifact-run.json` with status `allocated`. Read the allocated version from that manifest; never calculate a version yourself. `.agents/artifact-series.json` is the only active-series authority. A dirty `release-candidate` is rejected before consuming a patch. Never promote the series as part of generation.
+This command atomically reserves a new version directory and writes `artifact-run.json` with status `allocated`. Read the allocated version from that manifest; never calculate a version yourself. `.agents/artifact-series.json` is the only active-series authority. A dirty `release-candidate` is rejected before consuming a patch. Generation never guesses a new minor. If the user explicitly adopts a new series (for example “now v0.3.x”), treat that declaration as authorization for the separate promotion workflow: record the decision, validate and commit the intended baseline, promote from a clean tree with `scripts/promote-artifact-series.ts`, and commit the configuration before allocation. Do not request the same authorization again. Ordinary generation only increments the active patch; explicit artifact versions remain unsupported.
 
 Derive these sibling paths from the returned GDD path:
 
@@ -59,6 +59,26 @@ The orchestrator owns this run's status. Subagents use the reserved paths withou
 `bun <repository-root>/scripts/update-artifact-run.ts <version-directory> failed <stage> "<short non-sensitive error summary>"`
 
 Use stage identifiers such as `chart-report`, `saju`, `ziwei`, `natal`, `integration`, `selection`, `world-selection`, `gdd`, `final-validation`, or `fingerprint-registration`. Never put raw birth details, generated content, command arguments, or raw calculator stderr in the summary. Report the original error separately. If manifest update also fails, report both errors. On user cancellation, stop dependent work and record `cancelled` with the same command, without a failure object. Let active parallel specialists finish safely before finalizing. Never remove a reserved directory. After an abnormal interruption, leave unfinished status unchanged; do not guess the result or reassign the version.
+
+## Persist progress and handoff
+
+Allocation creates `<version-directory>/TODO.md` and per-stage checkpoints under `garbage/progress/`. The TODO is a readable handoff for the orchestrator, not a source artifact for downstream agents. Do not put birth arguments, chart or interpretation text, raw stderr, or a conversation summary in it. Do not hand-edit its generated contents.
+
+The allocator, parent status updater, chart runner, and specialist attempt manager update it automatically. For all remaining stages, the orchestrator must record `start` **before** launching work and `done` **only after** the stage's validator succeeds:
+
+`bun <repository-root>/scripts/update-artifact-progress.ts start <version-directory> <stage>`
+
+`bun <repository-root>/scripts/update-artifact-progress.ts done <version-directory> <stage>`
+
+Use stages `integration`, `selection`, `world-selection`, `gdd`, `final-validation`, `combat-registration`, and `world-registration`. After spawning an agent, repeat `start` with its agent identifier as the last argument to retain a lookup hint. Specialists already have a running checkpoint allocated by `prepare`; record their agent identifier with `start <version-directory> <system> <agent-id>` after spawning. The manager retains the attempt number.
+
+Record `final-validation` around all final validators. Record each registration separately: start before that registration command, done after its confirmed success. On a caught stage error, record `fail <version-directory> <stage>` before finalizing the parent failure; if progress recording also fails, report both errors and still attempt the terminal manifest update. A progress command failure blocks dependent work. Parent status changes refresh TODO automatically; they do not silently check off unfinished stages.
+
+Before yielding with unfinished work or after a context interruption, ensure durable checkpoints reflect the latest confirmed result. `sync <version-directory>` rebuilds TODO from manifest and checkpoints if rendering was interrupted. Do not mark a stage complete based solely on file existence.
+
+If the user explicitly continues an existing **unfinished** run, read only its manifest, TODO, checkpoints, and relevant same-run attempt records first. Do not allocate a replacement version. Check recorded agent/process liveness before launching another, revalidate completed outputs, and continue only unmet dependencies using the isolated inputs below. An allocated/running status is not evidence that the previous agent stopped. Do not delete locks or classify unfinished attempts automatically. If a tool succeeded before its checkpoint was written, reconcile the existing output and validator result instead of rerunning it. Before registering fingerprints, inspect both registries for this version to avoid duplicate registration. Terminal runs remain closed; TODO is a recovery hint, not authorization to reopen one.
+
+Never pass TODO or the progress directory to specialist, integration, selection, or GDD agents. Preserve their data isolation. Existing versions without TODO are not backfilled automatically.
 
 ## Run isolated stages
 
@@ -191,4 +211,4 @@ Only after all validators and fingerprint registration succeed, record:
 
 ## Complete
 
-Report the mode, artifact version, purpose, final manifest status, all nine validated artifact paths, and whether a model substitution occurred. On failure or cancellation, report the reserved version, purpose, final status and any errors without claiming unvalidated outputs succeeded. Do not reproduce birth arguments, chart content, interpretation, concept briefs, or GDD content.
+Report the mode, artifact version, purpose, final manifest status, all nine validated artifact paths, the root TODO.md path, and whether a model substitution occurred. On failure or cancellation, report the reserved version, purpose, final status and any errors without claiming unvalidated outputs succeeded. Do not reproduce birth arguments, chart content, interpretation, concept briefs, or GDD content.

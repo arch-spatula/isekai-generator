@@ -47,6 +47,7 @@ describe('reserved chart runs', () => {
     expect(readFileSync(output, 'utf8')).toBe(report)
     expect(JSON.parse(readFileSync(join(directory, 'docs/GDD/chart-evidence.json'), 'utf8'))).toEqual(buildEvidenceManifest(report))
     expect(readRunManifest(directory)).toMatchObject({ status: 'succeeded', failure: null })
+    expect(readFileSync(join(directory, 'TODO.md'), 'utf8')).toContain('— succeeded (chart-report)')
     await expect(runChartReport(root, output, [])).rejects.toThrow('Invalid run transition')
   })
 
@@ -55,6 +56,8 @@ describe('reserved chart runs', () => {
     await expect(runChartReport(root, join(directory, 'docs/GDD/chart-report.md'), [])).rejects.toThrow('private calculator details')
     expect(readRunManifest(directory)).toMatchObject({ status: 'failed', failure: { stage: 'chart-report', summary: 'Chart calculation or evidence validation failed.' } })
     expect(readFileSync(join(directory, 'artifact-run.json'), 'utf8')).not.toContain('private calculator details')
+    expect(readFileSync(join(directory, 'TODO.md'), 'utf8')).toContain('— failed (chart-report)')
+    expect(readFileSync(join(directory, 'TODO.md'), 'utf8')).not.toContain('private calculator details')
     expect(allocateRun(root, 'chart-report')).toEndWith('/v0.1.1')
   })
 

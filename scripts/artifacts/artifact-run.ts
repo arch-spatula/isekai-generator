@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { initializeProgress, refreshProgress } from './artifact-progress'
 
 export const PURPOSES = ['experiment', 'regression', 'new-profile', 'incident-reproduction', 'release-candidate'] as const
 export const MODES = ['light', 'deep'] as const
@@ -155,6 +156,7 @@ export function allocateRun(repositoryRoot: string, artifactKind: RunManifest['a
     }
     const manifest = validateRunManifest({ schemaVersion: 1, artifactVersion, series: config.activeSeries, artifactKind, purpose, mode, baselineRevision: config.baselineRevision, sourceRevision: state.revision, workingTreeDirty: state.dirty, status: 'allocated', allocatedAt: new Date().toISOString(), startedAt: null, finishedAt: null, failure: null })
     writeFileSync(join(directory, 'artifact-run.json'), `${JSON.stringify(manifest, null, 2)}\n`, { flag: 'wx' })
+    initializeProgress(directory, manifest)
     return directory
   }
 }
@@ -166,6 +168,7 @@ export function updateRun(runDirectory: string, status: RunStatus, failure: RunM
   const now = new Date().toISOString()
   const updated = validateRunManifest({ ...current, status, startedAt: status === 'running' ? now : current.startedAt, finishedAt: status === 'running' ? null : now, failure })
   writeJsonAtomic(join(runDirectory, 'artifact-run.json'), updated)
+  refreshProgress(runDirectory, updated)
   return updated
 }
 

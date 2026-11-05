@@ -227,7 +227,14 @@ validator는 이 선언의 일치와 누락을 검사하며 자연어 본문의 
 
 ## 완료 결과
 
-성공 시 모드, artifact version, purpose, 최종 상태, 검증된 아홉 산출물 경로와 모델 대체
+새 run에는 아티팩트 루트 `TODO.md`가 예약 시 자동 생성된다. 차트 runner·전문 해석 관리자는
+진행 상태를 자동 기록하고, 오케스트레이터는 통합 이후 각 단계와 최종 검증·두 지문 등록의
+시작·검증 완료를 `scripts/update-artifact-progress.ts`로 기록한다. 부모 상태 변경도 TODO에
+반영된다. 중단 후에는 같은 run의 TODO·manifest·체크포인트와 실제 결과를 대조한다.
+하위 해석·설계 에이전트에는 TODO를 전달하지 않는다. 상세 계약은
+[진행 기록 명세](../spec/artifact-progress-handoff.md)를 따른다.
+
+성공 시 모드, artifact version, purpose, 최종 상태, 검증된 아홉 산출물 및 루트 TODO 경로와 모델 대체
 여부를 보고한다. 출생 정보와 산출물 본문은 완료 메시지에 복제하지 않는다.
 
 ## 기준선 승격 운영

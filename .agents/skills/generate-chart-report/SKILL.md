@@ -30,9 +30,15 @@ For standalone use, accept `purpose` (default `experiment`) and `mode` (default 
 
 `bun <skill-path>/scripts/resolve-chart-output.ts <repository-root> --purpose <purpose> --mode <mode>`
 
-Allowed purposes are `experiment`, `regression`, `new-profile`, `incident-reproduction`, and `release-candidate`. Allowed modes are `light` and `deep`. The shared allocator reserves one patch in `.agents/artifact-series.json`'s active series and creates `artifact-run.json` with kind `chart-report` and status `allocated`. A dirty `release-candidate` is rejected before reservation. Reject explicit versions / `--version`; never change the active series during generation.
+Allowed purposes are `experiment`, `regression`, `new-profile`, `incident-reproduction`, and `release-candidate`. Allowed modes are `light` and `deep`. The shared allocator reserves one patch in `.agents/artifact-series.json`'s active series and creates `artifact-run.json` with kind `chart-report` and status `allocated`. A dirty `release-candidate` is rejected before reservation. Reject explicit artifact versions / `--version`. Ordinary generation increments only the active patch. An explicit user declaration adopting a new minor authorizes the separate documented promotion workflow before allocation; do not repeatedly ask for the same authorization or guess a minor from code changes.
 
 Never overwrite an existing version directory or accept a free-form standalone output path.
+
+## Progress and interruption
+
+Allocation creates a root `TODO.md`; the runner records chart start and validated completion, and parent status changes refresh it. The file points to same-run checkpoints and next checks without storing birth arguments or generated content. Do not pass it to downstream interpretation agents.
+
+If explicitly asked to continue an unfinished standalone run, first read its manifest, TODO and chart checkpoint. Confirm whether an earlier process is still active before launching another. A file's presence is not validation. If both report and evidence are complete, revalidate their consistency before reconciling the completion checkpoint; do not overwrite them or rerun the calculator. Terminal runs remain closed. Missing input must be obtained rather than guessed. Do not backfill old versions or remove locks automatically.
 
 ## Generate
 

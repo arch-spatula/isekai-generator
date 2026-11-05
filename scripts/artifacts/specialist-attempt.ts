@@ -4,6 +4,7 @@ import { dirname, join, relative, resolve } from 'node:path'
 import { diagnoseSystemInterpretation, type ChartSystem, type InterpretationDiagnostic } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
 import type { ChartEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
 import { readRunManifest } from './artifact-run'
+import { recordStageProgress } from './artifact-progress'
 
 export const MAX_SPECIALIST_ATTEMPTS = 3
 export type AttemptInput = {
@@ -76,6 +77,7 @@ export function prepareSpecialistAttempt(runDirectory: string, system: ChartSyst
     mkdirSync(target)
     const input: AttemptInput = { system, attempt, mode, startedAt: new Date().toISOString(), output: relative(run, join(target, 'interpretation.md')), ...(previous ? { previous } : {}) }
     writeRecord(join(target, 'input.json'), input)
+    recordStageProgress(run, readRunManifest(run), system, 'running', { attempt })
     return input
   })
 }
@@ -111,6 +113,7 @@ export function finishSpecialistAttempt(runDirectory: string, system: ChartSyste
         sha256: createHash('sha256').update(markdown!).digest('hex'), acceptedAt: new Date().toISOString(),
       })
     }
+    recordStageProgress(run, readRunManifest(run), system, result.status === 'passed' ? 'succeeded' : 'failed', { attempt })
     return result
   })
 }

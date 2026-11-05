@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { allocateRun, readRunManifest, updateRun } from './artifact-run'
 import { makeRepository } from './test-fixtures'
 import { finishSpecialistAttempt, prepareSpecialistAttempt } from './specialist-attempt'
+import { recordStageProgress } from './artifact-progress'
 
 const evidence = { version: 1, systems: { saju: [{ id: 'S-E0000000000000001', text: 'fixture' }], ziwei: [], natal: [] } }
 const domains = ['성격과 기질', '직업과 적성', '재물', '연애와 배우자', '가족과 대인관계', '건강과 생활 리듬', '시기운']
@@ -15,6 +16,7 @@ function setup(): string {
   updateRun(run, 'running')
   mkdirSync(join(run, 'docs/GDD'), { recursive: true })
   writeFileSync(join(run, 'docs/GDD/chart-evidence.json'), JSON.stringify(evidence))
+  recordStageProgress(run, readRunManifest(run), 'chart-report', 'succeeded')
   return run
 }
 
@@ -26,6 +28,7 @@ test('failed output and diagnostic are preserved before repair; only passing out
   expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
   const result = finishSpecialistAttempt(run, 'saju', 1)
   expect(result.status).toBe('validation-failed')
+  expect(readFileSync(join(run, 'TODO.md'), 'utf8')).toContain('— failed (saju)')
   expect(result.errors).toContainEqual(expect.objectContaining({ code: 'responsibility-avoidance', line: expect.any(Number) }))
   expect(JSON.stringify(result)).not.toContain('단정하지')
   expect(existsSync(join(run, 'docs/GDD/saju-interpretation.md'))).toBe(false)
@@ -35,6 +38,8 @@ test('failed output and diagnostic are preserved before repair; only passing out
   expect(existsSync(join(run, next.previous!.result))).toBe(true)
   writeFileSync(join(run, next.output), valid)
   expect(finishSpecialistAttempt(run, 'saju', 2).status).toBe('passed')
+  expect(readFileSync(join(run, 'TODO.md'), 'utf8')).toContain('— succeeded (saju)')
+  expect(readFileSync(join(run, 'TODO.md'), 'utf8')).toContain('시도: 2/3')
   expect(readFileSync(join(run, first.output), 'utf8')).toBe(failed)
   expect(readFileSync(join(run, 'docs/GDD/saju-interpretation.md'), 'utf8')).toBe(valid)
   expect(JSON.parse(readFileSync(join(run, 'garbage/attempts/saju/accepted.json'), 'utf8')).attempt).toBe(2)

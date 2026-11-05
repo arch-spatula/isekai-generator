@@ -324,6 +324,12 @@ bun promote-artifact-series.ts \
 - 차트 예약: `bun .agents/skills/generate-chart-report/scripts/resolve-chart-output.ts <repository-root> [--purpose <purpose>] [--mode <mode>]`
 - GDD 예약: `bun .agents/skills/generate-personalized-gdd/scripts/resolve-output.ts <repository-root> [--purpose <purpose>] [--mode <mode>]`
 
+예약 시 루트 `TODO.md`도 생성하며 단계별 진행은
+[생성 진행 기록 명세](artifact-progress-handoff.md)를 따른다. 이 파일은 상태·검증 결과와
+중단 후 확인 순서를 전달하며 새로운 아티팩트나 하위 설계 입력으로 취급하지 않는다.
+사용자의 명시적 minor 채택 의사는 승격 권한으로 처리한다. 예를 들어 0.3 전환은
+[채택 결정](../ADR/2026-11-05-adopt-artifact-series-0.3.md)을 근거로 수행하며 같은 의사를 다시 묻지 않는다.
+
 리졸버는 예약된 출력 경로를 stdout으로 반환하며 기존 positional version과 `--version`을
 거부한다. 상태 갱신은 동일 실행의 소유자 한 명이 수행한다. GDD 실행의 소유자는
 오케스트레이터이고 차트 단독 실행의 소유자는 runner다. 상태 갱신 도구는 생성물 검증을

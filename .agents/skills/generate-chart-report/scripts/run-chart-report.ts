@@ -2,6 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { failRun, readRunManifest, updateRun } from '../../../../scripts/artifacts/artifact-run'
 
+import { recordStageProgress } from '../../../../scripts/artifacts/artifact-progress'
+
 import { buildEvidenceManifest } from './chart-evidence'
 
 const REQUIRED_SECTIONS = ['四柱八字', '紫微斗數 命盤', 'Natal Chart'] as const
@@ -25,9 +27,16 @@ export async function runChartReport(
   if (standalone) updateRun(runDirectory, 'running')
   else if (manifest.status !== 'running') throw new Error('Parent GDD run must be running before chart calculation')
   try {
+    recordStageProgress(runDirectory, readRunManifest(runDirectory), 'chart-report', 'running')
     await calculateChartReport(root, outputPath, chartArguments)
+    recordStageProgress(runDirectory, readRunManifest(runDirectory), 'chart-report', 'succeeded')
     if (standalone) updateRun(runDirectory, 'succeeded')
   } catch (error) {
+    try { recordStageProgress(runDirectory, readRunManifest(runDirectory), 'chart-report', 'failed') } catch (progressError) {
+      const combined = new AggregateError([error, progressError], 'Chart failed; recording progress also failed')
+      if (standalone) failRun(runDirectory, 'chart-report', 'Chart calculation or progress recording failed.', combined)
+      throw combined
+    }
     if (standalone) failRun(runDirectory, 'chart-report', 'Chart calculation or evidence validation failed.', error)
     throw error
   }
