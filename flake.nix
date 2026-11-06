@@ -15,6 +15,8 @@
           nodejs_24
           bun
           just
+          lua5_1
+          love
           (python3.withPackages (pythonPackages: [
             pythonPackages.pyyaml
           ]))

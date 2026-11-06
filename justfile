@@ -23,4 +23,4 @@ test:
 
 # Nix에서 제공하는 개발 도구의 버전을 표시합니다.
 versions:
-    @nix develop 'path:.' --command sh -c 'printf "codex="; codex --version; printf "node="; node --version; printf "npm="; npm --version; printf "bun="; bun --version; printf "just="; just --version'
+    @nix develop 'path:.' --command sh -c 'printf "codex="; codex --version; printf "node="; node --version; printf "npm="; npm --version; printf "bun="; bun --version; printf "just="; just --version; printf "lua="; lua -v 2>&1; printf "love="; love --version'

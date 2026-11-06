@@ -8,13 +8,13 @@ multi agent workflow라고 불러야 할지 multi agent orchestration라고 불�
 
 ## 개발 환경
 
-Node.js와 Bun은 Nix 개발 셸에서 제공합니다. `just`가 설치되어 있다면 저장소 루트에서 다음 명령으로 진입합니다.
+Node.js, Bun, Lua와 LÖVE2D는 Nix 개발 셸에서 제공합니다. `just`가 설치되어 있다면 저장소 루트에서 다음 명령으로 진입합니다.
 
 ```bash
 just shell
 ```
 
-현재 개발 셸에는 Codex CLI, Node.js 24, npm, Bun, just가 포함되어 있습니다. 정확한 버전은 `flake.lock`에 고정됩니다.
+현재 개발 셸에는 Codex CLI, Node.js 24, npm, Bun, just, Lua 5.1, LÖVE2D가 포함되어 있습니다. 정확한 버전은 `flake.lock`에 고정됩니다. 독립 실행용 Lua는 LÖVE의 Lua 5.1 계열과 맞추도록 `lua5_1` 패키지를 사용하며, LÖVE는 자체 런타임으로 게임을 실행합니다.
 
 이 PC에 전역으로 설치된 Codex 대신 저장소에 고정된 Codex를 사용하려면 개발 셸 안에서 실행합니다.
 
@@ -43,6 +43,14 @@ just test     # 자동화 테스트 실행
 ```
 
 `just`가 설치되어 있지 않은 환경에서는 `nix develop`로 직접 진입할 수 있습니다.
+
+개발 셸 안에서 `lua <script.lua>`로 Lua 스크립트를 실행하고, `main.lua`가 있는 게임 디렉터리를 `love <game-directory>`로 실행합니다. 셸에 진입하지 않고 실행하려면 다음과 같이 사용합니다.
+
+```bash
+nix develop 'path:.' --command lua -v
+nix develop 'path:.' --command love --version
+nix develop 'path:.' --command love <game-directory>
+```
 
 명식 보고서는 저장소에 고정된 개인 프로필을 사용하지 않습니다. 생년월일시, 성별, 좌표와
 타임존을 실행할 때 전달해야 합니다.
