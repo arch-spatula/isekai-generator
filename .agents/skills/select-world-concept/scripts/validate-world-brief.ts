@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { parseGamePresentation, readGamePresentationContract } from '../../../../scripts/game-presentation'
 import { parseSelectedCandidateId } from '../../select-gameplay-concept/scripts/validate-concept-brief'
 import { closestWorldEntries, ensure, equalWorldAxes, parseWorldBrief, parseWorldRegistry, selectedWorld, worldScoreOrder, type WorldMatch, type WorldRegistry } from './world-contract'
 
@@ -8,6 +9,8 @@ function sameMatches(a: WorldMatch[], b: WorldMatch[]): boolean {
 }
 export function validateWorldBrief(markdown: string, interpretation: string, combatBrief: string, registry: WorldRegistry): string[] {
   try {
+    parseGamePresentation(markdown)
+    parseGamePresentation(combatBrief)
     parseWorldRegistry(registry)
     const b = parseWorldBrief(markdown)
     const combatId = parseSelectedCandidateId(combatBrief)
@@ -56,8 +59,9 @@ export function validateWorldBrief(markdown: string, interpretation: string, com
 if (import.meta.main) {
   try {
     const args = process.argv.slice(2)
-    ensure(args.length === 4, 'Usage: bun validate-world-brief.ts <world-brief> <interpretation> <combat-brief> <world-registry>')
-    const [brief, interpretation, combat, registry] = args.map(path => readFileSync(path, 'utf8'))
+    ensure(args.length === 5, 'Usage: bun validate-world-brief.ts <world-brief> <interpretation> <combat-brief> <world-registry> <game-presentation-contract.md>')
+    readGamePresentationContract(args[4])
+    const [brief, interpretation, combat, registry] = args.slice(0, 4).map(path => readFileSync(path, 'utf8'))
     const errors = validateWorldBrief(brief, interpretation, combat, parseWorldRegistry(JSON.parse(registry)))
     ensure(errors.length === 0, errors.join('\n'))
     console.log('Validated world concept brief.')

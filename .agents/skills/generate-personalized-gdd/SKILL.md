@@ -139,9 +139,16 @@ The integration agent must not receive the chart report, raw birth arguments, or
 
 ### 4. Select the gameplay concept
 
+Resolve `<presentation-input>` to the absolute `<repository-root>/docs/prompts/game-presentation-contract.md` path. This is a shared repository input, not a generated artifact. Before launching each of stages 4, 5 and 6, record that stage's progress start and run:
+
+`bun <repository-root>/scripts/game-presentation.ts <presentation-input>`
+
+Missing, empty or invalid input fails the current stage through the existing progress and manifest failure workflow; do not launch its agent or dependent work. Pass this exact path to all three isolated agents, including standalone-equivalent invocations. Do not pass the shared game contract to chart, specialist or integration agents. Preserve the same contract throughout the run; a changed contract requires stopping dependent work rather than silently mixing inputs.
+
 After stage 3 succeeds, invoke `$select-gameplay-concept` with only:
 
 - exact integrated interpretation, concept brief output, and fingerprint registry paths;
+- exact shared presentation input path;
 - selected mode;
 - absolute skill path.
 
@@ -152,6 +159,7 @@ The selection agent must not receive the chart report, specialist outputs, raw b
 After stage 4 succeeds, invoke `$select-world-concept` with only:
 
 - exact integrated interpretation, selected gameplay brief, world brief output, and world registry paths;
+- exact shared presentation input path;
 - selected mode;
 - absolute world skill path.
 
@@ -162,6 +170,7 @@ The world agent must not receive raw birth details, chart report, specialist out
 After stage 5 succeeds, invoke `$generate-gdd-from-interpretation` with only:
 
 - exact chart report, interpretation, gameplay concept brief, world concept brief, and GDD paths;
+- exact shared presentation input path;
 - selected mode;
 - absolute skill path.
 
@@ -189,13 +198,15 @@ Run all specialist, integration, combat, world and GDD validators:
 
 `bun <interpret-skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
 
-`bun <selection-skill-path>/scripts/validate-concept-brief.ts <concept-brief-output> <interpretation-output> <registry-path>`
+`bun <selection-skill-path>/scripts/validate-concept-brief.ts <concept-brief-output> <interpretation-output> <registry-path> <presentation-input>`
 
-`bun <world-skill-path>/scripts/validate-world-brief.ts <world-brief-output> <interpretation-output> <concept-brief-output> <world-registry-path>`
+`bun <world-skill-path>/scripts/validate-world-brief.ts <world-brief-output> <interpretation-output> <concept-brief-output> <world-registry-path> <presentation-input>`
 
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-output> <world-brief-output>`
+`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-output> <world-brief-output> <presentation-input>`
 
 Do not silently rewrite a stage's valid result. If final validation fails, return the exact error and the stage responsible.
+
+Stage success requires both its semantic review under the shared presentation contract and its validator. An agent-reported unresolved camera, control, art or readability conflict blocks dependent stages and final registration even if declarations pass. Final validators prove declaration consistency, not semantic quality; do not report otherwise.
 
 After every validation succeeds, register both selected fingerprints exactly once:
 

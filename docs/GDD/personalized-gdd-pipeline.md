@@ -31,9 +31,9 @@ flowchart LR
     ZM --> I
     NM --> I
     I --> X[chart-interpretation.md]
-    X --> C[4. 전투 원형 선택 에이전트]
-    F[전투 지문 레지스트리] --> C
-    C --> B[gameplay-concept-brief.md]
+    X --> CS[4. 전투 원형 선택 에이전트]
+    F[전투 지문 레지스트리] --> CS
+    CS --> B[gameplay-concept-brief.md]
     X --> W[5. 세계 구조 선택 에이전트]
     B --> W
     WF[세계 지문 레지스트리] --> W
@@ -42,6 +42,9 @@ flowchart LR
     R --> D
     X --> D
     B --> D
+    GP[game-presentation-contract.md] --> CS
+    GP --> W
+    GP --> D
     D --> P[personalized-action-rpg-concept.md]
 ```
 
@@ -127,6 +130,12 @@ artifacts/vX.Y.Z/docs/GDD/
 
 ## 단계 4: 전투 원형 선택
 
+전투·세계 선택과 GDD는 공통 입력
+[game-presentation-contract.md](../prompts/game-presentation-contract.md)의 정확한 절대 경로를
+받는다. 각 단계 실행 전에 `bun scripts/game-presentation.ts <presentation-input>`으로
+부재·빈 파일·계약 오류를 검사하고 전문을 읽는다. 독립 스킬 호출도 같은 입력이 필수다.
+차트·해석 단계에는 전달하지 않으며 생성 중 공통 조건을 개인 성향으로 바꾸지 않는다.
+
 `select-gameplay-concept`는 통합 해석에서 일곱 게임플레이 성향 축을 추출하고 구조적으로
 다른 후보 네 개를 비교한다. 후보는 해석 ID, 반대 근거, 약점과 점수를 포함하며 모든
 후보 쌍은 최소 세 축에서 달라야 한다.
@@ -134,6 +143,9 @@ artifacts/vX.Y.Z/docs/GDD/
 최초 선택이 `artifacts/registries/combat-concept-fingerprints.json`의 과거 지문과 일곱 축
 중 다섯 축 이상 같으면 다섯 번째 후보를 한 번 추가해 다시 비교한다. 과거 GDD 본문은
 읽지 않는다. 결과는 `gameplay-concept-brief.md`에 저장한다.
+
+모든 후보는 공통 계약 안의 조작과 성장 변화를 기존 core-loop·growth-path에 설명하고
+선택 전에 의미 검토한다. 브리프 끝에는 공통 `game-presentation` 블록을 정확히 한 번 선언한다.
 
 ## 단계 5: 독립된 세계 구조 선택
 
@@ -149,6 +161,10 @@ artifacts/vX.Y.Z/docs/GDD/
 최종 결과는 `world-concept-brief.md`다. 전체 계약은
 [세계 구조 선택 명세](../spec/world-concept-selection.md)를 따른다.
 
+모든 세계 후보는 같은 화면에서 공간 연결·높이·가림과 전투 동사를 설명한다.
+세계 브리프도 `world-concept` 밖에 공통 `game-presentation` 블록을 정확히 한 번 선언한다.
+공통 화면 조건은 세계 지문 축이나 다양성 점수에 포함하지 않는다.
+
 ## 단계 6: GDD
 
 `generate-gdd-from-interpretation`은 통합 해석을 주 설계 브리프로, `chart-report.md`를 근거
@@ -163,6 +179,10 @@ GDD의 `world-structure` JSON block은 선택된 6축의 값과 구체적 공간
 validator는 이 선언의 일치와 누락을 검사하며 자연어 본문의 의미적 일치는 생성 에이전트가
 검토한다. 해양 단어의 개수로 세계를 판정하지 않는다.
 
+GDD는 공통 계약의 화면·픽셀 표현, 이동·타격·높이·가림, 기본 공격·방어 피드백,
+다수 적과 보스의 가독성, 빌드 변화 및 구현 우선 조우를 설명한다. 공통
+`game-presentation` 블록을 정확히 한 번 선언하고 두 브리프의 선언도 검증한다.
+
 ## 데이터 격리
 
 | 데이터 | 차트 생성 | 전문 3개 | 통합 | 전투 선택 | 세계 선택 | GDD |
@@ -176,6 +196,7 @@ validator는 이 선언의 일치와 누락을 검사하며 자연어 본문의 
 | 세계 지문 레지스트리 | 미전달 | 미전달 | 미전달 | 미전달 | 지문·공간 요약만 읽기 | 미전달 |
 | `gameplay-concept-brief.md` | 미전달 | 미전달 | 미전달 | 생성 | 전투 계약 | 전투 계약 |
 | `world-concept-brief.md` | 미전달 | 미전달 | 미전달 | 미전달 | 생성 | 세계 계약 |
+| 공통 `game-presentation-contract.md` | 미전달 | 미전달 | 미전달 | 필수 입력 | 필수 입력 | 필수 입력 |
 | 대화 문맥·과거 GDD | 미전달 | 미전달 | 미전달 | 미전달 | 미전달 | 미전달 |
 
 ## 모델 선택
@@ -190,6 +211,17 @@ validator는 이 선언의 일치와 누락을 검사하며 자연어 본문의 
 | GDD | `gpt-5.6-terra`, low | `gpt-5.6-sol`, high |
 
 ## 검증과 실패 처리
+
+공통 화면 입력과 선언은 `scripts/game-presentation.ts`를 사용해 검사한다. 전투 validator의
+네 번째, 세계 validator의 다섯 번째, 두 GDD validator의 여섯 번째 인수는 공통 입력 경로다.
+생략하거나 빈 문서를 전달하면 실패한다. 세 산출물의 선언은 공통 고정 값과 같아야 한다.
+등록 CLI도 잘못된 선언을 거부하며 기존 레지스트리 항목은 변경하지 않는다.
+
+선언 검사는 자연어 본문의 의미 검토를 대신하지 않는다. 생성 단계는 선언과 실제 조작·
+카메라·아트가 충돌하거나 가독성·제작 범위가 불충분하면 기존 1회 수정 한도 안에서 보완하고,
+해결되지 않으면 실패를 반환한다. 미해결 의미 검토 실패 후에는 종속 생성·지문 등록·성공
+처리를 진행하지 않는다. 최종 검증은 유효한 단계 결과를 임의로 고치지 않는다.
+수용 사례와 검증 범위는 [공통 화면·아트 명세](../spec/game-presentation-contract.md)를 따른다.
 
 각 전문 문서는 evidence manifest의 해당 체계 ID가 모두 참조됐는지, 존재하지 않는 ID를 사용하지 않았는지, 순차 전문 ID와 `해석:` 계약을 충족하는지 검증한다. Markdown 장식, 공백, 구분선, 원문 행 복사는 검증 대상이 아니다. 통합 문서는 세 비교 분류, 순차 ID, 관계 유형, 서로 다른 두 체계 이상의 실제 전문 ID 참조를 검증한다. 원형 선택 문서는 후보 수, 축 값, 후보 간 거리, 해석 ID, 점수 선택, 지문 유사도와 추가 후보 조건을 검증한다. GDD는 통합 ID 추적성, 원본 보고서 비첨부와 선택 지문 일치를 검증한다.
 

@@ -9,7 +9,9 @@ Design one Action RPG GDD from a supplied interpretation and its source chart re
 
 ## Inputs
 
-Require exact paths for `chart-interpretation.md`, `chart-report.md`, `gameplay-concept-brief.md`, `world-concept-brief.md`, and the GDD output. Read all four inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`. The world brief must already have passed `$select-world-concept`; never invent a default world when it is missing.
+Require exact paths for `chart-interpretation.md`, `chart-report.md`, `gameplay-concept-brief.md`, `world-concept-brief.md`, shared `docs/prompts/game-presentation-contract.md`, and the GDD output. Read all five inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`. The world brief must already have passed `$select-world-concept`; never invent a default world when it is missing.
+
+Require the shared contract's exact path even for standalone calls; do not infer a default. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before designing. Stop on missing, empty or invalid input. Check both briefs' presentation declarations before designing; do not repair upstream briefs in this stage.
 
 Read `references/design-prompt.md` and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
 
@@ -33,6 +35,8 @@ After each major personalized design choice, add both `설계 모티프: <phrase
 
 Before writing, silently review the concept: reject direct job-to-magic translation, vague non-action gameplay, unexplained power escalation, power suppression presented as depth, and a single metaphor occupying most major systems. Do not include this review or hidden reasoning in the GDD.
 
+Apply the shared contract's design requirements and semantic review to the complete GDD. Copy its `game-presentation` block exactly once at the end. Do not cite interpretation IDs for shared production conditions. A matching block alone does not establish that prose, controls or camera comply.
+
 Write directly to the exact output path.
 
 Include exactly one `combat-fingerprint` fenced block containing a JSON object with the seven final fingerprint keys and values copied from the brief. Do not add other keys.
@@ -43,9 +47,9 @@ Include exactly one `world-structure` JSON fenced block with exactly `topology`,
 
 Run:
 
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-input> <world-brief-input>`
+`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-input> <world-brief-input> <presentation-input>`
 
-If validation reports an empty input, embedded source content, a missing design motif, an invalid interpretation ID reference, or a combat/world contract mismatch, repair only the current GDD once and validate again. Return the second failure unchanged.
+If validation or the shared contract's semantic review fails, repair only the current GDD once and validate and review again. Return an unresolved semantic conflict as failure even when the declaration validator passes. Return the second failure unchanged. Validator success covers declarations, not prose consistency.
 
 ## Complete
 

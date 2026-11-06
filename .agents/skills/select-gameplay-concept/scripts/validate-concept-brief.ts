@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { parseGamePresentation, readGamePresentationContract } from '../../../../scripts/game-presentation'
 
 import {
   AXIS_KEYS,
@@ -154,6 +155,9 @@ function matchesEqual(left: RegistryMatch[], right: RegistryMatch[]): boolean {
 
 export function validateConceptBrief(markdown: string, interpretation: string, registry: FingerprintRegistry): string[] {
   const errors: string[] = []
+  try { parseGamePresentation(markdown) } catch (error) {
+    errors.push(error instanceof Error ? error.message : String(error))
+  }
   if (!markdown.startsWith('# Gameplay Concept Brief\n')) errors.push('Missing Gameplay Concept Brief title.')
   validateFieldNames(markdown.split(/^## Interpretation Traits\s*$/m)[0], ['schema-version'], errors, 'Document')
   if (field(markdown, 'schema-version') !== '1') errors.push('schema-version must be 1.')
@@ -308,12 +312,13 @@ export function isValidConceptBrief(markdown: string, interpretation: string, re
 }
 
 if (import.meta.main) {
-  const [briefPath, interpretationPath, registryPath] = process.argv.slice(2)
-  if (briefPath == null || interpretationPath == null || registryPath == null) {
-    console.error('Usage: bun validate-concept-brief.ts <gameplay-concept-brief.md> <chart-interpretation.md> <combat-concept-fingerprints.json>')
+  const [briefPath, interpretationPath, registryPath, presentationPath, ...extra] = process.argv.slice(2)
+  if (briefPath == null || interpretationPath == null || registryPath == null || presentationPath == null || extra.length > 0) {
+    console.error('Usage: bun validate-concept-brief.ts <gameplay-concept-brief.md> <chart-interpretation.md> <combat-concept-fingerprints.json> <game-presentation-contract.md>')
     process.exitCode = 2
   } else {
     try {
+      readGamePresentationContract(presentationPath)
       const [brief, interpretation, registryJson] = await Promise.all([
         readFile(briefPath, 'utf8'),
         readFile(interpretationPath, 'utf8'),

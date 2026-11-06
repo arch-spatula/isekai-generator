@@ -1,6 +1,7 @@
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { writeJsonAtomic } from '../../../../scripts/artifacts/artifact-run'
+import { parseGamePresentation } from '../../../../scripts/game-presentation'
 import { ensure, parseWorldBrief, parseWorldRegistry, selectedWorld, type WorldEntry, type WorldRegistry } from './world-contract'
 
 export function loadWorldRegistry(path: string): WorldRegistry {
@@ -31,7 +32,9 @@ if (import.meta.main) {
     if (command === 'init' && version == null) initializeWorldRegistry(path)
     else {
       ensure(command === 'register' && version && briefPath, 'register requires a version and world brief')
-      const selected = selectedWorld(parseWorldBrief(readFileSync(briefPath, 'utf8')))
+      const brief = readFileSync(briefPath, 'utf8')
+      parseGamePresentation(brief)
+      const selected = selectedWorld(parseWorldBrief(brief))
       registerWorldFingerprint(path, { version, candidateId: selected.id, fingerprint: selected.fingerprint, spatialPlay: selected.spatialPlay })
     }
     console.log(`World registry ${command} complete.`)

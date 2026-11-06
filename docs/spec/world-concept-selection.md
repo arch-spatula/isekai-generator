@@ -7,7 +7,8 @@
 ## 목적과 범위
 
 해양 세계를 금지하지 않고 군도·항로가 기본 해법이 되는 경로를 끊는다. 전투 선택 다음,
-GDD 이전에 독립된 세계 선택 단계를 둔다. 통합 해석·선택 전투·세계 지문만 입력하며
+GDD 이전에 독립된 세계 선택 단계를 둔다. 통합 해석·선택 전투·세계 지문과
+[공통 화면·아트 계약](../prompts/game-presentation-contract.md)을 입력하며
 원시 출생정보, 차트, 전문 해석, 과거 GDD와 대화 문맥은 전달하지 않는다.
 
 출력은 같은 예약 디렉터리의 `world-concept-brief.md`다. light/deep은 설명 깊이만 다르고
@@ -57,6 +58,10 @@ topology와 core 해양 역할이 아닌 후보 최소 2개가 있어야 한다.
 ## 저장 및 검증
 
 세계 브리프는 한국어 설명과 정확히 한 `world-concept` JSON fenced block을 사용한다.
+추가로 공통 `game-presentation` 블록을 JSON 밖에 정확히 한 번 선언한다. 생성 전에
+공통 입력의 정확한 경로를 받아 검사·읽기하며 전투 브리프의 선언도 일치해야 한다.
+모든 후보의 spatialPlay·verbMapping은 공통 화면 안에서 이동·높이·가림을 설명한다.
+선언과 본문의 일치는 에이전트가 선택 전에 검토하고 validator는 선언만 확인한다.
 정확한 필드 계약은 스킬의 `references/selection-contract.md`가 정의한다. `schemaVersion: 1`은
 artifact series와 독립이다. 알 수 없는 필드, 빠진 필드, 잘못된 열거형, 없는 ID, 거리·점수·
 유사도 불일치, 누락된 비교와 전투 verb는 실패한다.
@@ -73,6 +78,7 @@ GDD는 정확히 한 `world-structure` JSON block으로 6축 각각의 `value`�
 의미적 일치, 지역 생태와 실제 탐험 구조의 자연스러움은 생성 에이전트가 검토한다.
 
 기존 GDD validator의 다섯 번째 인수로 세계 브리프가 필수가 된다. 생략하면 실패한다.
+현재 여섯 번째 인수로 공통 화면 계약도 필수다. 공통 조건은 6축 지문에 추가하지 않는다.
 과거 문서 재검증을 위해 새 계약을 자동 채우거나 기본 세계를 만들지 않는다.
 
 오케스트레이터는 세계 validator까지 성공한 뒤 GDD를 실행한다. 최종 검증에서는 세계
@@ -98,7 +104,8 @@ run을 재등록하지 않는다. 세계 단계 실패는 `world-selection`으�
 ## 실행 경로
 
 ```text
-bun .agents/skills/select-world-concept/scripts/validate-world-brief.ts <world-brief> <interpretation> <combat-brief> <world-registry>
+bun scripts/game-presentation.ts <game-presentation-contract.md>
+bun .agents/skills/select-world-concept/scripts/validate-world-brief.ts <world-brief> <interpretation> <combat-brief> <world-registry> <game-presentation-contract.md>
 bun .agents/skills/select-world-concept/scripts/manage-world-registry.ts init <world-registry>
 bun .agents/skills/select-world-concept/scripts/manage-world-registry.ts register <world-registry> <version> <world-brief>
 ```

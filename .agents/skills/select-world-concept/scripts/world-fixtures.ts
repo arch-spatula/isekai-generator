@@ -1,4 +1,5 @@
 import { SCORE_KEYS, WORLD_KEYS, type WorldBrief, type WorldCandidate, type WorldFingerprint } from './world-contract'
+import { presentationFixture } from '../../../../scripts/fixtures/game-presentation'
 
 export const worldFingerprints: WorldFingerprint[] = [
   { topology: 'continental', ecology: 'forest', traversal: 'overland', settlement: 'fixed-cities', hazard: 'collapse', spatialLogic: 'borders' },
@@ -15,7 +16,7 @@ export const spatialPlays = [
   '주기적으로 이동하는 사막 생물을 타고 다음 정착 주기에 맞춰 길을 바꾼다.',
 ]
 export const fixtureInterpretation = '### I-01\n해석: 기반 유지와 외부 탐색의 긴장\n### I-02\n해석: 충동적인 돌파와 반복 숙련의 차이'
-export const fixtureCombat = '## Candidates\n\n### Candidate C-01\n\n- primary-verbs: anchor, redirect\n\n## Selection\n\n- selected: C-01'
+export const fixtureCombat = '## Candidates\n\n### Candidate C-01\n\n- primary-verbs: anchor, redirect\n\n## Selection\n\n- selected: C-01' + presentationFixture
 export function worldCandidate(index: number, score: number): WorldCandidate {
   return {
     id: `W-0${index + 1}`, name: `구조 후보 ${index + 1}`, fingerprint: { ...worldFingerprints[index] },
@@ -38,7 +39,7 @@ export function worldBriefFixture(winner = 0): WorldBrief {
   }
 }
 export function serializeWorldBrief(brief = worldBriefFixture()): string {
-  return '# World Concept Brief\n\n```world-concept\n' + JSON.stringify(brief, null, 2) + '\n```\n'
+  return '# World Concept Brief\n\n```world-concept\n' + JSON.stringify(brief, null, 2) + '\n```\n' + presentationFixture
 }
 export function worldStructureFixture(fingerprint = worldFingerprints[0]): string {
   const structure = Object.fromEntries(WORLD_KEYS.map(key => [key, { value: fingerprint[key], manifestation: `${key}의 공간 규칙을 관문, 우회와 귀환 경로에 적용한다.` }]))

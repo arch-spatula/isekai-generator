@@ -1,5 +1,7 @@
 # Selection rules
 
+Read the supplied `docs/prompts/game-presentation-contract.md` as the fixed production brief. Follow its candidate design and semantic review requirements before scoring. Append exactly one copy of its `game-presentation` block after Final Fingerprint. Do not add presentation axes to the combat fingerprint.
+
 Abstract motives, tensions, action patterns, and growth conditions from the integrated interpretation. Do not turn occupations, documents, contracts, procedures, or other surface nouns into combat content. Every tendency and candidate must cite existing `I-NN` items.
 
 ## Axes
@@ -124,6 +126,6 @@ Use this exact heading and field order. Repeat trait, candidate, rejected, and c
 - risk: health
 ```
 
-Omit closest-match headings when the registry is empty. The final fingerprint must exactly copy the selected candidate's axes. Do not add YAML front matter, tables, JSON, extra machine fields, or alternate headings.
+Omit closest-match headings when the registry is empty. The final fingerprint must exactly copy the selected candidate's axes. Do not add YAML front matter, tables, JSON other than the required `game-presentation` block, extra machine fields, or alternate headings.
 
 Registry-match blocks above illustrate syntax only. Fill version/candidate values from the current local registry, not from historical examples. Omit closest-match blocks when the registry is empty. Registry files are runtime local data, not committed evidence.

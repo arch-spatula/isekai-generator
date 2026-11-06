@@ -12,6 +12,10 @@
 선택한다. 선택 과정은 `gameplay-concept-brief.md`에 남기며 최종 GDD는 선택된 전투
 계약을 그대로 따라야 한다.
 
+현재 생성은 [공통 화면·아트 계약](game-presentation-contract.md)도 필수 입력으로 받는다.
+전투·세계 후보와 GDD는 같은 화면·매체를 유지하고 공통 선언 블록을 포함한다.
+공통 제작 조건을 개인 해석 ID나 전투 지문의 비교 축에 추가하지 않는다.
+
 이 명세의 성공 조건은 다음과 같다.
 
 - 후보마다 구조화된 전투 축과 유효한 통합 해석 ID가 있다.
@@ -50,6 +54,7 @@ chart-interpretation.md
 select-gameplay-concept
         ├── 읽기: chart-interpretation.md
         ├── 읽기: combat-concept-fingerprints.json
+        ├── 읽기: game-presentation-contract.md
         └── 생성: gameplay-concept-brief.md
                          │
                          ▼
@@ -57,6 +62,8 @@ generate-gdd-from-interpretation
         ├── 읽기: chart-interpretation.md
         ├── 근거 확인: chart-report.md
         ├── 전투 계약: gameplay-concept-brief.md
+        ├── 세계 계약: world-concept-brief.md
+        ├── 제작 조건: game-presentation-contract.md
         └── 생성: personalized-action-rpg-concept.md
                          │
                          ▼
@@ -352,14 +359,16 @@ type RegistryEntry = {
 
 ## 10. GDD 계약 변경
 
-`generate-gdd-from-interpretation`은 기존 세 경로에 concept brief 경로를 추가로 요구한다.
+`generate-gdd-from-interpretation`은 두 concept brief와 공통 화면 계약 경로를 필수로 요구한다.
 
 ```text
 bun validate-gdd.ts \
   <gdd.md> \
   <chart-report.md> \
   <chart-interpretation.md> \
-  <gameplay-concept-brief.md>
+  <gameplay-concept-brief.md> \
+  <world-concept-brief.md> \
+  <game-presentation-contract.md>
 ```
 
 GDD 생성기는 선택 후보의 플레이어 판타지, 축, 주 동사, 핵심 루프, 성장 경로와 약점을
@@ -388,13 +397,14 @@ validator는 이 블록을 JSON으로 파싱하고 brief의 `## Final Fingerprin
 
 ## 11. 결정적 검증 규칙
 
-`validate-concept-brief.ts`는 concept brief, 통합 해석, 레지스트리 경로를 입력받는다.
+`validate-concept-brief.ts`는 concept brief, 통합 해석, 레지스트리와 공통 화면 계약 경로를 입력받는다.
 
 ```text
 bun validate-concept-brief.ts \
   <gameplay-concept-brief.md> \
   <chart-interpretation.md> \
-  <combat-concept-fingerprints.json>
+  <combat-concept-fingerprints.json> \
+  <game-presentation-contract.md>
 ```
 
 레지스트리 파일은 선택 사항이 아니다. 파일이 아직 없을 때 오케스트레이터가 빈
@@ -411,6 +421,7 @@ bun validate-concept-brief.ts \
 9. 레지스트리의 실제 초기·최종 최근접 항목과 `registryReview`가 일치하는지
 10. 유사도에 따른 `C-05` 생성과 추가 거리 조건이 맞는지
 11. 유사한 최종 선택에 비어 있지 않은 정당화가 있는지
+12. 공통 입력과 정확히 한 `game-presentation` 블록이 고정 계약을 충족하는지
 
 알 수 없는 최상위·후보·축 필드는 오타를 숨길 수 있으므로 실패시킨다. 오류 메시지는
 최초 실패 하나만 반환하지 않고 발견한 구조 오류를 모두 나열하며 종료 코드는 계약 위반
@@ -422,6 +433,7 @@ bun validate-concept-brief.ts \
 - `combat-fingerprint` 블록이 정확히 한 개인가
 - 블록이 brief의 `Final Fingerprint`와 정확히 같은가
 - GDD가 concept brief 전문을 그대로 포함하지 않는가
+- GDD와 두 brief의 공통 화면 선언이 일치하는가
 
 ## 12. 스킬과 오케스트레이터 변경
 
@@ -429,9 +441,10 @@ bun validate-concept-brief.ts \
 
 `.agents/skills/select-gameplay-concept/SKILL.md`는 다음 계약을 갖는다.
 
-- 입력: 통합 해석, 출력 concept brief, 레지스트리, mode의 정확한 경로
+- 입력: 통합 해석, 출력 concept brief, 레지스트리, 공통 화면 계약의 정확한 경로와 mode
 - 다른 산출물 탐색·읽기 금지
 - 후보 생성 전에 mode별 reference와 selection prompt 읽기
+- 후보 생성 전 공통 입력 검사·읽기, 모든 후보의 조작·성장을 공통 화면 안에서 설명하고 의미 검토
 - 현재 출력만 한 번 수정 후 재검증 가능
 - 완료 응답은 출력 경로, mode, 후보 수, 검증 결과만 포함
 
@@ -446,6 +459,7 @@ bun validate-concept-brief.ts \
 - 선택 후보를 고정 전투 계약으로 사용한다.
 - 탈락 후보를 혼합하거나 선택 결과를 재평가하지 않는다.
 - 고정 fingerprint 블록을 출력한다.
+- 공통 화면 계약과 선언을 유지하고 본문의 시점·매체·조작·가독성 일치를 검토한다.
 
 ### 12.3 오케스트레이터
 

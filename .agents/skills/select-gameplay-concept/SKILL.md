@@ -14,9 +14,12 @@ Require exact paths for:
 - `chart-interpretation.md`
 - `gameplay-concept-brief.md`
 - `combat-concept-fingerprints.json`
+- shared `docs/prompts/game-presentation-contract.md`
 - mode: `light` or `deep`
 
 Read only those inputs and this skill's references. Do not search for or read the chart report, specialist interpretations, raw birth data, prior artifacts, or prior GDDs.
+
+Require the shared contract's exact path even for standalone calls; do not infer a default. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before creating candidates. Stop on missing, empty or invalid input. Read the contract in full.
 
 ## Select
 
@@ -28,13 +31,15 @@ Compare the initial selection with the fingerprint registry. If any closest matc
 
 Write the brief directly to the exact output path. Preserve the fixed Markdown headings and fields from the selection prompt.
 
+Apply the shared contract to every candidate's core loop and growth path, including challengers. Review all candidates before scoring and the final prose before writing. Copy its `game-presentation` block exactly once at the end; common production conditions do not need interpretation IDs or new fingerprint axes.
+
 ## Validate
 
 Run:
 
-`bun <skill-path>/scripts/validate-concept-brief.ts <brief-output> <interpretation-input> <registry-input>`
+`bun <skill-path>/scripts/validate-concept-brief.ts <brief-output> <interpretation-input> <registry-input> <presentation-input>`
 
-If validation fails, repair only the current brief once and validate again. Return the second failure unchanged. Do not register the selected fingerprint; the orchestrator does that only after the GDD also passes validation.
+If validation or the shared contract's semantic review fails, repair only the current brief once and validate and review again. Return an unresolved semantic conflict as failure even when the declaration validator passes. Return the second failure unchanged. Do not register the selected fingerprint; the orchestrator does that only after the GDD also passes validation. Validator success covers declarations, not prose consistency.
 
 ## Complete
 

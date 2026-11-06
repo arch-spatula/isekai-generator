@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { parseGamePresentation } from '../../../../scripts/game-presentation'
 
 import { initializeRegistry, registerFingerprint } from './fingerprint-registry'
 import { parseFinalFingerprint, parseSelectedCandidateId } from './validate-concept-brief'
@@ -16,6 +17,7 @@ if (import.meta.main) {
   } else if (command === 'register' && registryPath != null && version != null && briefPath != null) {
     try {
       const brief = await readFile(briefPath, 'utf8')
+      parseGamePresentation(brief)
       const fingerprint = parseFinalFingerprint(brief)
       const candidateId = parseSelectedCandidateId(brief)
       if (fingerprint == null || candidateId == null) throw new Error('Brief has no valid selected fingerprint.')

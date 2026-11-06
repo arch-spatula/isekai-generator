@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { hasGamePresentation, readGamePresentationContract } from '../../../../scripts/game-presentation'
 
 import { AXIS_KEYS } from '../../select-gameplay-concept/scripts/fingerprint-registry'
 import { parseFinalFingerprint, parseSelectedCandidateId } from '../../select-gameplay-concept/scripts/validate-concept-brief'
@@ -51,6 +52,7 @@ export function isValidGdd(markdown: string, chartReport: string, interpretation
     }
   }
   return markdown.trim().length > 0
+    && [markdown, conceptBrief, worldBrief].every(hasGamePresentation)
     && normalizedReport.length > 0
     && interpretation.trim().length > 0
     && normalizedBrief.length > 0
@@ -66,12 +68,13 @@ export function isValidGdd(markdown: string, chartReport: string, interpretation
 }
 
 if (import.meta.main) {
-  const [gddPath, chartReportPath, interpretationPath, conceptBriefPath, worldBriefPath] = process.argv.slice(2)
-  if (gddPath == null || chartReportPath == null || interpretationPath == null || conceptBriefPath == null || worldBriefPath == null) {
-    console.error('Usage: bun validate-gdd.ts <gdd.md> <chart-report.md> <chart-interpretation.md> <gameplay-concept-brief.md> <world-concept-brief.md>')
+  const [gddPath, chartReportPath, interpretationPath, conceptBriefPath, worldBriefPath, presentationPath, ...extra] = process.argv.slice(2)
+  if (gddPath == null || chartReportPath == null || interpretationPath == null || conceptBriefPath == null || worldBriefPath == null || presentationPath == null || extra.length > 0) {
+    console.error('Usage: bun validate-gdd.ts <gdd.md> <chart-report.md> <chart-interpretation.md> <gameplay-concept-brief.md> <world-concept-brief.md> <game-presentation-contract.md>')
     process.exitCode = 2
   } else {
     try {
+      readGamePresentationContract(presentationPath)
       const [gdd, chartReport, interpretation, conceptBrief, worldBrief] = await Promise.all([
         readFile(gddPath, 'utf8'),
         readFile(chartReportPath, 'utf8'),
@@ -80,10 +83,10 @@ if (import.meta.main) {
         readFile(worldBriefPath, 'utf8'),
       ])
       if (!isValidGdd(gdd, chartReport, interpretation, conceptBrief, worldBrief)) {
-        console.error('Invalid GDD: empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
+        console.error('Invalid GDD: game presentation mismatch, empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
         process.exitCode = 1
       } else {
-        console.log('Validated interpretation-driven GDD with separate source report.')
+        console.log('Validated GDD declarations and evidence; prose consistency requires semantic review.')
       }
     } catch (error) {
       console.error(error instanceof Error ? error.message : String(error))

@@ -1,0 +1,60 @@
+{
+  "scope": "개인정보 없는 수동 수용 검토 자료. JSON 존재나 파싱 성공은 에이전트 행동 또는 의미 품질의 자동 검증이 아니다.",
+  "source": "docs/spec/three-agent-implementation-workflow.md sections 4–10",
+  "cases": [
+    {
+      "id": "unsupported-minimum-length",
+      "requirement": "비어 있지 않은 설명 허용; 최소 길이는 정하지 않음",
+      "proposal": "설명이 40자 미만이면 실패시키는 테스트 추가",
+      "expected": "리뷰에서 근거를 요구하고 무근거 실패 조건은 승인하지 않음",
+      "owner": "테스트 작성 담당"
+    },
+    {
+      "id": "length-is-not-meaning",
+      "requirement": "설명 완결성과 근거 연결을 검토",
+      "inputs": ["문이 닫혀 우회했다.", "좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다 좋다"],
+      "proposal": "긴 두 번째 문장만 의미 품질 합격",
+      "expected": "길이를 의미 품질 대용으로 승인하지 않고 별도 수용 검토로 분리",
+      "owner": "테스트 작성 담당"
+    },
+    {
+      "id": "copied-implementation-output",
+      "requirement": "normalizeLabel은 앞뒤 공백만 제거하고 내부 공백을 보존",
+      "input": " a  b ",
+      "implementationOutput": "a b",
+      "testExpected": "a b",
+      "expected": "요구에서 a  b를 도출하도록 테스트 수정 요청; 제품 결함도 구현 담당에게 전달",
+      "owner": "테스트 작성 담당 및 구현 담당"
+    },
+    {
+      "id": "valid-test-finds-product-defect",
+      "requirement": "normalizeLabel은 내부 공백 보존",
+      "input": " a  b ",
+      "testExpected": "a  b",
+      "implementationOutput": "a b",
+      "expected": "구현 담당이 수정; 테스트 기대값 유지",
+      "owner": "구현 담당"
+    },
+    {
+      "id": "integration-overclaim",
+      "requirement": "검증 주장은 실제 assertion 범위와 일치",
+      "proposal": "순수 함수 반환값 하나 확인 후 파일 저장 통합 검증 완료라고 보고",
+      "expected": "함수 검증으로 범위를 바로잡거나 실제 저장 경계 검증을 추가; 현재 과제에는 저장 기능 요구 없음",
+      "owner": "테스트 작성 담당"
+    },
+    {
+      "id": "changed-after-approval",
+      "requirement": "승인은 인계된 버전에만 유효",
+      "events": ["fixture와 assertion 버전 A 승인", "작성자가 fixture 또는 assertion을 버전 B로 변경", "A 승인으로 B 완료 주장"],
+      "expected": "B의 영향 부분을 재검토하고 B에서 실행",
+      "owner": "조정자 및 테스트 리뷰 담당"
+    },
+    {
+      "id": "stale-run-during-edit",
+      "requirement": "리뷰와 테스트 수정은 직렬; 실행·검토 버전 일치",
+      "events": ["리뷰 담당이 A 복사본 실행", "동시에 작성자가 B 수정", "A 통과를 B 최종 결과로 보고"],
+      "expected": "수정을 멈추고 검토·실행 버전을 고정한 뒤 다시 검토·실행",
+      "owner": "조정자 및 테스트 리뷰 담당"
+    }
+  ]
+}

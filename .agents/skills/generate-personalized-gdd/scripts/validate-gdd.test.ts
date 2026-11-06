@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { presentationFixture } from '../../../../scripts/fixtures/game-presentation'
 
 import { isValidGdd as validateGdd } from './validate-gdd'
 import { serializeWorldBrief, worldStructureFixture } from '../../select-world-concept/scripts/world-fixtures'
@@ -19,9 +20,9 @@ const conceptBrief = `## Selection
 - spaceUse: swap
 - combatRhythm: cycle
 - mastery: aim
-- risk: focus_break`
+- risk: focus_break` + presentationFixture
 
-const fingerprint = worldStructureFixture() + `\n\n\`\`\`combat-fingerprint
+const fingerprint = presentationFixture + worldStructureFixture() + `\n\n\`\`\`combat-fingerprint
 {"combatRange":"long","powerMedium":"spell","initiative":"reactive","spaceUse":"swap","combatRhythm":"cycle","mastery":"aim","risk":"focus_break"}
 \`\`\``
 

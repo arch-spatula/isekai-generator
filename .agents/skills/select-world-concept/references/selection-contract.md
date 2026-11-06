@@ -1,5 +1,7 @@
 # World selection contract
 
+Read the supplied `docs/prompts/game-presentation-contract.md` as the fixed production brief. Follow its candidate design and semantic review requirements before scoring. Append exactly one copy of its `game-presentation` block outside the world JSON. Presentation conditions are not world fingerprint axes.
+
 Use one `world-concept` JSON fenced block with this exact top-level schema:
 
 - `schemaVersion`: integer 1
