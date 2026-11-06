@@ -35,6 +35,7 @@ nix develop 'path:.' --command codex
 
 ```bash
 just          # 사용 가능한 명령 보기
+just help     # 사용 가능한 명령과 설명 보기
 just shell    # Nix 개발 셸 진입
 just versions # 개발 도구 버전 확인
 just report   # 전달한 출생정보의 전체 명식 보고서 출력
