@@ -57,3 +57,5 @@ Treat calculator failure as a final input error. Do not repair, guess, interpret
 ## Complete
 
 Return only the report path, evidence manifest path, artifact version, purpose and final status when standalone (or the parent's current status when orchestrated), and a one-sentence calculation status. On failure or cancellation, report the reserved version, purpose and final status without claiming validated outputs. Do not reproduce the birth arguments or report.
+
+Returned artifact paths identify local runtime files; they are valid in the user response but are not permanent repository evidence. If persistent documentation is requested, preserve only necessary non-identifying observations or committed synthetic cases and follow `docs/spec/local-artifact-document-boundary.md`. Do not link persistent docs to a specific local run or require its files or original birth input for regression.

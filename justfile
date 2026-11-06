@@ -15,7 +15,7 @@ report *args:
 
 # Run automated tests.
 test:
-    nix develop 'path:.' --command bun test
+    nix develop 'path:.' --command bun run test
 
 # Show versions of the development tools provided by Nix.
 versions:

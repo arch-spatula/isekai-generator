@@ -93,14 +93,15 @@ patch는 활성 series마다 `0`부터 단조 증가한다. 번호는 정렬 이
 
 ### 4.2 실행 디렉터리와 manifest
 
-patch 예약은 다음 디렉터리와 manifest를 먼저 만든다.
+patch 예약은 다음과 같은 디렉터리와 manifest를 먼저 만든다. 아래 버전은 가상 예시다.
 
 ```text
 artifacts/v0.1.28/
 └── artifact-run.json
 ```
 
-manifest 스키마는 다음과 같다.
+manifest 스키마는 다음과 같다. 아래 실행 번호·revision·시각은 형식 설명용 가상 값이며
+실제 로컬 아티팩트에 대한 근거 참조가 아니다.
 
 ```json
 {

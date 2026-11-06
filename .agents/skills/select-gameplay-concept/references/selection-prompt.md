@@ -103,12 +103,12 @@ Use this exact heading and field order. Repeat trait, candidate, rejected, and c
 - challenger-candidate: none
 - similarity-justification: none
 
-### Initial Closest Match v0.1.0 C-01
+### Initial Closest Match <registered-version> <registered-candidate>
 
 - equal-axes: 4
 - similar: false
 
-### Final Closest Match v0.1.0 C-01
+### Final Closest Match <registered-version> <registered-candidate>
 
 - equal-axes: 4
 - similar: false
@@ -125,3 +125,5 @@ Use this exact heading and field order. Repeat trait, candidate, rejected, and c
 ```
 
 Omit closest-match headings when the registry is empty. The final fingerprint must exactly copy the selected candidate's axes. Do not add YAML front matter, tables, JSON, extra machine fields, or alternate headings.
+
+Registry-match blocks above illustrate syntax only. Fill version/candidate values from the current local registry, not from historical examples. Omit closest-match blocks when the registry is empty. Registry files are runtime local data, not committed evidence.

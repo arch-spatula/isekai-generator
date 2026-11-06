@@ -212,3 +212,5 @@ Only after all validators and fingerprint registration succeed, record:
 ## Complete
 
 Report the mode, artifact version, purpose, final manifest status, all nine validated artifact paths, the root TODO.md path, and whether a model substitution occurred. On failure or cancellation, report the reserved version, purpose, final status and any errors without claiming unvalidated outputs succeeded. Do not reproduce birth arguments, chart content, interpretation, concept briefs, or GDD content.
+
+Returned artifact paths identify local runtime files; they are valid in the user response but are not permanent repository evidence. If persistent documentation is requested, preserve only necessary non-identifying observations or committed synthetic cases and follow `docs/spec/local-artifact-document-boundary.md`. Do not link persistent docs to a specific local run or require its files or original birth input for regression.

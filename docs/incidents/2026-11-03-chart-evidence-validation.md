@@ -2,7 +2,7 @@
 
 ## 요약
 
-`v0.1.24`의 네이탈 전문 해석은 내용·섹션·영역·해상도를 충족했지만, 차트 보고서의 장식 구분선 `═════`를 `- 검토:` 행으로 복제하지 않았다는 이유로 실패했다. 기존 validator는 `─────`만 구분선으로 제외하고 `═════`는 의미 있는 원문 행으로 취급했다.
+당시 로컬에서 생성된 네이탈 전문 해석은 내용·섹션·영역·해상도를 충족했지만, 차트 보고서의 장식 구분선 `═════`를 `- 검토:` 행으로 복제하지 않았다는 이유로 실패했다. 기존 validator는 `─────`만 구분선으로 제외하고 `═════`는 의미 있는 원문 행으로 취급했다.
 
 이 장애는 LLM 해석 실패가 아니라 책임 배치 실패였다. 계산 스크립트가 결정론적으로 아는 원문 구조와 장식을 LLM이 다시 복사하게 만들고, validator가 그 복사 결과를 문자열 단위로 비교했다.
 
@@ -46,7 +46,14 @@ N-E0123456789abcdef
 - manifest의 모든 ID가 문서 전체에서 한 번 이상 사용됐는가
 - 전문 ID·영역·해상도·해석 필드 계약이 유효한가
 
-## 테스트 원칙
+## 재현 근거와 테스트 원칙
+
+원래 생성 문서는 저장소에 포함되지 않는 당시의 관찰 자료다. 재현은 개인 입력이나
+원본 해석 대신 아래 합성 구분선 사례를 사용하는
+[차트 보고서 테스트](../../.agents/skills/generate-chart-report/scripts/run-chart-report.test.ts)와
+[전문 해석 테스트](../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation.test.ts)로 수행한다.
+
+`bun test ./.agents/skills/generate-chart-report/scripts/run-chart-report.test.ts ./.agents/skills/interpret-chart-system/scripts/validate-system-interpretation.test.ts`
 
 테스트는 더 이상 구분선 복사를 요구하지 않는다.
 

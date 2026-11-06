@@ -34,7 +34,7 @@
 
 ### 2.2 제외
 
-- 기존 v0.1.24와 v0.1.25 산출물 수정
+- 기존 로컬 산출물 수정
 - 차트 계산, 전문 해석, 통합 해석 방식 변경
 - 특정 차트 요소와 직업·무기의 고정 대응표
 - 자연어 임베딩 또는 외부 벡터 데이터베이스
@@ -134,6 +134,8 @@ artifacts/registries/combat-concept-fingerprints.json
 파일은 UTF-8 Markdown이다. 사람이 후보와 선택 근거를 읽을 수 있어야 하며, validator가
 결정적으로 파싱할 수 있도록 제목 순서와 필드 이름을 다음 형식으로 고정한다.
 
+아래 버전과 레지스트리 값은 형식 설명용 가상 예시이며 실제 로컬 실행을 가리키지 않는다.
+
 ```markdown
 # Gameplay Concept Brief
 
@@ -199,12 +201,12 @@ artifacts/registries/combat-concept-fingerprints.json
 - challenger-candidate: none
 - similarity-justification: none
 
-### Initial Closest Match v0.1.24 C-01
+### Initial Closest Match v0.9.2 C-01
 
 - equal-axes: 3
 - similar: false
 
-### Final Closest Match v0.1.24 C-01
+### Final Closest Match v0.9.2 C-01
 
 - equal-axes: 3
 - similar: false
@@ -521,8 +523,8 @@ LLM 결과의 재미나 문학성을 자동 테스트하지 않는다. 회귀 fi
 7. 전체 테스트를 실행한다.
    - 검증: `bun test ./scripts ./.agents` 성공
 
-각 단계는 앞 단계의 테스트가 통과한 뒤 진행한다. 기존 v0.1.24와 v0.1.25에는 새
-validator를 소급 적용하지 않는다.
+각 단계는 앞 단계의 테스트가 통과한 뒤 진행한다. 기존 로컬 산출물에는 새
+validator를 소급 적용하지 않으며 회귀 테스트는 합성 자료로 수행한다.
 
 ## 15. 완료 조건
 

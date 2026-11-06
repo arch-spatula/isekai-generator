@@ -5,7 +5,8 @@
   "packageManager": "bun@1.4.2",
   "scripts": {
     "report": "bun scripts/chart-report.ts",
-    "test": "bun test ./scripts ./.agents"
+    "test": "bun test ./scripts ./.agents && bun scripts/check-document-artifacts.ts",
+    "check:docs": "bun scripts/check-document-artifacts.ts"
   },
   "dependencies": {
     "@orrery/core": "^0.5.0"
