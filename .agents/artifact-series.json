@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "activeSeries": "0.3",
-  "baselineRevision": "fd06a46349962f2444aef18d780860230bf5ce1b",
-  "promotedAt": "2026-11-05T06:58:53.410Z",
-  "decision": "docs/ADR/2026-11-05-adopt-artifact-series-0.3.md",
+  "activeSeries": "0.4",
+  "baselineRevision": "6c2f1ff49c2e1916c0f25ab1b1dfb8ffc15e4475",
+  "promotedAt": "2026-11-08T08:03:13.382Z",
+  "decision": "docs/ADR/2026-11-08-adopt-artifact-series-0.4.md",
   "knownIssues": [
     "docs/incidents/2026-11-03-interpretation-prompt-quality.md",
     "docs/incidents/2026-11-04-maritime-world-setting-convergence.md"
