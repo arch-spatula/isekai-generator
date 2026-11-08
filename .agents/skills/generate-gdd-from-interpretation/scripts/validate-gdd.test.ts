@@ -1,3 +1,4 @@
+import { gddTemplateFixture } from '../../../../scripts/fixtures/gdd-template'
 import { describe, expect, test } from 'bun:test'
 import { presentationFixture } from '../../../../scripts/fixtures/game-presentation'
 
@@ -5,7 +6,7 @@ import { isValidGdd as validateGdd } from './validate-gdd'
 import { serializeWorldBrief, worldStructureFixture } from '../../select-world-concept/scripts/world-fixtures'
 
 function isValidGdd(gdd: string, chart: string, interpretation: string, combat: string): boolean {
-  return validateGdd(gdd, chart, interpretation, combat, serializeWorldBrief())
+  return validateGdd(gdd.trim() ? gddTemplateFixture(gdd.replace(/^#.*\n?/, '')) : gdd, chart, interpretation, combat, serializeWorldBrief())
 }
 
 const conceptBrief = `# Gameplay Concept Brief
@@ -44,7 +45,7 @@ describe('isValidGdd', () => {
 
   test('rejects an interpretation ID absent from the interpretation', () => {
     expect(isValidGdd(
-      '# GDD\n\n설계 모티프: 경계의 수호자\n해석 근거: I-02',
+      `# GDD\n\n설계 모티프: 경계의 수호자\n해석 근거: I-02${fingerprint}`,
       '四柱八字',
       '# 통합 차트 해석\n\n### I-01',
       conceptBrief,
@@ -53,7 +54,7 @@ describe('isValidGdd', () => {
 
   test('rejects a design motif without an interpretation reference', () => {
     expect(isValidGdd(
-      '# GDD\n\n설계 모티프: 경계의 수호자',
+      `# GDD\n\n설계 모티프: 경계의 수호자${fingerprint}`,
       '四柱八字',
       '# 통합 차트 해석\n\n### I-01',
       conceptBrief,

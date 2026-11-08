@@ -1,3 +1,4 @@
+import { gddTemplateFixture } from '../../../../scripts/fixtures/gdd-template'
 import { describe, expect, test } from 'bun:test'
 import { presentationFixture } from '../../../../scripts/fixtures/game-presentation'
 
@@ -5,7 +6,7 @@ import { isValidGdd as validateGdd } from './validate-gdd'
 import { serializeWorldBrief, worldStructureFixture } from '../../select-world-concept/scripts/world-fixtures'
 
 function isValidGdd(gdd: string, chart: string, interpretation: string, combat: string): boolean {
-  return validateGdd(gdd, chart, interpretation, combat, serializeWorldBrief())
+  return validateGdd(gdd.trim() ? gddTemplateFixture(gdd.replace(/^#.*\n?/, '')) : gdd, chart, interpretation, combat, serializeWorldBrief())
 }
 
 const conceptBrief = `## Selection
@@ -55,7 +56,7 @@ describe('orchestrator GDD contract', () => {
 
   test('rejects a design motif without a valid interpretation ID', () => {
     expect(isValidGdd(
-      '# GDD\n\n설계 모티프: 문턱\n해석 근거: I-02',
+      `# GDD\n\n설계 모티프: 문턱\n해석 근거: I-02${fingerprint}`,
       '四柱八字',
       '### I-01',
       conceptBrief,

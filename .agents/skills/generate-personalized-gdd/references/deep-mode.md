@@ -1,5 +1,5 @@
 # Deep mode contract
 
-Follow the concept prompt without imposing a fixed outline, section count, or required topic.
+Follow `docs/prompts/personalized-action-rpg-concept.md` as the actual output template, preserving its H1 and ordered H2 sections and filling every section.
 
-Explore the supplied material in greater depth before choosing the document's content and structure. Do not expose chain-of-thought, discarded drafts, or internal deliberation.
+Explore the supplied material in greater depth while developing content within the fixed template structure. Do not expose chain-of-thought, discarded drafts, or internal deliberation.

@@ -16,3 +16,4 @@
 - [전투 선택과 세계 구조 선택을 분리](2026-11-04-independent-world-concept-selection.md)
 - [생성 아티팩트 기준선 0.2 채택](2026-11-05-adopt-artifact-series-0.2.md)
 - [진행 기록을 포함한 생성 기준선 0.3 채택](2026-11-05-adopt-artifact-series-0.3.md)
+- [고정 GDD 출력 템플릿 기준선 0.4 채택](2026-11-08-adopt-artifact-series-0.4.md)

@@ -21,7 +21,7 @@ if (import.meta.main) {
         readFile(worldBriefPath, 'utf8'),
       ])
       if (!isValidGdd(gdd, chartReport, interpretation, conceptBrief, worldBrief)) {
-        console.error('Invalid GDD: game presentation mismatch, empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
+        console.error('Invalid GDD: output template structure mismatch, game presentation mismatch, empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
         process.exitCode = 1
       } else {
         console.log('Validated GDD declarations and evidence; prose consistency requires semantic review.')

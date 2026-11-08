@@ -1,9 +1,11 @@
+import { hasGamePresentation } from '../../../../scripts/game-presentation'
+import { gddTemplateFixture } from '../../../../scripts/fixtures/gdd-template'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { presentationFixture } from '../../../../scripts/fixtures/game-presentation'
-import { isValidGdd } from '../../generate-gdd-from-interpretation/scripts/validate-gdd'
+import { hasGddTemplateStructure, isValidGdd } from '../../generate-gdd-from-interpretation/scripts/validate-gdd'
 import { closestWorldEntries, selectedWorld } from './world-contract'
 import { fixtureCombat, fixtureInterpretation, serializeWorldBrief, worldBriefFixture, worldStructureFixture } from './world-fixtures'
 
@@ -14,7 +16,7 @@ const combatBrief = fixtureCombat + '\n\n## Final Fingerprint\n\n' + Object.entr
 const presentationPath = resolve(import.meta.dir, '../../../../docs/prompts/game-presentation-contract.md')
 const chart = '四柱八字\n원본 보고서\n紫微斗數 命盤\nNatal Chart'
 function gdd(): string {
-  return '# 독립 세계\n\n설계 모티프: 우회로의 개방\n해석 근거: I-01\n\n```combat-fingerprint\n' + JSON.stringify(combatFingerprint) + '\n```' + worldStructureFixture() + presentationFixture
+  return gddTemplateFixture('설계 모티프: 우회로의 개방\n해석 근거: I-01\n\n```combat-fingerprint\n' + JSON.stringify(combatFingerprint) + '\n```' + worldStructureFixture() + presentationFixture)
 }
 
 test('world contract is required by both final GDD CLIs and preserves combat', () => {
@@ -29,7 +31,10 @@ test('world contract is required by both final GDD CLIs and preserves combat', (
   }
   expect(isValidGdd(gdd().replace('"long"', '"close"'), chart, fixtureInterpretation, combatBrief, serializeWorldBrief())).toBe(false)
   expect(isValidGdd(gdd().replace('continental', 'archipelago'), chart, fixtureInterpretation, combatBrief, serializeWorldBrief())).toBe(false)
-  expect(isValidGdd(gdd() + serializeWorldBrief(), chart, fixtureInterpretation, combatBrief, serializeWorldBrief())).toBe(false)
+  const embeddedWorld = gdd().replace(presentationFixture, '') + '\n````markdown\n' + serializeWorldBrief() + '\n````\n'
+  expect(hasGddTemplateStructure(embeddedWorld)).toBe(true)
+  expect(hasGamePresentation(embeddedWorld)).toBe(true)
+  expect(isValidGdd(embeddedWorld, chart, fixtureInterpretation, combatBrief, serializeWorldBrief())).toBe(false)
   const wrongCombat = worldBriefFixture(); wrongCombat.combatCandidateId = 'C-02'
   expect(isValidGdd(gdd(), chart, fixtureInterpretation, combatBrief, serializeWorldBrief(wrongCombat))).toBe(false)
 })

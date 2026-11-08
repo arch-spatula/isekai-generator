@@ -1,9 +1,54 @@
 import { readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { hasGamePresentation, readGamePresentationContract } from '../../../../scripts/game-presentation'
 
 import { AXIS_KEYS } from '../../select-gameplay-concept/scripts/fingerprint-registry'
 import { parseFinalFingerprint, parseSelectedCandidateId } from '../../select-gameplay-concept/scripts/validate-concept-brief'
 import { jsonBlock, parseWorldBrief, record, selectedWorld, WORLD_KEYS } from '../../select-world-concept/scripts/world-contract'
+
+/** Read headings outside fenced code; keep section bodies for the nonempty check. */
+function templateSections(markdown: string): { level: number; title: string; body: string }[] {
+  const sections: { level: number; title: string; body: string }[] = []
+  let fence: { marker: string; length: number } | undefined
+  for (const line of markdown.replace(/<!--[\s\S]*?-->/g, '').split(/\r?\n/)) {
+    const delimiter = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/)
+    if (fence) {
+      if (delimiter && delimiter[1][0] === fence.marker && delimiter[1].length >= fence.length && delimiter[2].trim() === '') fence = undefined
+      else if (sections.length > 0 && line.trim()) sections[sections.length - 1].body += line + '\n'
+      continue
+    }
+    if (delimiter) {
+      fence = { marker: delimiter[1][0], length: delimiter[1].length }
+      continue
+    }
+    const heading = line.match(/^ {0,3}(#{1,6})(?:[ \t]+(.*)|$)/)
+    if (heading && heading[1].length <= 2) {
+      sections.push({ level: heading[1].length, title: (heading[2] ?? '').replace(/[ \t]+#+[ \t]*$/, '').trim(), body: '' })
+    } else if (!heading && sections.length > 0) sections[sections.length - 1].body += line + '\n'
+  }
+  return sections
+}
+
+/** Validate the output skeleton against the repository template, independently of cwd. */
+export function hasGddTemplateStructure(markdown: string): boolean {
+  try {
+    const template = readFileSync(new URL('../../../../docs/prompts/personalized-action-rpg-concept.md', import.meta.url), 'utf8')
+    const start = '<!-- gdd-template:start -->'
+    const end = '<!-- gdd-template:end -->'
+    if (template.split(start).length !== 2 || template.split(end).length !== 2) return false
+    const startIndex = template.indexOf(start) + start.length
+    const endIndex = template.indexOf(end)
+    if (endIndex <= startIndex) return false
+    const expected = templateSections(template.slice(startIndex, endIndex))
+    if (expected.length < 2 || expected[0].level !== 1 || !expected[0].title
+      || expected.slice(1).some(section => section.level !== 2 || !section.title)
+      || new Set(expected.map(section => section.title)).size !== expected.length) return false
+    const actual = templateSections(markdown)
+    return actual.length === expected.length && actual.every((section, index) =>
+      section.level === expected[index].level && section.title === expected[index].title
+      && (index === 0 || section.body.trim().length > 0))
+  } catch { return false }
+}
 
 /** Validate declared playable world structure, not the presence of maritime words. */
 export function matchesWorldStructure(markdown: string, worldBrief: string): boolean {
@@ -51,7 +96,8 @@ export function isValidGdd(markdown: string, chartReport: string, interpretation
       fingerprintMatches = false
     }
   }
-  return markdown.trim().length > 0
+  return hasGddTemplateStructure(markdown)
+    && markdown.trim().length > 0
     && [markdown, conceptBrief, worldBrief].every(hasGamePresentation)
     && normalizedReport.length > 0
     && interpretation.trim().length > 0
@@ -83,7 +129,7 @@ if (import.meta.main) {
         readFile(worldBriefPath, 'utf8'),
       ])
       if (!isValidGdd(gdd, chartReport, interpretation, conceptBrief, worldBrief)) {
-        console.error('Invalid GDD: game presentation mismatch, empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
+        console.error('Invalid GDD: output template structure mismatch, game presentation mismatch, empty or embedded sources, untraceable motifs, combat fingerprint mismatch, or missing/mismatched world structure.')
         process.exitCode = 1
       } else {
         console.log('Validated GDD declarations and evidence; prose consistency requires semantic review.')

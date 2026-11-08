@@ -167,10 +167,11 @@ The world agent must not receive raw birth details, chart report, specialist out
 
 ### 6. Generate the GDD
 
-After stage 5 succeeds, invoke `$generate-gdd-from-interpretation` with only:
+After stage 5 succeeds, read `<repository-root>/docs/prompts/personalized-action-rpg-concept.md` in full as the shared output template, then invoke `$generate-gdd-from-interpretation` with only:
 
 - exact chart report, interpretation, gameplay concept brief, world concept brief, and GDD paths;
 - exact shared presentation input path;
+- exact `<repository-root>/docs/prompts/personalized-action-rpg-concept.md` template input path;
 - selected mode;
 - absolute skill path.
 

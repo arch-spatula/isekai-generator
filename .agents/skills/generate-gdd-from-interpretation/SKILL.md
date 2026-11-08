@@ -9,9 +9,9 @@ Design one Action RPG GDD from a supplied interpretation and its source chart re
 
 ## Inputs
 
-Require exact paths for `chart-interpretation.md`, `chart-report.md`, `gameplay-concept-brief.md`, `world-concept-brief.md`, shared `docs/prompts/game-presentation-contract.md`, and the GDD output. Read all five inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`. The world brief must already have passed `$select-world-concept`; never invent a default world when it is missing.
+Require exact paths for `chart-interpretation.md`, `chart-report.md`, `gameplay-concept-brief.md`, `world-concept-brief.md`, shared `docs/prompts/game-presentation-contract.md`, shared `docs/prompts/personalized-action-rpg-concept.md` output template, and the GDD output. Read all six inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`. The world brief must already have passed `$select-world-concept`; never invent a default world when it is missing.
 
-Require the shared contract's exact path even for standalone calls; do not infer a default. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before designing. Stop on missing, empty or invalid input. Check both briefs' presentation declarations before designing; do not repair upstream briefs in this stage.
+Require both shared files' exact repository paths even for standalone calls; do not infer a substitute template. The template must be `<repository-root>/docs/prompts/personalized-action-rpg-concept.md`. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before designing. Stop on missing, empty or invalid input. Check both briefs' presentation declarations before designing; do not repair upstream briefs in this stage.
 
 Read `references/design-prompt.md` and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
 
@@ -29,7 +29,7 @@ Use the selected `world-concept-brief.md` candidate as the fixed world contract.
 
 Make power growth causally legible. Establish the power's origin, first manifestation, initial capabilities and limits, practiced mastery, expansion events, late-game scale, cost or risk, and credible enemy or world responses. Keep combat-power growth distinct from character and relationship growth. Do not replace becoming stronger with merely accepting more responsibility, delegating authority, or managing resources.
 
-Use multiple interpretation domains without allowing one surface metaphor to monopolize the protagonist, combat, progression, economy, world structure, relationships, and ending. Write the completed document in Korean without imposing a fixed outline. Do not append the chart report or the complete interpretation; they remain separate source artifacts.
+Use multiple interpretation domains without allowing one surface metaphor to monopolize the protagonist, combat, progression, economy, world structure, relationships, and ending. Write the completed document in Korean using the exact H1 and ordered H2 skeleton between the shared template boundaries. Fill every section, keep the game name in the body, and omit boundary comments and authoring instructions. H3 and deeper headings remain optional. Do not append the chart report or the complete interpretation; they remain separate source artifacts.
 
 After each major personalized design choice, add both `설계 모티프: <phrase>` and `해석 근거: <IDs>`. Create the motif in this stage; do not require it to appear in the interpretation. Cite one or more existing interpretation item IDs such as `I-01, I-03`. Keep these provenance lines concise.
 
@@ -39,9 +39,9 @@ Apply the shared contract's design requirements and semantic review to the compl
 
 Write directly to the exact output path.
 
-Include exactly one `combat-fingerprint` fenced block containing a JSON object with the seven final fingerprint keys and values copied from the brief. Do not add other keys.
+In template section 11, include exactly one `combat-fingerprint` fenced block containing a JSON object with the seven final fingerprint keys and values copied from the brief. Do not add other keys.
 
-Include exactly one `world-structure` JSON fenced block with exactly `topology`, `ecology`, `traversal`, `settlement`, `hazard`, `spatialLogic`. Each value is an object with exactly `value` (copied from the selected world fingerprint) and `manifestation` (concrete named spaces, connections, movement, risks or return paths in this GDD). Keep the actual world and regional descriptions consistent with those declarations. Do not append either concept brief.
+In template section 11, include exactly one `world-structure` JSON fenced block with exactly `topology`, `ecology`, `traversal`, `settlement`, `hazard`, `spatialLogic`. Each value is an object with exactly `value` (copied from the selected world fingerprint) and `manifestation` (concrete named spaces, connections, movement, risks or return paths in this GDD). Keep the actual world and regional descriptions consistent with those declarations. Do not append either concept brief.
 
 ## Validate
 
