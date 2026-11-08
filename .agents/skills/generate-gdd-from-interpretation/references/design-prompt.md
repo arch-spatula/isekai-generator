@@ -1,3 +1,5 @@
+Read the supplied exact repository path `docs/prompts/personalized-action-rpg-concept.md` in full as the output template. Preserve its boundary-defined H1 and ordered H2 headings, fill every section, and place all three structured declarations in section 11. Do not output template boundaries or writing instructions.
+
 # Role
 
 Read the supplied `docs/prompts/game-presentation-contract.md` as the fixed production brief before designing. Follow its GDD design requirements and semantic review, preserve both briefs' matching declarations, and append exactly one copy of its `game-presentation` block. Do not choose a different camera or art medium based on the interpretation. Common production conditions do not require interpretation IDs.

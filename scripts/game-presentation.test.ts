@@ -1,3 +1,4 @@
+import { gddTemplateFixture } from './fixtures/gdd-template'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -16,7 +17,7 @@ const fingerprint = { combatRange: 'long', powerMedium: 'spell', initiative: 're
 const combat = fixtureCombat + '\n\n## Final Fingerprint\n\n' + Object.entries(fingerprint).map(([key, value]) => `- ${key}: ${value}`).join('\n')
 const chart = '합성 원본 차트'
 const world = serializeWorldBrief()
-const gdd = '# 합성 GDD\n\n설계 모티프: 우회와 반격\n해석 근거: I-01\n\n```combat-fingerprint\n' + JSON.stringify(fingerprint) + '\n```\n' + worldStructureFixture() + presentationFixture
+const gdd = gddTemplateFixture('설계 모티프: 우회와 반격\n해석 근거: I-01\n\n```combat-fingerprint\n' + JSON.stringify(fingerprint) + '\n```\n' + worldStructureFixture() + presentationFixture)
 
 test('the shared prompt and independent fixture declare the same presentation', () => {
   expect(parseGamePresentation(readFileSync(prompt, 'utf8'))).toEqual(parseGamePresentation(presentationFixture))
