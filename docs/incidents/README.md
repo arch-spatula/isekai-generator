@@ -17,3 +17,4 @@
 - [방어문구 편집 해시 계약과 에이전트 검증 누락](2026-11-10-defensive-editor-hash-contract.md) — 해결: 합성 회귀·독립 리뷰·실제 편집자 계약 수용 확인
 - [통합 해석의 문장 길이를 품질로 대리한 검증 실패](2026-11-08-interpretation-length-quality-proxy.md) — 해결, 길이 제한 제거 및 합성 회귀 검증 완료
 - [세계관 선정에서 해석의 표면 표현을 직접 옮긴 문제](2026-11-09-world-setting-literal-translation.md) — 미해결, 해양 배제가 아닌 재해석과 설정의 설득력 기준
+- [능력 규칙의 구체성과 캐릭터 이미지 전달력의 불일치](2026-11-09-ability-concept-visual-abstraction.md) — 미해결, 작동 규칙과 시각적 첫인상의 구체성을 구분
