@@ -136,3 +136,36 @@ test('an active writer blocks only its own system', () => {
   expect(prepareSpecialistAttempt(run, 'ziwei').attempt).toBe(1)
   expect(existsSync(join(run, 'garbage/attempts/saju/.lock'))).toBe(true)
 })
+
+// The event stream must retain the validator's actual diagnostics before a retry,
+// while attempt files remain available for repair and postmortem inspection.
+test('failure diagnostics precede retries and exhaustion records the final stop reason', () => {
+  const run = setup()
+  const log = () => readFileSync(join(run, 'events.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
+  let priorResult = ''
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const prepared = prepareSpecialistAttempt(run, 'saju')
+    writeFileSync(join(run, prepared.output), valid + '\n단정하지 않는다.')
+    const result = finishSpecialistAttempt(run, 'saju', attempt)
+    const failed = log().find(event => event.event === 'validation_failed' && event.attempt === attempt)
+    expect(failed).toMatchObject({ stage: 'saju', attempt })
+    expect(failed.issues).toContainEqual(expect.objectContaining({ code: 'responsibility-avoidance', line: expect.any(Number) }))
+    expect(Boolean(failed.reason?.trim()) || failed.issues?.length > 0).toBe(true)
+    if (attempt > 1) {
+      const all = log()
+      const previousFailure = all.findIndex(event => event.event === 'validation_failed' && event.attempt === attempt - 1)
+      const retry = all.findIndex(event => event.event === 'retry_scheduled' && event.attempt === attempt)
+      expect(retry).toBeGreaterThan(previousFailure)
+      expect(all[retry].issues).toEqual(all[previousFailure].issues)
+      expect(readFileSync(join(run, `garbage/attempts/saju/${String(attempt - 1).padStart(3, '0')}/result.json`), 'utf8')).toBe(priorResult)
+    }
+    priorResult = readFileSync(join(run, `garbage/attempts/saju/${String(attempt).padStart(3, '0')}/result.json`), 'utf8')
+    expect(result.status).toBe('validation-failed')
+  }
+  expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow('limit exhausted')
+  const stopped = log().at(-1)
+  expect(stopped).toMatchObject({ event: 'stage_stopped', stage: 'saju' })
+  expect(stopped.issues).toEqual(log().find(event => event.event === 'validation_failed' && event.attempt === 3).issues)
+  expect(readFileSync(join(run, 'garbage/attempts/saju/003/result.json'), 'utf8')).toBe(priorResult)
+  expect(readRunManifest(run).status).toBe('running')
+})

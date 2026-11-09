@@ -1,5 +1,7 @@
 # Interpretation document contract
 
+Each required field must contain non-whitespace content on its own line. Prose depth is assessed by semantic review of evidence, concrete reasoning, and conditions, never by character count. Validator success confirms only the structural contract; it does not establish interpretive depth or semantic quality.
+
 Write the document in Korean with these headings exactly once and in this order:
 
 1. `# 통합 차트 해석`

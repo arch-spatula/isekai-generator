@@ -40,19 +40,19 @@ Derive these sibling paths from the returned GDD path:
 - `gameplay-concept-brief.md`
 - `world-concept-brief.md`
 
-Use `<repository-root>/artifacts/registries/combat-concept-fingerprints.json` as the fingerprint registry. Initialize it before the selection stage with:
-
-`bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts init <registry-path>`
-
-Use `<repository-root>/artifacts/registries/world-concept-fingerprints.json` as the independent world registry. Initialize it before world selection:
-
-`bun <world-skill-path>/scripts/manage-world-registry.ts init <world-registry-path>`
-
-Never overwrite or reuse an existing version directory. Do not inspect previous artifact content.
-
 Before starting the chart agent, record the start:
 
 `bun <repository-root>/scripts/update-artifact-run.ts <version-directory> running`
+
+Use `<repository-root>/artifacts/registries/combat-concept-fingerprints.json` as the fingerprint registry. Initialize it before the selection stage with:
+
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> selection 1 -- bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts init <registry-path>`
+
+Use `<repository-root>/artifacts/registries/world-concept-fingerprints.json` as the independent world registry. Initialize it before world selection:
+
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> world-selection 1 -- bun <world-skill-path>/scripts/manage-world-registry.ts init <world-registry-path>`
+
+Never overwrite or reuse an existing version directory. Do not inspect previous artifact content.
 
 The orchestrator owns this run's status. Subagents use the reserved paths without allocating or finalizing the parent run. On any caught stage error (including registry initialization, final validation, or fingerprint registration), stop dependent work and record:
 
@@ -61,6 +61,8 @@ The orchestrator owns this run's status. Subagents use the reserved paths withou
 Use stage identifiers such as `chart-report`, `saju`, `ziwei`, `natal`, `integration`, `selection`, `world-selection`, `gdd`, `final-validation`, or `fingerprint-registration`. Never put raw birth details, generated content, command arguments, or raw calculator stderr in the summary. Report the original error separately. If manifest update also fails, report both errors. On user cancellation, stop dependent work and record `cancelled` with the same command, without a failure object. Let active parallel specialists finish safely before finalizing. Never remove a reserved directory. After an abnormal interruption, leave unfinished status unchanged; do not guess the result or reassign the version.
 
 ## Persist progress and handoff
+
+Read [the unified event-log contract](../../../docs/spec/artifact-event-log.md). `<version-directory>/events.jsonl` is the single chronological source for failure reasons and retry/stop decisions; TODO and checkpoints remain summaries. The allocator, chart runner, specialist manager and parent status updater record their own events. Pass the reserved run directory and actual attempt number as logging metadata to integration, selection, world-selection and GDD agents; do not pass TODO or events content as design input. Those stages must run their validators through `scripts/run-logged-step.ts` as their skills require, record failure before the permitted repair and append `retry_scheduled` with actual issues before repairing. For execution errors outside those tools, append `execution_failed` using `scripts/log-artifact-event.ts` with the actual safe error, not merely a stage status. Before stopping, append `stage_stopped` with the reason (budget exhausted, unresolved issue or infrastructure failure). Missing diagnostics must be stated explicitly, never inferred. If event recording fails, stop dependent work, report both errors and still attempt the terminal manifest update. Never backfill previous terminal runs.
 
 Allocation creates `<version-directory>/TODO.md` and per-stage checkpoints under `garbage/progress/`. The TODO is a readable handoff for the orchestrator, not a source artifact for downstream agents. Do not put birth arguments, chart or interpretation text, raw stderr, or a conversation summary in it. Do not hand-edit its generated contents.
 
@@ -133,7 +135,8 @@ After all specialists succeed, invoke `$interpret-chart-report` with only:
 - exact Saju, Zi Wei Dou Shu, natal, and integrated interpretation paths;
 - exact `docs/prompts/interpretation-guidelines.md` path;
 - selected mode;
-- absolute skill path.
+- absolute skill path;
+- reserved run directory and logging attempt 1.
 
 The integration agent must not receive the chart report, raw birth arguments, or conversation context.
 
@@ -141,16 +144,17 @@ The integration agent must not receive the chart report, raw birth arguments, or
 
 Resolve `<presentation-input>` to the absolute `<repository-root>/docs/prompts/game-presentation-contract.md` path. This is a shared repository input, not a generated artifact. Before launching each of stages 4, 5 and 6, record that stage's progress start and run:
 
-`bun <repository-root>/scripts/game-presentation.ts <presentation-input>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> <current-stage> 1 -- bun <repository-root>/scripts/game-presentation.ts <presentation-input>`
 
-Missing, empty or invalid input fails the current stage through the existing progress and manifest failure workflow; do not launch its agent or dependent work. Pass this exact path to all three isolated agents, including standalone-equivalent invocations. Do not pass the shared game contract to chart, specialist or integration agents. Preserve the same contract throughout the run; a changed contract requires stopping dependent work rather than silently mixing inputs.
+Use `selection`, `world-selection` or `gdd` for `<current-stage>`. Missing, empty or invalid input fails the current stage through the existing progress and manifest failure workflow; do not launch its agent or dependent work. Pass this exact path to all three isolated agents, including standalone-equivalent invocations. Do not pass the shared game contract to chart, specialist or integration agents. Preserve the same contract throughout the run; a changed contract requires stopping dependent work rather than silently mixing inputs.
 
 After stage 3 succeeds, invoke `$select-gameplay-concept` with only:
 
 - exact integrated interpretation, concept brief output, and fingerprint registry paths;
 - exact shared presentation input path;
 - selected mode;
-- absolute skill path.
+- absolute skill path;
+- reserved run directory and logging attempt 1.
 
 The selection agent must not receive the chart report, specialist outputs, raw birth arguments, conversation context, or prior GDD content.
 
@@ -161,7 +165,8 @@ After stage 4 succeeds, invoke `$select-world-concept` with only:
 - exact integrated interpretation, selected gameplay brief, world brief output, and world registry paths;
 - exact shared presentation input path;
 - selected mode;
-- absolute world skill path.
+- absolute world skill path;
+- reserved run directory and logging attempt 1.
 
 The world agent must not receive raw birth details, chart report, specialist outputs, conversation history, combat registry, or prior GDDs. It preserves the selected combat contract and independently compares world structures. Stop if world validation fails.
 
@@ -173,7 +178,8 @@ After stage 5 succeeds, read `<repository-root>/docs/prompts/personalized-action
 - exact shared presentation input path;
 - exact `<repository-root>/docs/prompts/personalized-action-rpg-concept.md` template input path;
 - selected mode;
-- absolute skill path.
+- absolute skill path;
+- reserved run directory and logging attempt 1.
 
 Use a lightweight model for `light` and a deep-reasoning model for `deep`. The stage must not receive raw birth arguments or conversation context.
 
@@ -191,19 +197,19 @@ Use the closest exposed model if unavailable and report the substitution.
 
 Run all specialist, integration, combat, world and GDD validators:
 
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts saju <saju-output> <chart-evidence-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <system-skill-path>/scripts/validate-system-interpretation.ts saju <saju-output> <chart-evidence-output>`
 
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts ziwei <ziwei-output> <chart-evidence-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <system-skill-path>/scripts/validate-system-interpretation.ts ziwei <ziwei-output> <chart-evidence-output>`
 
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts natal <natal-output> <chart-evidence-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <system-skill-path>/scripts/validate-system-interpretation.ts natal <natal-output> <chart-evidence-output>`
 
-`bun <interpret-skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <interpret-skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
 
-`bun <selection-skill-path>/scripts/validate-concept-brief.ts <concept-brief-output> <interpretation-output> <registry-path> <presentation-input>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <selection-skill-path>/scripts/validate-concept-brief.ts <concept-brief-output> <interpretation-output> <registry-path> <presentation-input>`
 
-`bun <world-skill-path>/scripts/validate-world-brief.ts <world-brief-output> <interpretation-output> <concept-brief-output> <world-registry-path> <presentation-input>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <world-skill-path>/scripts/validate-world-brief.ts <world-brief-output> <interpretation-output> <concept-brief-output> <world-registry-path> <presentation-input>`
 
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-output> <world-brief-output> <presentation-input>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> final-validation 1 -- bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-output> <world-brief-output> <presentation-input>`
 
 Do not silently rewrite a stage's valid result. If final validation fails, return the exact error and the stage responsible.
 
@@ -211,9 +217,9 @@ Stage success requires both its semantic review under the shared presentation co
 
 After every validation succeeds, register both selected fingerprints exactly once:
 
-`bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts register <registry-path> <version> <concept-brief-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> combat-registration 1 -- bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts register <registry-path> <version> <concept-brief-output>`
 
-`bun <world-skill-path>/scripts/manage-world-registry.ts register <world-registry-path> <version> <world-brief-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <version-directory> world-registration 1 -- bun <world-skill-path>/scripts/manage-world-registry.ts register <world-registry-path> <version> <world-brief-output>`
 
 If either registration fails, record `failed` and report which registrations already completed. The two files are not a transaction; do not mark success, silently remove an entry, or retry registration of the same run. Revalidate current registry comparisons before registration if another run registered in the meantime.
 

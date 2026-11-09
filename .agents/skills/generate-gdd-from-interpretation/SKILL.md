@@ -11,7 +11,7 @@ Design one Action RPG GDD from a supplied interpretation and its source chart re
 
 Require exact paths for `chart-interpretation.md`, `chart-report.md`, `gameplay-concept-brief.md`, `world-concept-brief.md`, shared `docs/prompts/game-presentation-contract.md`, shared `docs/prompts/personalized-action-rpg-concept.md` output template, and the GDD output. Read all six inputs in full. Refuse empty inputs or an interpretation that fails the section contract used by `$interpret-chart-report`. The world brief must already have passed `$select-world-concept`; never invent a default world when it is missing.
 
-Require both shared files' exact repository paths even for standalone calls; do not infer a substitute template. The template must be `<repository-root>/docs/prompts/personalized-action-rpg-concept.md`. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before designing. Stop on missing, empty or invalid input. Check both briefs' presentation declarations before designing; do not repair upstream briefs in this stage.
+Require both shared files' exact repository paths even for standalone calls; do not infer a substitute template. The template must be `<repository-root>/docs/prompts/personalized-action-rpg-concept.md`. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/run-logged-step.ts <run-directory> gdd <validation-attempt> -- bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before designing. Stop on missing, empty or invalid input. Check both briefs' presentation declarations before designing; do not repair upstream briefs in this stage.
 
 Read `references/design-prompt.md` and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`. Default to `light`; reject unsupported modes.
 
@@ -45,9 +45,11 @@ In template section 11, include exactly one `world-structure` JSON fenced block 
 
 ## Validate
 
+Follow [the unified event-log contract](../../../docs/spec/artifact-event-log.md). Resolve `<run-directory>` from the reserved output's `docs/GDD/` parent. Use validation attempt 1 initially and 2 only for the existing permitted repair. Before repairing, append `retry_scheduled` with the actual failed conditions and repair reason through `scripts/log-artifact-event.ts`; do not overwrite or read other runs. Record semantic-review failures as `validation_failed` with explicit issues, and record `stage_stopped` on unresolved failure. Logging failure blocks further work. Do not copy generated content into events.
+
 Run:
 
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-input> <world-brief-input> <presentation-input>`
+`bun <repository-root>/scripts/run-logged-step.ts <run-directory> gdd <validation-attempt> -- bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-input> <world-brief-input> <presentation-input>`
 
 If validation or the shared contract's semantic review fails, repair only the current GDD once and validate and review again. Return an unresolved semantic conflict as failure even when the declaration validator passes. Return the second failure unchanged. Validator success covers declarations, not prose consistency.
 

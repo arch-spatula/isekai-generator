@@ -10,6 +10,9 @@
 하는지 알 수 있게 한다. 기존 버전 관리의 `allocated/running/succeeded/failed/cancelled`는
 전체 실행의 상태이며, 단계별 진행 정보는 별도로 기록한다.
 
+실제 실패 원인과 재시도·중단 이유는 [실행별 이벤트 로그](artifact-event-log.md)의
+`events.jsonl`에서 확인한다. 이 문서의 진행 체크포인트는 그 진단 로그를 대신하지 않는다.
+
 ## 저장 계약
 
 ```text

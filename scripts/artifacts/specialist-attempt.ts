@@ -3,6 +3,7 @@ import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, rmSync, wri
 import { dirname, join, relative, resolve } from 'node:path'
 import { diagnoseSystemInterpretation, type ChartSystem, type InterpretationDiagnostic } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
 import type { ChartEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
+import { appendArtifactEvent } from './artifact-events'
 import { readRunManifest } from './artifact-run'
 import { recordStageProgress } from './artifact-progress'
 
@@ -61,18 +62,24 @@ export function prepareSpecialistAttempt(runDirectory: string, system: ChartSyst
     const attempts = readdirSync(directory).filter(name => /^\d{3}$/.test(name)).sort()
     let previous: AttemptInput['previous']
     let mode: AttemptInput['mode'] = 'generate'
+    let priorResult: AttemptResult | undefined
     if (attempts.length > 0) {
       const prior = join(directory, attempts.at(-1)!)
       // Missing or incomplete records block another agent from starting.
       const result = JSON.parse(readFileSync(join(prior, 'result.json'), 'utf8')) as AttemptResult
+      priorResult = result
       if (!['validation-failed', 'execution-failed'].includes(result.status)) throw new Error('Previous attempt is not a recorded failure')
       if (result.status === 'validation-failed') {
         mode = 'repair'
         previous = { output: relative(run, join(prior, 'interpretation.md')), result: relative(run, join(prior, 'result.json')) }
       }
     }
-    if (attempts.length >= MAX_SPECIALIST_ATTEMPTS) throw new Error('Specialist attempt limit exhausted (3 total)')
+    if (attempts.length >= MAX_SPECIALIST_ATTEMPTS) {
+      appendArtifactEvent(run, { event: 'stage_stopped', stage: system, attempt: attempts.length, operation: 'prepare-specialist-attempt', reason: 'Specialist attempt limit exhausted (3 total)', issues: priorResult?.errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) })) })
+      throw new Error('Specialist attempt limit exhausted (3 total)')
+    }
     const attempt = attempts.length + 1
+    if (priorResult) appendArtifactEvent(run, { event: 'retry_scheduled', stage: system, attempt, operation: 'prepare-specialist-attempt', reason: priorResult.status, issues: priorResult.errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) })) })
     const target = join(directory, String(attempt).padStart(3, '0'))
     mkdirSync(target)
     const input: AttemptInput = { system, attempt, mode, startedAt: new Date().toISOString(), output: relative(run, join(target, 'interpretation.md')), ...(previous ? { previous } : {}) }
@@ -104,14 +111,21 @@ export function finishSpecialistAttempt(runDirectory: string, system: ChartSyste
       system, attempt, mode: input.mode, finishedAt: new Date().toISOString(), output: relative(run, output),
       status: executionFailed || markdown == null ? 'execution-failed' : errors.length ? 'validation-failed' : 'passed', errors,
     }
+    appendArtifactEvent(run, { event: result.status === 'passed' ? 'validation_succeeded' : result.status === 'execution-failed' ? 'execution_failed' : 'validation_failed', stage: system, attempt, operation: 'validate-system-interpretation', output: result.output, ...(errors.length ? { reason: result.status === 'execution-failed' ? 'Specialist execution failed or produced no document.' : 'Specialist document failed validation.', issues: errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) })) } : {}) })
     writeRecord(join(target, 'result.json'), result)
     if (result.status === 'passed') {
+      try {
       requireRunning(run)
       publishOnce(finalPath(run, system), markdown!)
       writeRecord(join(directory, 'accepted.json'), {
         system, attempt, output: relative(run, finalPath(run, system)), source: result.output,
         sha256: createHash('sha256').update(markdown!).digest('hex'), acceptedAt: new Date().toISOString(),
       })
+      } catch (error) {
+        try { appendArtifactEvent(run, { event: 'execution_failed', stage: system, attempt, operation: 'publish-specialist-interpretation', reason: error instanceof Error ? error.message : String(error) }) }
+        catch (loggingError) { throw new AggregateError([error, loggingError], 'Publication failed; recording failure also failed') }
+        throw error
+      }
     }
     recordStageProgress(run, readRunManifest(run), system, result.status === 'passed' ? 'succeeded' : 'failed', { attempt })
     return result

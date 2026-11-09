@@ -19,7 +19,7 @@ Require exact paths for:
 
 Read only those inputs and this skill's references. Do not search for or read the chart report, specialist interpretations, raw birth data, prior artifacts, or prior GDDs.
 
-Require the shared contract's exact path even for standalone calls; do not infer a default. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before creating candidates. Stop on missing, empty or invalid input. Read the contract in full.
+Require the shared contract's exact path even for standalone calls; do not infer a default. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/run-logged-step.ts <run-directory> selection <validation-attempt> -- bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before creating candidates. Stop on missing, empty or invalid input. Read the contract in full.
 
 ## Select
 
@@ -35,9 +35,11 @@ Apply the shared contract to every candidate's core loop and growth path, includ
 
 ## Validate
 
+Follow [the unified event-log contract](../../../docs/spec/artifact-event-log.md). Resolve `<run-directory>` from the reserved output's `docs/GDD/` parent. Use validation attempt 1 initially and 2 only for the existing permitted repair. Before repairing, append `retry_scheduled` with the actual failed conditions and repair reason through `scripts/log-artifact-event.ts`; do not overwrite or read other runs. Record semantic-review failures as `validation_failed` with explicit issues, and record `stage_stopped` on unresolved failure. Logging failure blocks further work. Do not copy generated content into events.
+
 Run:
 
-`bun <skill-path>/scripts/validate-concept-brief.ts <brief-output> <interpretation-input> <registry-input> <presentation-input>`
+`bun <repository-root>/scripts/run-logged-step.ts <run-directory> selection <validation-attempt> -- bun <skill-path>/scripts/validate-concept-brief.ts <brief-output> <interpretation-input> <registry-input> <presentation-input>`
 
 If validation or the shared contract's semantic review fails, repair only the current brief once and validate and review again. Return an unresolved semantic conflict as failure even when the declaration validator passes. Return the second failure unchanged. Do not register the selected fingerprint; the orchestrator does that only after the GDD also passes validation. Validator success covers declarations, not prose consistency.
 
