@@ -72,6 +72,7 @@ Pixel Composer도 공개 소스는 MIT지만, 조사 당시 공식 itch.io 실�
 
 ## 근거
 
+- [LÖVE2D 이펙트 라이브러리 추가 조사](../spec/love-vfx-library-review.md) — 후보별 역할·유지보수 상태와 후속 비교 방향
 - [Pixelbolt 제작 방식과 CLI](https://github.com/skulitom/Pixelbolt#readme)
 - [Pixelbolt LICENSE](https://github.com/skulitom/Pixelbolt/blob/main/LICENSE)
 - [Pixelbolt 아트워크 라이선스 고지](https://github.com/skulitom/Pixelbolt#license)
