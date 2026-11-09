@@ -20,3 +20,4 @@
 - [Pixelbolt를 활용한 코드 기반 이펙트 제작 계획](2026-11-09-pixelbolt-vfx-plan.md)
 - [LibreSprite를 게임 이미지 생성 도구로 활용](2026-11-09-libresprite-image-generation.md)
 - [Godot과 PixelFX를 이용한 게임 제작 경로 평가](2026-11-11-godot-pixelfx-evaluation.md)
+- [스토리 영감용 해석의 방어 문구를 생성 지시와 사후 편집에서 제거](2026-11-09-interpretation-defensive-wording-editing.md)
