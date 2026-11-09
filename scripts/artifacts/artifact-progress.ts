@@ -72,6 +72,7 @@ function render(run: string, manifest: RunManifest): string {
   const ready = stageNames.filter(stage => progress[stage] == null && PROGRESS_STAGES[stage].dependencies.every(dependency => progress[dependency as ProgressStage]?.status === 'succeeded'))
   const lines = [
     `# ${manifest.artifactVersion} 생성 진행`, '',
+    '실패 원인·재시도·중단 기록: [events.jsonl](events.jsonl)', '',
     `- 실행 상태: ${manifest.status}`, `- 종류: ${manifest.artifactKind}`, `- 모드 / 목적: ${manifest.mode} / ${manifest.purpose}`,
     `- 마지막 기록: ${new Date().toISOString()}`, '- 실행 기록: [artifact-run.json](artifact-run.json)', '',
     '## 단계', '',

@@ -32,7 +32,7 @@ const REQUIRED_DOMAINS = [
 const RESPONSIBILITY_AVOIDANCE = /예언(?:이|을|하지)|예측(?:이 아니다|하지)|단정하지|진단하지|확정하지|면책|주의 문구/
 
 type System = 'S' | 'Z' | 'N'
-type SpecialistIds = Readonly<Record<System, ReadonlySet<string>>>
+export type SpecialistIds = Readonly<Record<System, ReadonlySet<string>>>
 
 function citedIds(text: string): string[] {
   return text.match(/[SZN]-\d{2}/g) ?? []
@@ -50,91 +50,72 @@ function section(markdown: string, heading: string, nextHeading: string): string
   return markdown.slice(start, markdown.indexOf(nextHeading, start))
 }
 
-/** Return whether an interpretation follows the handoff contract. */
-export function isValidInterpretation(markdown: string, specialistIds?: SpecialistIds): boolean {
-  if (markdown.trim().length === 0) return false
-  if (RESPONSIBILITY_AVOIDANCE.test(markdown)) return false
-  let priorIndex = -1
+function fieldValue(text: string, label: string): string | undefined {
+  const value = text.match(new RegExp(`^${label}:[^\\S\\r\\n]*([^\\r\\n]*)$`, 'm'))?.[1].trim()
+  return value === '' ? undefined : value
+}
+
+export type InterpretationDiagnostic = { code: string; message: string; item?: string; field?: string; line?: number }
+
+/** Diagnose the complete structural handoff without quoting source prose. */
+export function diagnoseInterpretation(markdown: string, specialistIds?: SpecialistIds): InterpretationDiagnostic[] {
+  const issues: InterpretationDiagnostic[] = []
+  const lineAt = (offset: number) => markdown.slice(0, Math.max(0, offset)).split('\n').length
+  const add = (code: string, message: string, offset = 0, item?: string, field?: string) => issues.push({ code, message, line: lineAt(offset), ...(item ? { item } : {}), ...(field ? { field } : {}) })
+  if (!markdown.trim()) add('empty-document', 'Interpretation document is empty.')
+  if (RESPONSIBILITY_AVOIDANCE.test(markdown)) add('field-content', 'Responsibility avoidance wording is prohibited.', markdown.search(RESPONSIBILITY_AVOIDANCE))
+  let prior = -1
   for (const heading of REQUIRED_HEADINGS) {
     const index = markdown.indexOf(heading)
-    if (index <= priorIndex || markdown.indexOf(heading, index + heading.length) !== -1) return false
-    priorIndex = index
+    if (index < 0 || index <= prior || markdown.indexOf(heading, index + heading.length) !== -1) add('required-heading', `Required heading missing, duplicated, or out of order: ${heading}`, Math.max(0, index), undefined, heading)
+    prior = index
   }
-
-  const coreAxis = section(markdown, '### 공통 핵심축', '### 체계별 고유 통찰')
-  const coreFields = ['핵심 욕구', '반복 갈등', '의사결정 기준']
-  if (!coreFields.every(field => (coreAxis.match(new RegExp(`^${field}:\\s*(\\S.+)$`, 'm'))?.[1].length ?? 0) >= 20)) return false
-  const coreEvidence = coreAxis.match(/^근거:\s*(.+)$/m)?.[1]
-  if (coreEvidence == null || !hasValidEvidence(coreEvidence, specialistIds, 2)) return false
-
-  const uniqueInsights = section(markdown, '### 체계별 고유 통찰', '### 영역 간 작동 구조')
-  const systemLabels: ReadonlyArray<readonly [string, System]> = [
-    ['사주', 'S'],
-    ['자미두수', 'Z'],
-    ['서양 점성술', 'N'],
-  ]
-  for (const [label, system] of systemLabels) {
-    const match = uniqueInsights.match(new RegExp(`^- ${label} 고유:\\s*(\\S.{30,})\\s+\\(근거:\\s*([^)]+)\\)\\s*$`, 'm'))
-    if (match == null) return false
-    const ids = citedIds(match[2])
-    if (ids.length === 0 || ids.some(id => id[0] !== system)) return false
-    if (specialistIds != null && ids.some(id => !specialistIds[system].has(id))) return false
+  for (const [heading, next, fields] of [
+    ['### 공통 핵심축', '### 체계별 고유 통찰', ['핵심 욕구', '반복 갈등', '의사결정 기준']],
+    ['### 영역 간 작동 구조', '### 시간에 따른 변화', ['내적 동기', '행동 방식', '환경 반응', '반복 결과']],
+    ['### 시간에 따른 변화', '## 핵심 해석 항목', ['유지', '변화']],
+  ] as const) {
+    const block = section(markdown, heading, next)
+    for (const field of fields) if (fieldValue(block, field) == null) add('field-content', 'Required section field is empty or missing.', markdown.indexOf(heading), undefined, field)
+    if (!hasValidEvidence(fieldValue(block, '근거') ?? '', specialistIds, 2)) add('item-evidence', 'Section requires valid evidence from at least two systems.', markdown.indexOf(heading), undefined, '근거')
   }
-
-  const operation = section(markdown, '### 영역 간 작동 구조', '### 시간에 따른 변화')
-  const operationFields = ['내적 동기', '행동 방식', '환경 반응', '반복 결과']
-  if (!operationFields.every(field => (operation.match(new RegExp(`^${field}:\\s*(\\S.+)$`, 'm'))?.[1].length ?? 0) >= 20)) return false
-  const operationEvidence = operation.match(/^근거:\s*(.+)$/m)?.[1]
-  if (operationEvidence == null || !hasValidEvidence(operationEvidence, specialistIds, 2)) return false
-
-  const time = section(markdown, '### 시간에 따른 변화', '## 핵심 해석 항목')
-  if ((time.match(/^유지:\s*(\S.+)$/m)?.[1].length ?? 0) < 20) return false
-  if ((time.match(/^변화:\s*(\S.+)$/m)?.[1].length ?? 0) < 20) return false
-  const timeEvidence = time.match(/^근거:\s*(.+)$/m)?.[1]
-  if (timeEvidence == null || !hasValidEvidence(timeEvidence, specialistIds, 2)) return false
-
-  const itemsStart = markdown.indexOf('## 핵심 해석 항목')
-  const items = markdown.slice(itemsStart)
+  const unique = section(markdown, '### 체계별 고유 통찰', '### 영역 간 작동 구조')
+  for (const [label, system] of [['사주', 'S'], ['자미두수', 'Z'], ['서양 점성술', 'N']] as const) {
+    const match = unique.match(new RegExp(`^- ${label} 고유:[^\\S\\r\\n]*([^\\r\\n]*)[^\\S\\r\\n]+\\(근거:[^\\S\\r\\n]*([^()\\r\\n]+)\\)[^\\S\\r\\n]*$`, 'm'))
+    const ids = citedIds(match?.[2] ?? '')
+    if (!match || !match[1].trim() || !ids.length || ids.some(id => id[0] !== system || (specialistIds != null && !specialistIds[system].has(id)))) add('item-evidence', 'System-specific insight requires content and valid evidence from its own system.', markdown.indexOf('### 체계별 고유 통찰'), undefined, `${label} 고유`)
+  }
+  const start = Math.max(0, markdown.indexOf('## 핵심 해석 항목'))
+  const items = markdown.slice(start)
   const matches = [...items.matchAll(/^### (I-\d{2})\s*$/gm)]
-  if (matches.length === 0) return false
+  if (!matches.length) add('item-field', 'At least one interpretation item is required.', start)
+  const domains = new Set<string>(), covered = new Set<string>()
+  for (const [index, match] of matches.entries()) {
+    const offset = start + match.index
+    const block = items.slice(match.index + match[0].length, matches[index + 1]?.index ?? items.length)
+    const item = match[1]
+    const report = (code: string, message: string, field?: string) => add(code, message, field && block.indexOf(`${field}:`) >= 0 ? offset + match[0].length + block.indexOf(`${field}:`) : offset, item, field)
+    if (item !== `I-${String(index + 1).padStart(2, '0')}`) report('item-sequence', 'Item IDs must be sequential.')
+    for (const field of ['영역', '연결 영역', '관계', '근거', '해석', '작동 사슬', '양면성', '조건']) if (fieldValue(block, field) == null) report('item-field', 'Required item field is empty or missing.', field)
+    const domain = fieldValue(block, '영역'), linked = fieldValue(block, '연결 영역'), relationship = fieldValue(block, '관계'), evidence = fieldValue(block, '근거') ?? ''
+    if (domain) domains.add(domain)
+    for (const id of citedIds(evidence)) covered.add(id)
+    if (!REQUIRED_DOMAINS.includes(domain as never)) report('item-domain', 'Unsupported item domain.', '영역')
+    if (!REQUIRED_DOMAINS.includes(linked as never) || linked === domain) report('item-domain', 'Linked domain must be supported and differ from the primary domain.', '연결 영역')
+    if (!/^(일관|구체화|상충|고유)$/.test(relationship ?? '')) report('field-content', 'Unsupported relationship.', '관계')
+    const chain = fieldValue(block, '작동 사슬')?.split('→') ?? []
+    if (chain.length < 4 || chain.some(value => !value.trim())) report('item-chain', 'Operation chain requires at least four nonempty stages.', '작동 사슬')
+    if (!/^강점:\s*[^|]*[^\s|][^|]*\|\s*취약점:\s*[^|]*[^\s|][^|]*$/.test(fieldValue(block, '양면성') ?? '')) report('item-duality', 'Duality requires nonempty strength and vulnerability.', '양면성')
+    if (/^창작 시드:/m.test(block)) report('field-content', 'Creative seed fields are prohibited.', '창작 시드')
+    if (!hasValidEvidence(evidence, specialistIds, relationship === '고유' ? 1 : 2) || (relationship === '고유' && new Set(citedIds(evidence).map(id => id[0])).size !== 1)) report('item-evidence', 'Evidence is unknown or does not meet the relationship system requirement.', '근거')
+  }
+  for (const domain of REQUIRED_DOMAINS) if (!domains.has(domain)) add('domain-coverage', `Required domain is not covered: ${domain}`, start, undefined, '영역')
+  if (specialistIds) for (const ids of Object.values(specialistIds)) for (const id of ids) if (!covered.has(id)) add('evidence-coverage', `Specialist evidence is not covered: ${id}`, start, id, '근거')
+  return issues
+}
 
-  const coveredDomains = new Set<string>()
-  const coveredSpecialistIds = new Set<string>()
-  const itemsAreValid = matches.every((match, index) => {
-    if (match[1] !== `I-${String(index + 1).padStart(2, '0')}`) return false
-    const blockStart = match.index + match[0].length
-    const blockEnd = matches[index + 1]?.index ?? items.length
-    const block = items.slice(blockStart, blockEnd)
-    const domain = block.match(/^영역:\s*(.+?)\s*$/m)?.[1]
-    const linkedDomain = block.match(/^연결 영역:\s*(.+?)\s*$/m)?.[1]
-    const relationship = block.match(/^관계:\s*(일관|구체화|상충|고유)\s*$/m)
-    const evidence = block.match(/^근거:\s*(.+)$/m)
-    const reading = block.match(/^해석:\s*(\S.+)$/m)?.[1]
-    const operationChain = block.match(/^작동 사슬:\s*(\S.+)$/m)?.[1]
-    const duality = block.match(/^양면성:\s*(\S.+)$/m)?.[1]
-    const condition = block.match(/^조건:\s*(\S.+)$/m)?.[1]
-    if (domain != null) coveredDomains.add(domain)
-    for (const id of citedIds(evidence?.[1] ?? '')) coveredSpecialistIds.add(id)
-    return domain != null
-      && REQUIRED_DOMAINS.includes(domain as typeof REQUIRED_DOMAINS[number])
-      && linkedDomain != null
-      && REQUIRED_DOMAINS.includes(linkedDomain as typeof REQUIRED_DOMAINS[number])
-      && linkedDomain !== domain
-      && relationship != null
-      && reading != null && reading.length >= 80
-      && operationChain != null && (operationChain.match(/→/g)?.length ?? 0) >= 3
-      && duality != null && /강점:\s*\S.{15,}\|\s*취약점:\s*\S.{15,}/.test(duality)
-      && condition != null && condition.length >= 30
-      && !/^창작 시드:/m.test(block)
-      && evidence != null
-      && hasValidEvidence(evidence[1], specialistIds, relationship?.[1] === '고유' ? 1 : 2)
-      && (relationship?.[1] !== '고유' || new Set(citedIds(evidence[1]).map(id => id[0])).size === 1)
-  })
-  const allSpecialistIdsAreCovered = specialistIds == null || Object.values(specialistIds)
-    .every(ids => [...ids].every(id => coveredSpecialistIds.has(id)))
-  return itemsAreValid
-    && REQUIRED_DOMAINS.every(domain => coveredDomains.has(domain))
-    && allSpecialistIdsAreCovered
+export function isValidInterpretation(markdown: string, specialistIds?: SpecialistIds): boolean {
+  return diagnoseInterpretation(markdown, specialistIds).length === 0
 }
 
 if (import.meta.main) {
@@ -156,13 +137,13 @@ if (import.meta.main) {
       }
       if (Object.values(specialistIds).some(ids => ids.size === 0)) throw new Error('Each specialist interpretation must contain its own IDs.')
       if (!isValidInterpretation(markdown, specialistIds)) {
-        console.error('Interpretation is empty or violates the required section and interpretation-item contract.')
+        console.error(JSON.stringify({ issues: diagnoseInterpretation(markdown, specialistIds) }))
         process.exitCode = 1
       } else {
         console.log('Validated chart interpretation.')
       }
     } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error))
+      console.error(JSON.stringify({ issues: [{ code: 'input-error', message: error instanceof Error ? error.message : String(error) }] }))
       process.exitCode = 1
     }
   }

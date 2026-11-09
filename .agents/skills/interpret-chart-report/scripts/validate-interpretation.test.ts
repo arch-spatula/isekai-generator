@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 import { isValidInterpretation } from './validate-interpretation'
 
@@ -62,7 +65,7 @@ describe('isValidInterpretation', () => {
     expect(isValidInterpretation(valid.replace('## 핵심 해석 항목', ''), specialistIds)).toBe(false)
   })
 
-  test('rejects an interpretation item without evidence', () => {
+  test('rejects the core axis without evidence', () => {
     expect(isValidInterpretation(valid.replace('근거:', '출처:'), specialistIds)).toBe(false)
   })
 
@@ -105,8 +108,8 @@ describe('isValidInterpretation', () => {
     expect(isValidInterpretation(valid.replace(/^변화:.+\n/m, ''), specialistIds)).toBe(false)
   })
 
-  test('rejects a shallow interpretation', () => {
-    expect(isValidInterpretation(valid.replace(/^해석:.+$/m, '해석: 보존과 변화가 함께 요구된다.'), specialistIds)).toBe(false)
+  test('accepts a concise interpretation without judging semantic quality', () => {
+    expect(isValidInterpretation(valid.replace(/^해석:.+$/m, '해석: 보존과 변화가 함께 요구된다.'), specialistIds)).toBe(true)
   })
 
   test('rejects responsibility-avoidance language', () => {
@@ -153,5 +156,119 @@ describe('isValidInterpretation', () => {
   test('rejects an ID placed in the wrong specialist source', () => {
     const misplaced = { S: new Set<string>(), Z: new Set(['Z-01', 'S-01']), N: new Set(['N-01']) }
     expect(isValidInterpretation(valid, misplaced)).toBe(false)
+  })
+})
+
+// Independent cases isolate each former prose-length gate. Semantic quality is
+// not inferred from these structural contract assertions.
+const conciseFields = [
+  ['핵심 욕구', '자율을 원한다.'],
+  ['반복 갈등', '간섭과 충돌한다.'],
+  ['의사결정 기준', '자율을 우선한다.'],
+  ['- 사주 고유', '에너지를 아낀다. (근거: S-01)'],
+  ['- 자미두수 고유', '무대가 바뀐다. (근거: Z-01)'],
+  ['- 서양 점성술 고유', '내적 긴장이 있다. (근거: N-01)'],
+  ['내적 동기', '자율을 원한다.'],
+  ['행동 방식', '기준을 정한다.'],
+  ['환경 반응', '간섭에 저항한다.'],
+  ['반복 결과', '홀로 부담한다.'],
+  ['유지', '자율을 중시한다.'],
+  ['변화', '관심사가 바뀐다.'],
+  ['해석', '간섭이 강하면 혼자 결정한다.'],
+  ['작동 사슬', '욕구 → 선택 → 마찰 → 고립'],
+  ['양면성', '강점: 결단 | 취약점: 고립'],
+  ['조건', '자율이 있을 때 몰입한다.'],
+] as const
+
+function replaceField(markdown: string, field: string, value: string): string {
+  return markdown.replace(new RegExp(`^${field}:.*$`, 'm'), `${field}: ${value}`)
+}
+
+const concise = conciseFields.reduce((markdown, [field, value]) => replaceField(markdown, field, value), valid)
+
+describe('nonempty prose and structural boundaries', () => {
+  for (const [field, value] of conciseFields) {
+    test(`accepts concise ${field} independently`, () => {
+      expect(isValidInterpretation(replaceField(valid, field, value), specialistIds)).toBe(true)
+    })
+  }
+  test('accepts all concise descriptions together', () => {
+    expect(isValidInterpretation(concise, specialistIds)).toBe(true)
+  })
+  for (const [field] of conciseFields) {
+    test(`rejects missing ${field}`, () => {
+      expect(isValidInterpretation(valid.replace(new RegExp(`^${field}:.*\n`, 'm'), ''), specialistIds)).toBe(false)
+    })
+    for (const blank of ['', '   ', '\t']) {
+      test(`rejects blank ${field} ${JSON.stringify(blank)} without borrowing the next line`, () => {
+        const value = field.startsWith('- ') ? `${blank} (근거: ${field === '- 사주 고유' ? 'S' : field === '- 자미두수 고유' ? 'Z' : 'N'}-01)` : blank
+        expect(isValidInterpretation(replaceField(valid, field, value), specialistIds)).toBe(false)
+      })
+    }
+  }
+  for (const duality of [
+    '강점: | 취약점: 고립',
+    '강점: 결단 | 취약점:',
+    '강점:   | 취약점: 고립',
+    '강점: 결단 | 취약점: \t',
+    '강점: 결단 취약점: 고립',
+    '취약점: 고립 | 강점: 결단',
+    '강점: 결단 | 취약점: 고립 | 취약점: 조급',
+  ]) {
+    test(`rejects malformed strength-vulnerability pair ${duality}`, () => {
+      expect(isValidInterpretation(replaceField(valid, '양면성', duality), specialistIds)).toBe(false)
+    })
+  }
+  test('rejects a three-stage operation chain', () => {
+    expect(isValidInterpretation(replaceField(valid, '작동 사슬', '욕구 → 행동 → 결과'), specialistIds)).toBe(false)
+  })
+  for (const chain of [' → 행동 → 마찰 → 결과', '욕구 → → 마찰 → 결과', '욕구 → 행동 → 마찰 → ', '욕구 → \t → 마찰 → 결과']) {
+    test(`rejects an operation chain with an empty stage ${JSON.stringify(chain)}`, () => {
+      expect(isValidInterpretation(replaceField(valid, '작동 사슬', chain), specialistIds)).toBe(false)
+    })
+  }
+
+  test('rejects an interpretation item without evidence', () => {
+    const missingItemEvidence = valid.replace(/(### I-01[\s\S]*?)^근거:.*\n/m, '$1')
+    expect(isValidInterpretation(missingItemEvidence, specialistIds)).toBe(false)
+  })
+
+  test('accepts concise descriptions with CRLF line endings', () => {
+    expect(isValidInterpretation(concise.replace(/\n/g, '\r\n'), specialistIds)).toBe(true)
+  })
+
+  test('accepts an operation chain with more than four stages', () => {
+    expect(isValidInterpretation(replaceField(valid, '작동 사슬', '욕구 → 선택 → 행동 → 마찰 → 고립'), specialistIds)).toBe(true)
+  })
+})
+
+describe('interpretation CLI', () => {
+  test('validates concise synthetic sources and rejects a blank required field', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'interpretation-contract-'))
+    try {
+      const paths = ['integrated.md', 'saju.md', 'ziwei.md', 'natal.md'].map(name => join(directory, name))
+      await Promise.all([
+        writeFile(paths[0], concise),
+        writeFile(paths[1], '# Synthetic Saju\n### S-01\nSynthetic evidence.'),
+        writeFile(paths[2], '# Synthetic Ziwei\n### Z-01\nSynthetic evidence.'),
+        writeFile(paths[3], '# Synthetic Natal\n### N-01\nSynthetic evidence.'),
+      ])
+      const validator = join(import.meta.dir, 'validate-interpretation.ts')
+      const run = async () => {
+        const child = Bun.spawn([Bun.argv[0], validator, ...paths], { stdout: 'pipe', stderr: 'pipe' })
+        const [exitCode, stdout, stderr] = await Promise.all([
+          child.exited, new Response(child.stdout).text(), new Response(child.stderr).text(),
+        ])
+        return { exitCode, stdout, stderr }
+      }
+      expect(await run()).toEqual({ exitCode: 0, stdout: 'Validated chart interpretation.\n', stderr: '' })
+      await writeFile(paths[0], replaceField(concise, '핵심 욕구', '   '))
+      const rejected = await run()
+      expect(rejected.exitCode).toBe(1)
+      expect(rejected.stdout).toBe('')
+      expect(JSON.parse(rejected.stderr).issues).toContainEqual(expect.objectContaining({ code: 'field-content', field: '핵심 욕구' }))
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 })

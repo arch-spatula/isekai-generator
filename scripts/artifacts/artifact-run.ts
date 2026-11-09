@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { appendArtifactEvent } from './artifact-events'
 import { initializeProgress, refreshProgress } from './artifact-progress'
 
 export const PURPOSES = ['experiment', 'regression', 'new-profile', 'incident-reproduction', 'release-candidate'] as const
@@ -156,6 +157,7 @@ export function allocateRun(repositoryRoot: string, artifactKind: RunManifest['a
     }
     const manifest = validateRunManifest({ schemaVersion: 1, artifactVersion, series: config.activeSeries, artifactKind, purpose, mode, baselineRevision: config.baselineRevision, sourceRevision: state.revision, workingTreeDirty: state.dirty, status: 'allocated', allocatedAt: new Date().toISOString(), startedAt: null, finishedAt: null, failure: null })
     writeFileSync(join(directory, 'artifact-run.json'), `${JSON.stringify(manifest, null, 2)}\n`, { flag: 'wx' })
+    writeFileSync(join(directory, 'events.jsonl'), '', { flag: 'wx' })
     initializeProgress(directory, manifest)
     return directory
   }
@@ -167,6 +169,8 @@ export function updateRun(runDirectory: string, status: RunStatus, failure: RunM
   requireCondition(allowed[current.status].includes(status), `Invalid run transition: ${current.status} -> ${status}`)
   const now = new Date().toISOString()
   const updated = validateRunManifest({ ...current, status, startedAt: status === 'running' ? now : current.startedAt, finishedAt: status === 'running' ? null : now, failure })
+  if (status === 'failed' && failure) appendArtifactEvent(runDirectory, { event: 'stage_stopped', stage: failure.stage, operation: 'update-run', reason: failure.summary })
+  appendArtifactEvent(runDirectory, { event: `run_${status === 'running' ? 'started' : status}` as 'run_started' | 'run_succeeded' | 'run_failed' | 'run_cancelled', stage: failure?.stage ?? 'run', operation: 'update-run', ...(failure ? { reason: failure.summary } : status === 'cancelled' ? { reason: 'Run cancelled.' } : {}) })
   writeJsonAtomic(join(runDirectory, 'artifact-run.json'), updated)
   refreshProgress(runDirectory, updated)
   return updated

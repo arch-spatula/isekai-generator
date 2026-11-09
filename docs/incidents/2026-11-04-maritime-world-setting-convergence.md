@@ -7,6 +7,8 @@
 - 상태: 완화 설계·구현 및 결정적 테스트 완료, 실제 대표 입력 생성 회귀 대기
 - 후속 결정: [전투 선택과 세계 구조 선택 분리](../ADR/2026-11-04-independent-world-concept-selection.md)
 - 구현 명세: [세계 구조 선택](../spec/world-concept-selection.md)
+- 관련 후속 발견: [세계관의 표면 직역과 설득력 문제](2026-11-09-world-setting-literal-translation.md).
+  해양 요소 제거 자체가 목표가 아니며, 소재의 반복과 재해석 부족은 구분해 검토한다.
 
 ## 자료의 보존 범위
 

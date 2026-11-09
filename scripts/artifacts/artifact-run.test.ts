@@ -123,7 +123,7 @@ describe('run manifest state and atomic updates', () => {
     try {
       expect(() => updateRun(directory, 'running')).toThrow('rename failed')
       expect(fs.readFileSync(path, 'utf8')).toBe(original)
-      expect(fs.readdirSync(directory).sort()).toEqual(['TODO.md', 'artifact-run.json', 'garbage'])
+      expect(fs.readdirSync(directory).sort()).toEqual(['TODO.md', 'artifact-run.json', 'events.jsonl', 'garbage'])
       try { failRun(directory, 'chart-report', 'Chart failed.', new Error('original generation error')) } catch (error) {
         expect(error).toBeInstanceOf(AggregateError)
         expect((error as AggregateError).errors.map(e => e.message)).toEqual(['original generation error', 'rename failed'])

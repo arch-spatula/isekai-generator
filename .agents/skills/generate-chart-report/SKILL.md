@@ -42,6 +42,8 @@ If explicitly asked to continue an unfinished standalone run, first read its man
 
 ## Generate
 
+The runner records safe execution and validation failure details in the run root `events.jsonl` under [the unified event-log contract](../../../docs/spec/artifact-event-log.md). Do not wrap birth-bearing calculator arguments in the generic logged-command runner. For input-adapter failures after reservation, append an `execution_failed` event with the missing/invalid input category through `scripts/log-artifact-event.ts` before terminal status, without copying birth values or raw stderr. Logging failure blocks dependent work and must be reported.
+
 Resolve the repository root containing `scripts/chart-report.ts`. Run:
 
 `bun <skill-path>/scripts/run-chart-report.ts <repository-root> <chart-report-output> -- <all chart flags>`

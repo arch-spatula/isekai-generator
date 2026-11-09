@@ -45,9 +45,13 @@ Follow the exact section contract in `references/interpretation-format.md`. Writ
 
 ## Validate
 
+Follow [the unified event-log contract](../../../docs/spec/artifact-event-log.md). Resolve `<run-directory>` from the reserved output's `docs/GDD/` parent. Use validation attempt 1 initially and 2 only for the existing permitted repair. Before repairing, append `retry_scheduled` with the actual failed conditions and repair reason through `scripts/log-artifact-event.ts`; do not overwrite or read other runs. Record semantic-review failures as `validation_failed` with explicit issues, and record `stage_stopped` on unresolved failure. Logging failure blocks further work. Do not copy generated content into events.
+
+Each required field must contain non-whitespace content on its own line. Prose depth is assessed by semantic review of evidence, concrete reasoning, and conditions, never by character count. Validator success confirms only the structural contract; it does not establish interpretive depth or semantic quality.
+
 Run:
 
-`bun <skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
+`bun <repository-root>/scripts/run-logged-step.ts <run-directory> integration <validation-attempt> -- bun <skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
 
 If validation fails, repair only the current output once and validate again. Return failure unchanged after a second failure.
 
