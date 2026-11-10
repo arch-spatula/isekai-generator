@@ -1,13 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { verifyDefensiveAcceptance } from './defensive-edit'
 import type { RunManifest } from './artifact-run'
 
 export const PROGRESS_STAGES = {
   'chart-report': { label: '차트 보고서와 근거 검증', dependencies: [], outputs: ['chart-report.md', 'chart-evidence.json'] },
-  saju: { label: '사주 해석 검증 및 게시', dependencies: ['chart-report'], outputs: ['saju-interpretation.md'] },
-  ziwei: { label: '자미두수 해석 검증 및 게시', dependencies: ['chart-report'], outputs: ['ziwei-interpretation.md'] },
-  natal: { label: '네이탈 해석 검증 및 게시', dependencies: ['chart-report'], outputs: ['natal-interpretation.md'] },
+  saju: { label: '사주 생성·편집 검증 및 게시', dependencies: ['chart-report'], outputs: ['saju-interpretation.md'] },
+  ziwei: { label: '자미두수 생성·편집 검증 및 게시', dependencies: ['chart-report'], outputs: ['ziwei-interpretation.md'] },
+  natal: { label: '네이탈 생성·편집 검증 및 게시', dependencies: ['chart-report'], outputs: ['natal-interpretation.md'] },
   integration: { label: '통합 해석 검증', dependencies: ['saju', 'ziwei', 'natal'], outputs: ['chart-interpretation.md'] },
   selection: { label: '전투 콘셉트 선정 및 검증', dependencies: ['integration'], outputs: ['gameplay-concept-brief.md'] },
   'world-selection': { label: '세계 콘셉트 선정 및 검증', dependencies: ['selection'], outputs: ['world-concept-brief.md'] },
@@ -20,6 +21,7 @@ export type ProgressStage = keyof typeof PROGRESS_STAGES
 export type StageProgress = {
   status: 'pending' | 'running' | 'succeeded' | 'failed'
   updatedAt: string; agentId?: string; attempt?: number
+  editing?: { attempt: number; sourceSha256: string; status: string; result: string }
 }
 
 function stages(manifest: RunManifest): ProgressStage[] {
@@ -79,6 +81,7 @@ function render(run: string, manifest: RunManifest): string {
     lines.push(`- [${state?.status === 'succeeded' ? 'x' : ' '}] ${PROGRESS_STAGES[stage].label} — ${state?.status ?? 'pending'} (${stage})`)
     for (const output of PROGRESS_STAGES[stage].outputs) lines.push(`  - 산출물: [${output}](docs/GDD/${output})`)
     if (state) lines.push(`  - 체크포인트: [${stage}.json](garbage/progress/${stage}.json)`)
+    if (state?.editing) lines.push(`  - 편집: ${state.editing.attempt}/3 — ${state.editing.status}; 원본 해시: ${state.editing.sourceSha256}; [결과](${state.editing.result})`)
     if (state?.agentId) lines.push(`  - 에이전트: ${state.agentId}`)
     if (state?.attempt) lines.push(`  - 시도: ${state.attempt}/3 — [기록](garbage/attempts/${stage}/${String(state.attempt).padStart(3, '0')}/)`)
   }
@@ -99,9 +102,10 @@ function render(run: string, manifest: RunManifest): string {
     '1. artifact-run.json과 이 파일, garbage/progress/의 단계 기록을 확인한다. TODO.md가 오래됐으면 update-artifact-progress.ts sync로 다시 렌더링한다.',
     '2. 차트가 없으면 원래 입력을 확보한 뒤 차트 단계를 실행한다. 입력이 남아 있지 않으면 필요한 값만 사용자에게 확인한다.',
     '3. 전문 해석은 garbage/attempts/<system>/의 input.json, result.json, accepted.json과 정식 문서를 대조한다. 결과 없는 시도·남은 락은 자동 실패 처리하거나 삭제하지 않는다.',
-    '4. 결과는 기록됐지만 게시나 체크포인트가 중단된 경우, 새 시도를 만들기 전에 산출물과 validator 결과를 대조한다.',
-    '5. 지문 등록이 중단됐다면 두 레지스트리에 이 버전이 이미 등록됐는지 각각 확인한다. 등록 완료 후 체크포인트 전에 중단됐을 수 있으므로 같은 run을 다시 등록하지 않는다.',
-    '6. 단계별 입력·격리·검증·재시도 계약은 generate-personalized-gdd 또는 generate-chart-report 스킬을 따른다. 이 파일을 하위 해석·설계 에이전트에 전달하지 않는다.',
+    '4. 방어문구 편집은 garbage/defensive-editing/<system>/의 원본 해시, input/result, candidate, accepted 기록을 확인하고 정식 문서와 재검증한다. 미완료·운영 실패는 다음 호출의 근거가 아니다.',
+    '5. 결과는 기록됐지만 게시나 체크포인트가 중단된 경우, 새 시도를 만들기 전에 산출물과 validator 결과를 대조한다.',
+    '6. 지문 등록이 중단됐다면 두 레지스트리에 이 버전이 이미 등록됐는지 각각 확인한다. 등록 완료 후 체크포인트 전에 중단됐을 수 있으므로 같은 run을 다시 등록하지 않는다.',
+    '7. 단계별 입력·격리·검증·재시도 계약은 generate-personalized-gdd 또는 generate-chart-report 스킬을 따른다. 이 파일을 하위 해석·설계 에이전트에 전달하지 않는다.',
     '', '이 파일은 도구가 갱신한다. 원시 출생정보, 차트·해석 본문, 명령 인자와 원시 stderr를 기록하지 않는다.', '')
   return lines.join('\n')
 }
@@ -124,7 +128,7 @@ export function refreshProgress(run: string, manifest: RunManifest): void {
   })
 }
 
-export function recordStageProgress(run: string, manifest: RunManifest, stage: ProgressStage, status: StageProgress['status'], details: { agentId?: string; attempt?: number } = {}): void {
+export function recordStageProgress(run: string, manifest: RunManifest, stage: ProgressStage, status: StageProgress['status'], details: { agentId?: string; attempt?: number; editing?: StageProgress['editing'] } = {}): void {
   if (!stages(manifest).includes(stage)) throw new Error('Unsupported progress stage for this run')
   if (manifest.status !== 'running') throw new Error('Stage checkpoints require a running run')
   if (!existsSync(join(run, 'TODO.md'))) throw new Error('Run has no progress log; do not backfill previous runs automatically')
@@ -133,10 +137,14 @@ export function recordStageProgress(run: string, manifest: RunManifest, stage: P
   if (details.attempt != null && (!['saju', 'ziwei', 'natal'].includes(stage) || !Number.isInteger(details.attempt) || details.attempt < 1 || details.attempt > 3)) throw new Error('Invalid specialist attempt')
   locked(run, () => {
     const progress = readStageProgress(run, manifest)
+    if (stage === 'integration' && status !== 'failed') {
+      for (const system of ['saju', 'ziwei', 'natal'] as const) verifyDefensiveAcceptance(run, system)
+    }
     const current = progress[stage]
     if (current?.status === 'succeeded' && status !== 'succeeded') throw new Error('Completed stages cannot be restarted')
     if (status !== 'failed' && !PROGRESS_STAGES[stage].dependencies.every(dependency => progress[dependency as ProgressStage]?.status === 'succeeded')) throw new Error('Stage dependencies are not complete')
     const next: StageProgress = { status, updatedAt: new Date().toISOString(), ...details }
+    if (current?.editing && details.editing == null) next.editing = current.editing
     if (current?.attempt && details.attempt == null) next.attempt = current.attempt
     if (current?.agentId && details.agentId == null && (details.attempt == null || details.attempt === current.attempt)) next.agentId = current.agentId
     writeAtomic(join(directory(run), `${stage}.json`), `${JSON.stringify(next, null, 2)}\n`)
