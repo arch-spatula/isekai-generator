@@ -369,27 +369,6 @@
       "notes": []
     },
     {
-      "id": "hwang-hyun-jin",
-      "name": "황현진?",
-      "alias": null,
-      "field": null,
-      "status": "excluded",
-      "birth_date": null,
-      "birth_time": null,
-      "birth_time_precision": "unknown",
-      "birth_city": null,
-      "sex": null,
-      "reported_reliability": null,
-      "reported_source": null,
-      "source_note": "확인 가능한 신뢰도 있는 생시 자료 부족",
-      "source_url": null,
-      "verification_status": "unverified",
-      "raw_birth_input": null,
-      "notes": [
-        "2026-11-10 검색: 스트레이키즈 현진(2000-03-20)이 후보이나 원자료는 이름에 물음표가 있고 날짜·분야가 없어 동일 인물 확정 및 성별 보완을 보류했다. 공식 후보 프로필: https://straykids.jype.com/profile"
-      ]
-    },
-    {
       "id": "yoon-bo-ra",
       "name": "윤보라",
       "alias": null,
