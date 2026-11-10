@@ -385,7 +385,9 @@
       "source_url": null,
       "verification_status": "unverified",
       "raw_birth_input": null,
-      "notes": []
+      "notes": [
+        "2026-11-10 검색: 스트레이키즈 현진(2000-03-20)이 후보이나 원자료는 이름에 물음표가 있고 날짜·분야가 없어 동일 인물 확정 및 성별 보완을 보류했다. 공식 후보 프로필: https://straykids.jype.com/profile"
+      ]
     },
     {
       "id": "yoon-bo-ra",
@@ -397,14 +399,17 @@
       "birth_time": null,
       "birth_time_precision": "unknown",
       "birth_city": "서울",
-      "sex": null,
+      "sex": "female",
       "reported_reliability": null,
       "reported_source": "Astrotheme",
       "source_note": "Astrotheme 등에서도 time unknown으로 표시",
       "source_url": null,
       "verification_status": "unverified",
       "raw_birth_input": null,
-      "notes": []
+      "notes": [
+        "2026-11-10 성별만 보완: FMDb 인물 프로필의 Gender: Female 표기 확인. https://fmdb.mov/en/people/1534624-yoon-bo-ra (생년월일·생시·도시 검증 출처가 아님.)",
+        "씨스타 보라로 식별해 성별을 보완했다. 원자료의 생년월일 1990-01-30은 일부 공개 프로필의 1989-12-30과 달라 원자료 값을 유지하고 추가 확인이 필요하다."
+      ]
     },
     {
       "id": "choi-soo-young",
@@ -416,14 +421,16 @@
       "birth_time": null,
       "birth_time_precision": "unknown",
       "birth_city": "서울",
-      "sex": null,
+      "sex": "female",
       "reported_reliability": null,
       "reported_source": "Astrotheme",
       "source_note": "time unknown으로 명시",
       "source_url": null,
       "verification_status": "unverified",
       "raw_birth_input": null,
-      "notes": []
+      "notes": [
+        "2026-11-10 성별만 보완: KOFIC KoBiz 인물 프로필의 Gender: Female 표기 확인. https://www.koreanfilm.or.kr/eng/films/index/peopleView.jsp?peopleCd=20133931 (생년월일·생시·도시 검증 출처가 아님.)"
+      ]
     },
     {
       "id": "kim-tae-ri",
@@ -435,14 +442,16 @@
       "birth_time": null,
       "birth_time_precision": "unknown",
       "birth_city": "서울",
-      "sex": null,
+      "sex": "female",
       "reported_reliability": null,
       "reported_source": "Astrotheme",
       "source_note": "time unknown",
       "source_url": null,
       "verification_status": "unverified",
       "raw_birth_input": null,
-      "notes": []
+      "notes": [
+        "2026-11-10 성별만 보완: KOFIC KoBiz 인물 프로필의 Gender: Female 표기 확인. https://koreanfilm.or.kr/mobile3/pnc/peopleView.jsp?peopleCd=20201026 (생년월일·생시·도시 검증 출처가 아님.)"
+      ]
     },
     {
       "id": "im-yoon-a",
@@ -454,14 +463,16 @@
       "birth_time": null,
       "birth_time_precision": "unknown",
       "birth_city": "서울",
-      "sex": null,
+      "sex": "female",
       "reported_reliability": null,
       "reported_source": "Astrid",
       "source_note": "time unknown",
       "source_url": null,
       "verification_status": "unverified",
       "raw_birth_input": null,
-      "notes": []
+      "notes": [
+        "2026-11-10 성별만 보완: KOFIC KoBiz 인물 프로필의 Gender: Female 표기 확인. https://www.koreanfilm.or.kr/eng/films/index/peopleView.jsp?peopleCd=20224649 (생년월일·생시·도시 검증 출처가 아님.)"
+      ]
     },
     {
       "id": "park-shin-hye",
@@ -473,14 +484,16 @@
       "birth_time": null,
       "birth_time_precision": "unknown",
       "birth_city": "광주",
-      "sex": null,
+      "sex": "female",
       "reported_reliability": null,
       "reported_source": "Astrid",
       "source_note": "time unknown",
       "source_url": null,
       "verification_status": "unverified",
       "raw_birth_input": null,
-      "notes": []
+      "notes": [
+        "2026-11-10 성별만 보완: KOFIC KoBiz 인물 프로필의 Gender: Female 표기 확인. https://m.koreanfilm.or.kr/mobile4/jsp/People/PeopleView.jsp?peopleCd=10028892 (생년월일·생시·도시 검증 출처가 아님.)"
+      ]
     }
   ]
 }
