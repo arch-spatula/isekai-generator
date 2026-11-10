@@ -20,31 +20,22 @@ function setup(): string {
   return run
 }
 
-test('failed output and diagnostic are preserved before repair; only passing output is published', () => {
-  const run = setup()
-  const first = prepareSpecialistAttempt(run, 'saju')
-  const failed = valid + '\n단정하지 않는다.'
-  writeFileSync(join(run, first.output), failed)
-  expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
-  const result = finishSpecialistAttempt(run, 'saju', 1)
-  expect(result.status).toBe('validation-failed')
-  expect(readFileSync(join(run, 'TODO.md'), 'utf8')).toContain('— failed (saju)')
-  expect(result.errors).toContainEqual(expect.objectContaining({ code: 'responsibility-avoidance', line: expect.any(Number) }))
-  expect(JSON.stringify(result)).not.toContain('단정하지')
-  expect(existsSync(join(run, 'docs/GDD/saju-interpretation.md'))).toBe(false)
-  const next = prepareSpecialistAttempt(run, 'saju')
-  expect(next.mode).toBe('repair')
-  expect(next.previous?.output).toBe(first.output)
-  expect(existsSync(join(run, next.previous!.result))).toBe(true)
-  writeFileSync(join(run, next.output), valid)
-  expect(finishSpecialistAttempt(run, 'saju', 2).status).toBe('passed')
-  expect(readFileSync(join(run, 'TODO.md'), 'utf8')).toContain('— succeeded (saju)')
-  expect(readFileSync(join(run, 'TODO.md'), 'utf8')).toContain('시도: 2/3')
-  expect(readFileSync(join(run, first.output), 'utf8')).toBe(failed)
-  expect(readFileSync(join(run, 'docs/GDD/saju-interpretation.md'), 'utf8')).toBe(valid)
-  expect(JSON.parse(readFileSync(join(run, 'garbage/attempts/saju/accepted.json'), 'utf8')).attempt).toBe(2)
-  expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow('final document')
-  expect(() => finishSpecialistAttempt(run, 'saju', 2)).toThrow('already completed')
+test('defensive-only and clean outputs require editing before publication and block regeneration', () => {
+  for (const suffix of ['', '\n단정하지 않는다.']) {
+    const run = setup()
+    const first = prepareSpecialistAttempt(run, 'saju')
+    const source = valid + suffix
+    writeFileSync(join(run, first.output), source)
+    const result = finishSpecialistAttempt(run, 'saju', 1)
+    expect(result.status).toBe('editing-required')
+    expect(result.errors.length).toBe(suffix ? 1 : 0)
+    if (suffix) expect(result.errors).toContainEqual(expect.objectContaining({ code: 'responsibility-avoidance' }))
+    expect(existsSync(join(run, 'docs/GDD/saju-interpretation.md'))).toBe(false)
+    expect(existsSync(join(run, 'garbage/attempts/saju/accepted.json'))).toBe(false)
+    expect(readFileSync(join(run, first.output), 'utf8')).toBe(source)
+    expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
+    expect(() => finishSpecialistAttempt(run, 'saju', 1)).toThrow('already completed')
+  }
 })
 
 test('repair is fully revalidated and both generation and repair share a three-attempt budget', () => {
@@ -55,7 +46,7 @@ test('repair is fully revalidated and both generation and repair share a three-a
   const second = prepareSpecialistAttempt(run, 'saju')
   expect(second.mode).toBe('generate')
   expect(second.previous).toBeUndefined()
-  writeFileSync(join(run, second.output), valid + '\n단정하지')
+  writeFileSync(join(run, second.output), valid.replaceAll('근거:', '출처:') + '\n단정하지')
   finishSpecialistAttempt(run, 'saju', 2)
   const third = prepareSpecialistAttempt(run, 'saju')
   expect(third.mode).toBe('repair')
@@ -92,17 +83,20 @@ test('an interrupted or unrecorded attempt blocks new execution', () => {
   expect(existsSync(join(run, 'docs/GDD/saju-interpretation.md'))).toBe(false)
 })
 
-test('publication failure is distinct from validation and prevents another attempt', () => {
+test('mixed structural and defensive errors retain the specialist repair route', () => {
   const run = setup()
   const first = prepareSpecialistAttempt(run, 'saju')
-  writeFileSync(join(run, first.output), valid)
-  writeFileSync(join(run, 'docs/GDD/saju-interpretation.md'), 'existing document')
-  expect(() => finishSpecialistAttempt(run, 'saju', 1)).toThrow()
-  const result = JSON.parse(readFileSync(join(run, 'garbage/attempts/saju/001/result.json'), 'utf8'))
-  expect(result.status).toBe('passed')
-  expect(readFileSync(join(run, 'docs/GDD/saju-interpretation.md'), 'utf8')).toBe('existing document')
-  expect(existsSync(join(run, 'garbage/attempts/saju/accepted.json'))).toBe(false)
-  expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
+  writeFileSync(join(run, first.output), valid.replaceAll('근거:', '출처:') + '\n단정하지 않는다.')
+  const result = finishSpecialistAttempt(run, 'saju', 1)
+  expect(result.status).toBe('validation-failed')
+  expect(result.errors.some(error => error.code === 'item-evidence')).toBe(true)
+  expect(result.errors.some(error => error.code === 'responsibility-avoidance')).toBe(true)
+  const next = prepareSpecialistAttempt(run, 'saju')
+  expect(next.mode).toBe('repair')
+  expect(next.previous?.output).toBe(first.output)
+  writeFileSync(join(run, next.output), valid)
+  expect(finishSpecialistAttempt(run, 'saju', 2).status).toBe('editing-required')
+  expect(existsSync(join(run, 'docs/GDD/saju-interpretation.md'))).toBe(false)
 })
 
 test('CLI records execution errors and returns the next allowed action', () => {

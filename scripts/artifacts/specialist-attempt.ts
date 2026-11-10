@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { randomUUID } from 'node:crypto'
 import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 import { diagnoseSystemInterpretation, type ChartSystem, type InterpretationDiagnostic } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
@@ -13,7 +13,7 @@ export type AttemptInput = {
 }
 export type AttemptResult = {
   system: ChartSystem; attempt: number; mode: AttemptInput['mode']; finishedAt: string
-  status: 'passed' | 'validation-failed' | 'execution-failed'; output: string
+  status: 'editing-required' | 'validation-failed' | 'execution-failed'; output: string
   errors: InterpretationDiagnostic[]
 }
 
@@ -102,18 +102,10 @@ export function finishSpecialistAttempt(runDirectory: string, system: ChartSyste
     }
     const result: AttemptResult = {
       system, attempt, mode: input.mode, finishedAt: new Date().toISOString(), output: relative(run, output),
-      status: executionFailed || markdown == null ? 'execution-failed' : errors.length ? 'validation-failed' : 'passed', errors,
+      status: executionFailed || markdown == null ? 'execution-failed' : errors.some(error => error.code !== 'responsibility-avoidance') ? 'validation-failed' : 'editing-required', errors,
     }
     writeRecord(join(target, 'result.json'), result)
-    if (result.status === 'passed') {
-      requireRunning(run)
-      publishOnce(finalPath(run, system), markdown!)
-      writeRecord(join(directory, 'accepted.json'), {
-        system, attempt, output: relative(run, finalPath(run, system)), source: result.output,
-        sha256: createHash('sha256').update(markdown!).digest('hex'), acceptedAt: new Date().toISOString(),
-      })
-    }
-    recordStageProgress(run, readRunManifest(run), system, result.status === 'passed' ? 'succeeded' : 'failed', { attempt })
+    recordStageProgress(run, readRunManifest(run), system, result.status === 'editing-required' ? 'running' : 'failed', { attempt })
     return result
   })
 }

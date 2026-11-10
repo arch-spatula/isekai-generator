@@ -118,17 +118,27 @@ After an agent returns, run:
 
 `bun <repository-root>/scripts/manage-specialist-attempt.ts finish <version-directory> <system> <attempt>`
 
-If the agent failed to execute, use `error` in place of `finish`. Do not pass raw stderr or generated text to the manager. `finish` independently runs the full validator, writes the immutable `result.json` **before** another attempt may be prepared, and publishes only passing output to the system's final `docs/GDD/<system>-interpretation.md`. It records the chosen attempt and content hash in `garbage/attempts/<system>/accepted.json`.
+If execution failed, use `error`. `finish` runs the full validator and durably records diagnostics first. Inspect status: `validation-failed` means structural or mixed errors and uses the existing specialist repair policy; `execution-failed` allows fresh generation within the same three-call budget. `editing-required` means only defensive diagnostics or no diagnostics remain. Do not invoke the specialist again for this result.
 
-The manager's successful exit means the outcome was recorded; inspect its returned `status`. For `validation-failed`, call `prepare` again: the default is policy B, repairing the preserved failed document. For `execution-failed` (including missing output), call `prepare` again to generate fresh from source without reading failed content. Never combine attempts. Preserve all failure documents and logs. A repeated validation failure stays on repair; it does not trigger a fresh generation just to avoid the rule.
+For every such system, including zero-diagnostic documents, run:
 
-On `passed`, keep that system's final output and do not rerun it. Wait until all three systems have passed before integration. If the budget is exhausted or allocation, validation infrastructure, logging, or publication throws an error, stop dependent work, let active parallel specialists finish safely, and record the parent failure under that system's stage. Report the original error. Do not launch another agent when result recording fails. A passed validation with a publication error is a run failure, not successful completion.
+`bun <repository-root>/scripts/manage-defensive-edit.ts prepare <version-directory> <system>`
 
-Keep the parent run `running` during recovery; only the orchestrator finalizes it. On cancellation, launch no further attempts, let active specialists finish safely, then record `cancelled`. An unfinished attempt or abandoned lock after interruption is not automatically resumed, removed or classified. Never reopen a terminal run. `garbage/` is for recovery tooling only; do not provide it to integration, selection, GDD, or game-development agents.
+Launch `$edit-defensive-phrases` with `fork_turns="none"`, the mode, specialist instructions, allocated input.json, exact source output, and returned system-only chart/evidence files. Never pass the multi-system chart report, other interpretations, raw birth arguments, TODO, or conversation history. On retry supply only the immediately preceding candidate/review/result, current diagnostics and confirmed targets. Use the mode's specialist model policy.
+
+After spawning the editor, record its agent ID with `bun <repository-root>/scripts/update-artifact-progress.ts start <version-directory> <system> <agent-id>`. The manager retains generation and editing checkpoints. Reuse available specialist slots for independent system editors within the tool concurrency limit; no scheduler is added.
+
+The editor writes only edits.json and review.md. Then run:
+
+`bun <repository-root>/scripts/manage-defensive-edit.ts finish <version-directory> <system> <attempt>`
+
+Use `error` for editor execution failure. The manager checks hashes, exact matches, scope, review completeness, preservation and the full validator before publishing. A no-change review consumes one call. Only `editing-failed` permits another allocation: sentence → item → related system items/paragraphs. This separate lifetime budget is three calls per system, never reset by changing specialist source. Operational failures, missing records, unresolved uncertainty and exhausted budget block integration; do not regenerate to bypass them. On `passed`, retain the final and both accepted records, and never restart the specialist.
+
+Keep the parent running during recovery. On tool, record or publication errors stop dependent work, allow active parallel agents to finish safely and record parent failure under that system. Cancellation launches no further agents. Never remove locks, overwrite records or reopen terminal runs. Resume checks source/candidate/final hashes and full validation, acceptance records and process liveness. All three systems must have accepted edits with matching final hashes before integration; the progress tool verifies this gate. Never pass editing reports to integration or later agents.
 
 ### 3. Integrate the specialist interpretations
 
-After all specialists succeed, invoke `$interpret-chart-report` with only:
+After all three systems pass defensive editing and acceptance verification, invoke `$interpret-chart-report` with only:
 
 - exact Saju, Zi Wei Dou Shu, natal, and integrated interpretation paths;
 - exact `docs/prompts/interpretation-guidelines.md` path;

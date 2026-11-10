@@ -3,6 +3,7 @@ import * as fs from 'node:fs'
 import { join } from 'node:path'
 import { allocateRun, readRunManifest, updateRun } from './artifact-run'
 import { PROGRESS_STAGES, readStageProgress, recordStageProgress, refreshProgress, type ProgressStage } from './artifact-progress'
+import { seedDefensiveAcceptances } from './defensive-test-fixtures'
 import { makeRepository } from './test-fixtures'
 
 function setup(kind: 'personalized-gdd' | 'chart-report' = 'personalized-gdd'): string {
@@ -34,6 +35,7 @@ test('an interrupted active stage retains agent and next action without guessing
   refreshProgress(run, readRunManifest(run))
   expect(todo(run)).toContain('에이전트·프로세스가 실제로 살아 있는지 먼저 확인')
   expect(readRunManifest(run).status).toBe('running')
+  seedDefensiveAcceptances(run)
   expect(() => mark(run, 'integration', 'running')).toThrow('dependencies')
   mark(run, 'chart-report', 'succeeded')
   expect(todo(run)).toContain('다음 작업 후보: saju, ziwei, natal')
@@ -70,6 +72,7 @@ test('terminal state sync records failure and never authorizes reopening a run',
 
 test('partial registration leaves a specific pending registration instead of rerunning the first', () => {
   const run = setup()
+  seedDefensiveAcceptances(run)
   for (const stage of Object.keys(PROGRESS_STAGES) as ProgressStage[]) {
     if (stage === 'world-registration') break
     mark(run, stage, 'succeeded')

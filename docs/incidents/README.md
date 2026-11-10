@@ -14,3 +14,4 @@
 - [컨텍스트 부족 시 품질 유지와 인계 계약 부재](2026-11-05-context-exhaustion-quality-handoff.md) — 계약 공백 확인, 품질 저하의 실제 재현은 미확인
 - [영구 문서의 로컬 아티팩트 의존](2026-11-05-local-artifact-document-dependency.md) — 해결, 아티팩트 없는 사본 검증 완료
 - [Codex 0.167 로컬 빌드로 인한 개발 셸 정지](2026-11-08-codex-0.167-local-build-freeze.md) — 0.166으로 완화, 2026-11-15 이후 패키지·캐시 재탐색 예정
+- [방어문구 편집 해시 계약과 에이전트 검증 누락](2026-11-10-defensive-editor-hash-contract.md) — 해결: 합성 회귀·독립 리뷰·실제 편집자 계약 수용 확인
