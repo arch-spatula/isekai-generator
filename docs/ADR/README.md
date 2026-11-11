@@ -20,3 +20,6 @@
 - [Pixelbolt를 활용한 코드 기반 이펙트 제작 계획](2026-11-09-pixelbolt-vfx-plan.md)
 - [LibreSprite를 게임 이미지 생성 도구로 활용](2026-11-09-libresprite-image-generation.md)
 - [Godot과 PixelFX를 이용한 게임 제작 경로 평가](2026-11-11-godot-pixelfx-evaluation.md)
+- [해석과 게임 메커니즘의 복수 번역 온톨로지 도입](2026-11-11-interpretation-mechanics-ontology.md)
+- [합성 fixture로 생성 탐색 계약 회귀 검증](2026-11-11-synthetic-exploration-fixtures.md)
+- [비식별 설계 사례 카드의 대안 중심 검색 도입](2026-11-11-design-pattern-card-retrieval.md)
