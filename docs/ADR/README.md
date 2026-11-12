@@ -21,3 +21,4 @@
 - [LibreSprite를 게임 이미지 생성 도구로 활용](2026-11-09-libresprite-image-generation.md)
 - [Godot과 PixelFX를 이용한 게임 제작 경로 평가](2026-11-11-godot-pixelfx-evaluation.md)
 - [인물과 주변 환경의 해석을 구분해 세계관과 스토리 설정에 활용](2026-11-10-person-environment-world-story.md)
+- [SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가](2026-11-12-sqlite-agent-state-evaluation.md)
