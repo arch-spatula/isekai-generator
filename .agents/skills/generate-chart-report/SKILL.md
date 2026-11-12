@@ -7,6 +7,10 @@ description: Collect conversational birth details, normalize chart options and a
 
 Act as an input adapter and deterministic report runner. Do not interpret the chart.
 
+Before asking any input question, check explicit user values, existing agreements and applicable settings, then apply every defined default. Omission of an option with a default is not missing or ambiguous input; do not request confirmation of defaults or values already resolved from supplied information. Explicit user values override defaults. Ask only for required information still missing or conflicts still unresolved after this step.
+
+An omitted calendar means Gregorian (양력). Resolve timezone from an unambiguous birthplace (South Korean cities use `Asia/Seoul`). Never pass an explicitly lunar date to the Gregorian calculator unchanged.
+
 ## Collect inputs
 
 Extract details already supplied in natural language and ask one focused question at a time only for missing required data. Required data are year, month, day, hour, minute, gender, latitude, longitude, and timezone.

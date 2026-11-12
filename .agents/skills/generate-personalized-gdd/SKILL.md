@@ -7,6 +7,10 @@ description: Orchestrate a versioned personalized Action RPG GDD through chart c
 
 Run isolated agents in dependency order. Execute the three specialist interpretation agents concurrently. Do not calculate, interpret, integrate, select combat or world concepts, or design in the parent conversation.
 
+Before asking any input question, check explicit user values, existing agreements and applicable settings, then apply every defined default, including mode, purpose and chart options. Omission of an option with a default is not missing or ambiguous input; do not request confirmation of defaults or values already resolved from supplied information. Explicit user values override defaults. Ask only for required information still missing or conflicts still unresolved after this step. Pass the resolved values to stage agents so they do not ask again.
+
+Use the chart skill's birth input rules: an omitted calendar means Gregorian (양력), and an unambiguous birthplace determines timezone (South Korean cities use `Asia/Seoul`). Never silently treat an explicitly lunar date as Gregorian.
+
 ## Accept the request
 
 Pass user-stated birth details to the chart stage without inventing a date, exact time, gender, or ambiguous birthplace. Accept optional `mode` and `purpose`. Reject explicit `version` / `--version`; versions are reserved only through the active series allocator.
