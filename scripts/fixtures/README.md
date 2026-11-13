@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | [interpretation-quality-cases.json](interpretation-quality-cases.json) | 방어적 문구와 정당한 범위·조건 설명의 비교 | `expected`와 이유를 기준으로 수동 검토. 의미 검증은 아직 미구현 |
 | [gdd-translation-cases.json](gdd-translation-cases.json) | 표면 직역과 행동 패턴 변환의 비교 | [GDD 개선 계획](../../docs/GDD/personalized-gdd-remediation-plan.md)의 평가표로 수동 검토 |
+| [ability-design-cases.json](ability-design-cases.json) | 능력 최초 설계와 기존 능력의 표현 개선 관찰 | 입력·요청과 관찰 질문으로 자유 기록. 성공·실패 필드와 고정 정답이 없으며 생성 스킬에는 자동 연결되지 않음 |
 | [game-presentation-cases.json](game-presentation-cases.json) | 화면 선언과 본문 모순, 가독성·조작·빌드의 비교 | [공통 화면·아트 계약](../../docs/spec/game-presentation-contract.md)의 수용 기준으로 수동 검토 |
 | [three-agent-workflow-cases.json](three-agent-workflow-cases.json) | 무근거 기대값·구현 결함·검증 범위·승인 버전의 합성 수용 사례 | [3개 에이전트 작업 흐름](../../docs/spec/three-agent-implementation-workflow.md)의 요구와 비교해 수동 검토 |
 
