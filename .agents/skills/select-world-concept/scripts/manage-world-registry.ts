@@ -1,42 +1,6 @@
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
-import { writeJsonAtomic } from '../../../../scripts/artifacts/artifact-run'
-import { parseGamePresentation } from '../../../../scripts/game-presentation'
-import { ensure, parseWorldBrief, parseWorldRegistry, selectedWorld, type WorldEntry, type WorldRegistry } from './world-contract'
-
-export function loadWorldRegistry(path: string): WorldRegistry {
-  return parseWorldRegistry(JSON.parse(readFileSync(path, 'utf8')))
-}
-export function initializeWorldRegistry(path: string): void {
-  mkdirSync(dirname(path), { recursive: true })
-  if (existsSync(path)) { loadWorldRegistry(path); return }
-  try { writeFileSync(path, JSON.stringify({ schemaVersion: 1, entries: [] }, null, 2) + '\n', { flag: 'wx' }) } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-    loadWorldRegistry(path)
-  }
-}
-export function registerWorldFingerprint(path: string, entry: WorldEntry): void {
-  // An existing lock is an explicit failure; do not guess whether another writer died.
-  const lock = `${path}.lock`
-  const fd = openSync(lock, 'wx')
-  try {
-    const registry = loadWorldRegistry(path)
-    const next = parseWorldRegistry({ schemaVersion: 1, entries: [...registry.entries, entry] })
-    writeJsonAtomic(path, next)
-  } finally { closeSync(fd); unlinkSync(lock) }
-}
-if (import.meta.main) {
-  try {
-    const [command, path, version, briefPath, ...extra] = process.argv.slice(2)
-    ensure(path && extra.length === 0, 'Usage: bun manage-world-registry.ts init <registry> | register <registry> <version> <world-brief>')
-    if (command === 'init' && version == null) initializeWorldRegistry(path)
-    else {
-      ensure(command === 'register' && version && briefPath, 'register requires a version and world brief')
-      const brief = readFileSync(briefPath, 'utf8')
-      parseGamePresentation(brief)
-      const selected = selectedWorld(parseWorldBrief(brief))
-      registerWorldFingerprint(path, { version, candidateId: selected.id, fingerprint: selected.fingerprint, spatialPlay: selected.spatialPlay })
-    }
-    console.log(`World registry ${command} complete.`)
-  } catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exitCode = 1 }
-}
+import { ArtifactState } from '../../../../scripts/artifacts/artifact-state-store'
+import type { WorldRegistry, WorldEntry } from './world-contract'
+export function loadWorldRegistry(repositoryRoot:string):WorldRegistry{const state=new ArtifactState(repositoryRoot,false,true);try{return state.registry('world')}finally{state.close()}}
+export function initializeWorldRegistry(_path:string):void{throw new Error('Registry initialization belongs to artifact-state allocate')}
+export function registerWorldFingerprint(_path:string,_entry:WorldEntry):void{throw new Error('Use artifact-state finalize for atomic combat and world registration')}
+if(import.meta.main){console.error('Use read-artifact-state fingerprints or artifact-state finalize');process.exitCode=2}

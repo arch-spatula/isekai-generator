@@ -5,6 +5,17 @@
 > 근거 결정: [개인화 전투 원형을 후보 비교로 선택](../ADR/2026-11-03-personalized-combat-archetype-selection.md)
 > 범위: `chart-interpretation.md`와 개인화 Action RPG GDD 사이의 전투 원형 후보 생성·선택·검증
 
+## SQLite 전환 적용
+
+> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
+
+신규 실행의 전투 지문은 공용 SQLite에서 조회한다. 세계 지문과 논리적으로 분리하고
+이전 GDD 본문은 읽지 않는다. 비교 snapshot·최단 거리 동률·challenger 규칙을 유지하며,
+비교 수치와 일치 축은 도구가 계산한다. 등록은 최종 확정 시 세계 지문과 한 트랜잭션으로
+수행한다. 아래 JSON 레지스트리 경로·파일 init/register 계약은 전환 전 구현 기록이다.
+
+상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+
 ## 1. 목적
 
 통합 차트 해석에서 곧바로 하나의 GDD를 생성하지 않는다. 먼저 구조적으로 다른 전투

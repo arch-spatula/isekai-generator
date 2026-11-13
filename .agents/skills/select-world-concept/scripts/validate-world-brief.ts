@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { parseGamePresentation, readGamePresentationContract } from '../../../../scripts/game-presentation'
+import { parseGamePresentation } from '../../../../scripts/game-presentation'
 import { parseSelectedCandidateId } from '../../select-gameplay-concept/scripts/validate-concept-brief'
 import { closestWorldEntries, ensure, equalWorldAxes, parseWorldBrief, parseWorldRegistry, selectedWorld, worldScoreOrder, type WorldMatch, type WorldRegistry } from './world-contract'
 
@@ -56,14 +56,4 @@ export function validateWorldBrief(markdown: string, interpretation: string, com
     return []
   } catch (error) { return [error instanceof Error ? error.message : String(error)] }
 }
-if (import.meta.main) {
-  try {
-    const args = process.argv.slice(2)
-    ensure(args.length === 5, 'Usage: bun validate-world-brief.ts <world-brief> <interpretation> <combat-brief> <world-registry> <game-presentation-contract.md>')
-    readGamePresentationContract(args[4])
-    const [brief, interpretation, combat, registry] = args.slice(0, 4).map(path => readFileSync(path, 'utf8'))
-    const errors = validateWorldBrief(brief, interpretation, combat, parseWorldRegistry(JSON.parse(registry)))
-    ensure(errors.length === 0, errors.join('\n'))
-    console.log('Validated world concept brief.')
-  } catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exitCode = 1 }
-}
+if (import.meta.main) { console.error('Use artifact-state finish --attempt <id> --claim <claim> --request <id>; validation reads its immutable DB input'); process.exitCode=2 }

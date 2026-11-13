@@ -1,3 +1,5 @@
+import { ArtifactState } from '../../../../scripts/artifacts/artifact-state-store'
+import { tree } from '../../../../scripts/artifacts/sqlite-test-fixtures'
 import { describe, expect, test } from 'bun:test'
 
 import { isCompleteChartReport, runChartReport } from './run-chart-report'
@@ -45,19 +47,25 @@ describe('reserved chart runs', () => {
     const output = join(directory, 'docs/GDD/chart-report.md')
     await runChartReport(root, output, [])
     expect(readFileSync(output, 'utf8')).toBe(report)
-    expect(JSON.parse(readFileSync(join(directory, 'docs/GDD/chart-evidence.json'), 'utf8'))).toEqual(buildEvidenceManifest(report))
+    const state = new ArtifactState(root, false, true)
+    try { expect(state.evidence(state.run(directory.split('/').at(-1)!).id)).toEqual(buildEvidenceManifest(report)) } finally { state.close() }
+    expect(tree(join(root, 'artifacts')).filter(path => /\.jsonl?$|TODO\.md$/.test(path))).toEqual([])
     expect(readRunManifest(directory)).toMatchObject({ status: 'succeeded', failure: null })
-    expect(readFileSync(join(directory, 'TODO.md'), 'utf8')).toContain('— succeeded (chart-report)')
-    await expect(runChartReport(root, output, [])).rejects.toThrow('Invalid run transition')
+    const summary = new ArtifactState(root, false, true)
+    try { expect(summary.summary(summary.run(directory.split('/').at(-1)!).id).data.stages).toContainEqual(expect.objectContaining({ stage: 'chart-report', status: 'succeeded' })) } finally { summary.close() }
+    await expect(runChartReport(root, output, [])).rejects.toThrow()
   })
 
   test('calculator failure consumes patch and stores only a short safe failure summary', async () => {
     const root = fixture(true), directory = allocateRun(root, 'chart-report')
     await expect(runChartReport(root, join(directory, 'docs/GDD/chart-report.md'), [])).rejects.toThrow('private calculator details')
     expect(readRunManifest(directory)).toMatchObject({ status: 'failed', failure: { stage: 'chart-report', summary: 'Chart calculation or evidence validation failed.' } })
-    expect(readFileSync(join(directory, 'artifact-run.json'), 'utf8')).not.toContain('private calculator details')
-    expect(readFileSync(join(directory, 'TODO.md'), 'utf8')).toContain('— failed (chart-report)')
-    expect(readFileSync(join(directory, 'TODO.md'), 'utf8')).not.toContain('private calculator details')
+    const state = new ArtifactState(root, false, true)
+    try {
+      const run = state.run(directory.split('/').at(-1)!)
+      expect(JSON.stringify(state.summary(run.id))).not.toContain('private calculator details')
+      expect(JSON.stringify(state.all('SELECT * FROM events WHERE run_id=?', run.id))).not.toContain('private calculator details')
+    } finally { state.close() }
     expect(allocateRun(root, 'chart-report')).toEndWith('/v0.1.1')
   })
 

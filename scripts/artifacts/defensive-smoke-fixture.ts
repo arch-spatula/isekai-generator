@@ -1,13 +1,12 @@
 /** Manual model acceptance fixture. Creates only synthetic data under /tmp; never calls an LLM. */
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { allocateRun, git, readRunManifest, updateRun } from './artifact-run'
-import { recordStageProgress } from './artifact-progress'
-import { prepareSpecialistAttempt, finishSpecialistAttempt } from './specialist-attempt'
-import { prepareDefensiveEdit } from './defensive-edit'
+import { allocateRun, git, updateRun } from './artifact-run'
+import { ArtifactState } from './artifact-state-store'
+import {randomUUID} from 'node:crypto'
 import { syntheticSajuInterpretation } from './defensive-test-fixtures'
 
-export function createDefensiveSmokeFixture(): { run: string; input: string; chart: string; evidence: string; source: string; edits: string; review: string } {
+export function createDefensiveSmokeFixture(): {run:string;repository:string;attemptId:string;claim:string;inputCommand:string[]} {
   const repository = mkdtempSync('/tmp/defensive-model-smoke-')
   git(repository, ['init', '--quiet'])
   mkdirSync(join(repository, '.agents'))
@@ -19,17 +18,18 @@ export function createDefensiveSmokeFixture(): { run: string; input: string; cha
   commit()
   const run = allocateRun(repository, 'personalized-gdd')
   updateRun(run, 'running')
-  mkdirSync(join(run, 'docs/GDD'), { recursive: true })
-  writeFileSync(join(run, 'docs/GDD/chart-report.md'), '四柱八字\n합성 원국: 관계의 긴장을 집중과 우선순위 선택에 연결한다. 실제 출생정보가 아니다.\n紫微斗數 命盤\nsynthetic\nNatal Chart\nsynthetic')
-  writeFileSync(join(run, 'docs/GDD/chart-evidence.json'), JSON.stringify({ version: 1, systems: { saju: [{ id: 'S-E0000000000000001', text: '합성 원국의 관계와 선택 조건' }], ziwei: [], natal: [] } }))
-  recordStageProgress(run, readRunManifest(run), 'chart-report', 'succeeded')
-  const specialist = prepareSpecialistAttempt(run, 'saju')
-  // The defensive clause is separate from the valid reading, so its removal preserves that reading.
-  writeFileSync(join(run, specialist.output), syntheticSajuInterpretation.replace('### S-02', '단정하지 않는다.\n### S-02'))
-  if (finishSpecialistAttempt(run, 'saju', specialist.attempt).status !== 'editing-required') throw new Error('Synthetic source did not reach editing')
-  const prepared = prepareDefensiveEdit(run, 'saju')
-  if (prepared.diagnostics.length !== 1 || prepared.diagnostics[0].code !== 'responsibility-avoidance') throw new Error('Expected one synthetic defensive diagnostic')
-  return { run, input: join(run, prepared.input), chart: join(run, prepared.chart), evidence: join(run, prepared.evidence), source: join(run, prepared.source.output), edits: join(run, prepared.edits), review: join(run, prepared.review) }
+  const state=new ArtifactState(repository)
+  try {
+    const id=state.run(run.split('/').at(-1)!).id
+    const chart=state.prepare(id,'chart-report','generate',randomUUID()).data
+    writeFileSync(chart.output,'四柱八字\n합성 원국: 관계의 긴장을 집중과 우선순위 선택에 연결한다. 실제 출생정보가 아니다.\n紫微斗數 命盤\nsynthetic\nNatal Chart\nsynthetic')
+    state.submit(chart.attemptId,chart.claim,{},randomUUID());state.finish(chart.attemptId,chart.claim,randomUUID())
+    const specialist=state.prepare(id,'saju','generate',randomUUID()).data
+    const evidence=state.evidence(id).systems.saju[0].id
+    writeFileSync(specialist.output,syntheticSajuInterpretation.replaceAll('S-E0000000000000001',evidence).replace('### S-02','단정하지 않는다.\n### S-02'))
+    state.submit(specialist.attemptId,specialist.claim,{},randomUUID());state.finish(specialist.attemptId,specialist.claim,randomUUID())
+    const prepared=state.prepare(id,'saju','edit',randomUUID()).data
+    return {run,repository,attemptId:prepared.attemptId,claim:prepared.claim,inputCommand:['bun','scripts/read-artifact-state.ts','input','--root',repository,'--attempt',prepared.attemptId,'--claim',prepared.claim]}
+  }finally{state.close()}
 }
-
-if (import.meta.main) console.log(JSON.stringify(createDefensiveSmokeFixture(), null, 2))
+if(import.meta.main)console.log(JSON.stringify(createDefensiveSmokeFixture()))

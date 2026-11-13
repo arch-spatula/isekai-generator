@@ -1,7 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
 import { presentationFixture } from '../../../../scripts/fixtures/game-presentation'
 
 import { isValidConceptBrief, validateConceptBrief } from './validate-concept-brief'
@@ -120,22 +117,10 @@ describe('gameplay concept brief validator', () => {
     ]) expect(isValidConceptBrief(invalid, interpretation, emptyRegistry)).toBe(false)
   })
 
-  test('CLI requires the explicit shared input and rejects invalid briefs', () => {
-    const root = mkdtempSync(join(tmpdir(), 'combat-presentation-'))
-    try {
-      const files = ['brief.md', 'interpretation.md', 'registry.json'].map(name => join(root, name))
-      const sources = [validBrief(), interpretation, emptyRegistry]
-      files.forEach((path, index) => writeFileSync(path, sources[index]))
-      const cli = resolve(import.meta.dir, 'validate-concept-brief.ts')
-      const contract = resolve(import.meta.dir, '../../../../docs/prompts/game-presentation-contract.md')
-      expect(Bun.spawnSync(['bun', cli, ...files, contract]).exitCode).toBe(0)
-      expect(Bun.spawnSync(['bun', cli, ...files]).exitCode).toBe(2)
-      expect(Bun.spawnSync(['bun', cli, ...files, join(root, 'absent.md')]).exitCode).toBe(1)
-      const empty = join(root, 'empty.md'); writeFileSync(empty, '')
-      expect(Bun.spawnSync(['bun', cli, ...files, empty]).exitCode).toBe(1)
-      writeFileSync(files[0], validBrief().replace('"top-down"', '"side-scrolling"'))
-      expect(Bun.spawnSync(['bun', cli, ...files, contract]).exitCode).toBe(1)
-    } finally { rmSync(root, { recursive: true, force: true }) }
+  test('shared presentation contract remains mandatory in the immutable brief validator', () => {
+    expect(isValidConceptBrief(validBrief(), interpretation, emptyRegistry)).toBe(true)
+    expect(isValidConceptBrief(validBrief().replace(presentationFixture, ''), interpretation, emptyRegistry)).toBe(false)
+    expect(isValidConceptBrief(validBrief().replace('"top-down"', '"side-scrolling"'), interpretation, emptyRegistry)).toBe(false)
   })
 
   test('rejects an unknown interpretation ID', () => {
