@@ -1,5 +1,3 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
 
 export const AXIS_KEYS = [
   'combatRange',
@@ -71,38 +69,10 @@ export function parseRegistry(value: string): FingerprintRegistry {
   return registry as FingerprintRegistry
 }
 
-export async function loadRegistry(path: string): Promise<FingerprintRegistry> {
-  try {
-    return parseRegistry(await readFile(path, 'utf8'))
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      return { schemaVersion: 1, entries: [] }
-    }
-    throw error
-  }
+export async function loadRegistry(repositoryRoot: string): Promise<FingerprintRegistry> {
+ const {ArtifactState}=await import('../../../../scripts/artifacts/artifact-state-store')
+ const state=new ArtifactState(repositoryRoot,false,true)
+ try{return state.registry('combat')}finally{state.close()}
 }
-
-export async function initializeRegistry(path: string): Promise<void> {
-  const registry = await loadRegistry(path)
-  await mkdir(dirname(path), { recursive: true })
-  try {
-    await readFile(path, 'utf8')
-  } catch (error) {
-    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error
-    await writeFile(path, `${JSON.stringify(registry, null, 2)}\n`, { flag: 'wx' })
-  }
-}
-
-export async function registerFingerprint(path: string, entry: RegistryEntry): Promise<void> {
-  const registry = await loadRegistry(path)
-  if (!VERSION_PATTERN.test(entry.version)) throw new Error(`Invalid artifact version: ${entry.version}`)
-  if (registry.entries.some(existing => existing.version === entry.version)) {
-    throw new Error(`Fingerprint already registered for ${entry.version}`)
-  }
-  const next: FingerprintRegistry = { schemaVersion: 1, entries: [...registry.entries, entry] }
-  parseRegistry(JSON.stringify(next))
-  await mkdir(dirname(path), { recursive: true })
-  const temporaryPath = `${path}.tmp-${process.pid}`
-  await writeFile(temporaryPath, `${JSON.stringify(next, null, 2)}\n`, { flag: 'wx' })
-  await rename(temporaryPath, path)
-}
+export async function initializeRegistry(_path:string):Promise<void>{throw new Error('Registry initialization belongs to artifact-state allocate')}
+export async function registerFingerprint(_path:string,_entry:RegistryEntry):Promise<void>{throw new Error('Use artifact-state finalize for atomic combat and world registration')}

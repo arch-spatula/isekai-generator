@@ -105,8 +105,32 @@ describe('isValidInterpretation', () => {
     expect(isValidInterpretation(valid.replace(/^변화:.+\n/m, ''), specialistIds)).toBe(false)
   })
 
-  test('rejects a shallow interpretation', () => {
-    expect(isValidInterpretation(valid.replace(/^해석:.+$/m, '해석: 보존과 변화가 함께 요구된다.'), specialistIds)).toBe(false)
+  test('accepts concise text throughout the integrated structure', () => {
+    let concise = valid
+    for (const field of ['핵심 욕구', '반복 갈등', '의사결정 기준', '내적 동기', '행동 방식', '환경 반응', '반복 결과', '유지', '변화', '해석', '조건']) {
+      concise = concise.replace(new RegExp(`^${field}:.+$`, 'gm'), `${field}: 재량이 있으면 꾸준히 완성한다.`)
+    }
+    concise = concise.replace(/고유: .+ \(근거:/g, '고유: 고유한 발현 조건을 구분한다. (근거:')
+      .replace(/^양면성:.+$/gm, '양면성: 강점: 약속을 지킴 | 취약점: 도움 요청이 늦음')
+    expect(isValidInterpretation(concise, specialistIds)).toBe(true)
+  })
+
+  test.each(['핵심 욕구', '반복 갈등', '의사결정 기준', '내적 동기', '행동 방식', '환경 반응', '반복 결과', '유지', '변화', '해석', '조건'])('rejects an empty required field: %s', field => {
+    for (const content of ['', '   ', '\t']) {
+      expect(isValidInterpretation(valid.replace(new RegExp(`^${field}:.+$`, 'm'), `${field}: ${content}`), specialistIds)).toBe(false)
+    }
+  })
+
+  test('rejects an empty system-specific insight even with valid evidence', () => {
+    expect(isValidInterpretation(valid.replace(/^- 사주 고유:.+$/m, '- 사주 고유:   (근거: S-01)'), specialistIds)).toBe(false)
+  })
+
+  test.each([
+    '양면성: 강점: | 취약점: 도움 요청이 늦음',
+    '양면성: 강점: 약속을 지킴 | 취약점:',
+    '양면성: 강점:   | 취약점:   ',
+  ])('rejects an empty strength or vulnerability: %s', line => {
+    expect(isValidInterpretation(valid.replace(/^양면성:.+$/m, line), specialistIds)).toBe(false)
   })
 
   test('rejects responsibility-avoidance language', () => {

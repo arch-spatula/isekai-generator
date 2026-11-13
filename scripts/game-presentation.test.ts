@@ -1,3 +1,7 @@
+import { Database } from 'bun:sqlite'
+import { beforeGdd, beforeFinalize } from './fixtures/sqlite-pipeline-runtime'
+import { pipelineGdd as fullPipelineGdd } from './fixtures/sqlite-pipeline'
+import { prepare, submit, finish, call, request } from './artifacts/sqlite-test-fixtures'
 import { gddTemplateFixture } from './fixtures/gdd-template'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -67,43 +71,26 @@ test('world and final GDD validation require matching presentation in every upst
   }
 })
 
-test('world and both GDD CLIs require an explicit valid shared input', () => {
-  const root = mkdtempSync(join(tmpdir(), 'presentation-cli-')); roots.push(root)
-  const sources = { gdd, chart, interpretation: fixtureInterpretation, combat, world, registry: JSON.stringify(emptyRegistry), empty: '' }
-  const paths = Object.fromEntries(Object.entries(sources).map(([name, source]) => {
-    const path = join(root, `${name}.md`); writeFileSync(path, source); return [name, path]
-  }))
-  const calls = [
-    ['select-world-concept/scripts/validate-world-brief.ts', [paths.world, paths.interpretation, paths.combat, paths.registry]],
-    ...['generate-gdd-from-interpretation', 'generate-personalized-gdd'].map(skill => [
-      `${skill}/scripts/validate-gdd.ts`, [paths.gdd, paths.chart, paths.interpretation, paths.combat, paths.world],
-    ] as const),
-  ] as const
-  for (const [script, args] of calls) {
-    const cli = resolve(import.meta.dir, '../.agents/skills', script)
-    expect(Bun.spawnSync(['bun', cli, ...args, prompt]).exitCode).toBe(0)
-    expect(Bun.spawnSync(['bun', cli, ...args]).exitCode).not.toBe(0)
-    expect(Bun.spawnSync(['bun', cli, ...args, paths.empty]).exitCode).not.toBe(0)
-    expect(Bun.spawnSync(['bun', cli, ...args, join(root, 'absent.md')]).exitCode).not.toBe(0)
-  }
+test('public finish rejects a GDD missing its shared presentation and cannot register it', () => {
+  const { root, run } = beforeGdd()
+  const attempt = prepare(root, run, 'gdd').data
+  writeFileSync(attempt.output, fullPipelineGdd().replace(presentationFixture, ''))
+  submit(root, attempt)
+  expect(finish(root, attempt).outcome).toBe('validation-failed')
+  const result = call(root, ['finalize', '--run', run, '--request', request()])
+  expect(result.code).toBe(1)
+  const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
+  try { expect(db.query('SELECT count(*) AS count FROM fingerprints').get()).toEqual({ count: 0 }) } finally { db.close() }
 })
 
-test('invalid presentation cannot be registered and existing registry data stays unchanged', () => {
-  const root = mkdtempSync(join(tmpdir(), 'presentation-register-')); roots.push(root)
-  for (const [skill, manager, source] of [
-    ['select-gameplay-concept', 'manage-fingerprint-registry.ts', combat],
-    ['select-world-concept', 'manage-world-registry.ts', world],
-  ]) {
-    const registry = join(root, `${skill}.json`), brief = join(root, `${skill}.md`)
-    const cli = resolve(import.meta.dir, '../.agents/skills', skill, 'scripts', manager)
-    expect(Bun.spawnSync(['bun', cli, 'init', registry]).exitCode).toBe(0)
-    writeFileSync(brief, source)
-    expect(Bun.spawnSync(['bun', cli, 'register', registry, 'v0.9.0', brief]).exitCode).toBe(0)
-    const before = readFileSync(registry, 'utf8')
-    writeFileSync(brief, source.replace('top-down', 'side-scrolling'))
-    expect(Bun.spawnSync(['bun', cli, 'register', registry, 'v0.9.1', brief]).exitCode).toBe(1)
-    expect(readFileSync(registry, 'utf8')).toBe(before)
-  }
+test('invalid presentation never overwrites an already accepted GDD', () => {
+  const { root, run, directory } = beforeFinalize()
+  const path = join(directory, 'docs/GDD/personalized-action-rpg-concept.md')
+  const before = readFileSync(path, 'utf8')
+  const attempted = call(root, ['prepare', '--run', run, '--stage', 'gdd', '--kind', 'generate', '--request', request()])
+  expect(attempted.code).toBe(1)
+  expect(JSON.parse(attempted.stderr).error.code).toBe('stage-not-available')
+  expect(readFileSync(path, 'utf8')).toBe(before)
 })
 
 test('declaration validation does not pretend to judge prose semantics or ban negative mentions', () => {

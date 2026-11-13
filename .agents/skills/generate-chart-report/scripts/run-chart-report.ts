@@ -1,11 +1,12 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { ArtifactState } from '../../../../scripts/artifacts/artifact-state-store'
+import { writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
-import { failRun, readRunManifest, updateRun } from '../../../../scripts/artifacts/artifact-run'
+import { failRun, updateRun } from '../../../../scripts/artifacts/artifact-run'
 
-import { recordStageProgress } from '../../../../scripts/artifacts/artifact-progress'
 
-import { buildEvidenceManifest } from './chart-evidence'
 
+class ChartCalculationError extends Error {}
 const REQUIRED_SECTIONS = ['四柱八字', '紫微斗數 命盤', 'Natal Chart'] as const
 
 /** Return whether calculator output contains all supported chart systems. */
@@ -14,54 +15,28 @@ export function isCompleteChartReport(report: string): boolean {
 }
 
 /** Run the repository calculator and save its stdout without modification. */
-export async function runChartReport(
-  repositoryRoot: string,
-  outputPath: string,
-  chartArguments: string[],
-): Promise<void> {
-  const root = resolve(repositoryRoot)
-  const runDirectory = resolve(dirname(outputPath), '..', '..')
-  const manifest = readRunManifest(runDirectory)
-  if (resolve(outputPath) !== join(root, 'artifacts', manifest.artifactVersion, 'docs', 'GDD', 'chart-report.md')) throw new Error('Chart output must belong to the reserved run')
-  const standalone = manifest.artifactKind === 'chart-report'
-  if (standalone) updateRun(runDirectory, 'running')
-  else if (manifest.status !== 'running') throw new Error('Parent GDD run must be running before chart calculation')
-  try {
-    recordStageProgress(runDirectory, readRunManifest(runDirectory), 'chart-report', 'running')
-    await calculateChartReport(root, outputPath, chartArguments)
-    recordStageProgress(runDirectory, readRunManifest(runDirectory), 'chart-report', 'succeeded')
-    if (standalone) updateRun(runDirectory, 'succeeded')
-  } catch (error) {
-    try { recordStageProgress(runDirectory, readRunManifest(runDirectory), 'chart-report', 'failed') } catch (progressError) {
-      const combined = new AggregateError([error, progressError], 'Chart failed; recording progress also failed')
-      if (standalone) failRun(runDirectory, 'chart-report', 'Chart calculation or progress recording failed.', combined)
-      throw combined
-    }
-    if (standalone) failRun(runDirectory, 'chart-report', 'Chart calculation or evidence validation failed.', error)
-    throw error
-  }
-}
-
-async function calculateChartReport(root: string, outputPath: string, chartArguments: string[]): Promise<void> {
-  const processResult = Bun.spawn(
-    ['bun', join(root, 'scripts', 'chart-report.ts'), ...chartArguments],
-    { cwd: root, stdout: 'pipe', stderr: 'pipe' },
-  )
-  const [exitCode, stdout, stderr] = await Promise.all([
-    processResult.exited,
-    new Response(processResult.stdout).text(),
-    new Response(processResult.stderr).text(),
-  ])
-  if (exitCode !== 0) throw new Error(stderr.trim() || `Chart calculator exited with code ${exitCode}`)
-  if (!isCompleteChartReport(stdout)) throw new Error('Chart report is empty or missing a supported chart section.')
-
-  await mkdir(dirname(outputPath), { recursive: true })
-  await writeFile(outputPath, stdout, { encoding: 'utf8', flag: 'wx' })
-  await writeFile(
-    join(dirname(outputPath), 'chart-evidence.json'),
-    `${JSON.stringify(buildEvidenceManifest(stdout), null, 2)}\n`,
-    { encoding: 'utf8', flag: 'wx' },
-  )
+export async function runChartReport(repositoryRoot:string,outputPath:string,chartArguments:string[]):Promise<void> {
+ const root=resolve(repositoryRoot),runDirectory=resolve(dirname(outputPath),'../..'),state=new ArtifactState(root)
+ let activeRun:any
+ try {
+  const run=state.run(runDirectory.split('/').at(-1)!)
+  if(resolve(outputPath)!==join(root,'artifacts',run.version,'docs/GDD/chart-report.md'))throw new Error('Chart output must belong to reserved run')
+  if(run.kind==='chart-report'&&run.status==='allocated')updateRun(runDirectory,'running')
+  else if(run.status!=='running')throw new Error('Parent GDD run must be running before chart calculation')
+  activeRun=run
+  const prepared=state.prepare(run.id,'chart-report','generate',randomUUID()).data
+  const child=Bun.spawn(['bun',join(root,'scripts/chart-report.ts'),...chartArguments],{cwd:root,stdout:'pipe',stderr:'pipe'})
+  const [exitCode,stdout,stderr]=await Promise.all([child.exited,new Response(child.stdout).text(),new Response(child.stderr).text()])
+  if(exitCode!==0)throw new ChartCalculationError(stderr.trim()||'Chart calculator failed')
+  if(!isCompleteChartReport(stdout))throw new ChartCalculationError('Chart calculator returned incomplete output')
+  await writeFile(prepared.output,stdout,{flag:'wx'})
+  state.submit(prepared.attemptId,prepared.claim,{},randomUUID());state.finish(prepared.attemptId,prepared.claim,randomUUID())
+  if(run.kind==='chart-report')state.finalize(run.id,randomUUID())
+ }catch(error){
+  if(activeRun){if(activeRun.kind==='chart-report'&&error instanceof ChartCalculationError)failRun(runDirectory,'chart-report','Chart calculation or evidence validation failed.',error)
+  try{state.blockFailure('chart-calculation-failed',activeRun.id)}catch(recordError){throw new AggregateError([error,recordError],'Chart failed; recording blocked state also failed')}}
+  throw error
+ }finally{state.close()}
 }
 
 if (import.meta.main) {

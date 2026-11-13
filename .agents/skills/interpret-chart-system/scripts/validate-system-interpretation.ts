@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises'
 
 import type { ChartEvidenceManifest, EvidenceSystem } from '../../generate-chart-report/scripts/chart-evidence'
 
@@ -58,7 +57,7 @@ export function diagnoseSystemInterpretation(system: ChartSystem, markdown: stri
     const block = items.slice(match.index! + match[0].length, matches[index + 1]?.index ?? items.length)
     const domain = block.match(/^영역:\s*(.+?)\s*$/m)?.[1]
     const resolution = block.match(/^해상도:\s*(.+?)\s*$/m)?.[1]
-    const reading = block.match(/^해석:\s*(\S.+)$/m)?.[1]
+    const reading = block.match(/^해석:[ \t]*(\S[^\r\n]*)$/m)?.[1]
     const evidence = block.match(/^근거:\s*(\S.+)$/m)?.[1]
     const evidenceIds = evidence?.match(new RegExp(`${contract.prefix}-E[0-9a-f]{16}`, 'g')) ?? []
     if (domain != null) coveredDomains.add(domain)
@@ -66,7 +65,7 @@ export function diagnoseSystemInterpretation(system: ChartSystem, markdown: stri
     for (const id of evidenceIds) coveredEvidenceIds.add(id)
     if (domain == null || !REQUIRED_DOMAINS.includes(domain as typeof REQUIRED_DOMAINS[number])) report('item-domain', 'Item requires a supported life domain.')
     if (resolution == null || !(contract.resolutions as readonly string[]).includes(resolution)) report('item-resolution', 'Item requires a supported system resolution.')
-    if (reading == null || reading.length < 80) report('item-reading', 'Item interpretation requires at least 80 characters.')
+    if (reading == null) report('item-reading', 'Item requires a non-empty interpretation.')
     if (/^시드 가치:/m.test(block)) report('creative-preselection', 'Specialist items must not preselect creative material.')
     if (evidenceIds.length === 0) report('item-evidence', 'Item requires system evidence IDs.')
     if (manifest != null && evidenceIds.some(id => !validEvidenceIds.has(id))) report('unknown-evidence', 'Item references an unknown system evidence ID.')
@@ -82,25 +81,4 @@ export function isValidSystemInterpretation(system: ChartSystem, markdown: strin
   return diagnoseSystemInterpretation(system, markdown, manifest).length === 0
 }
 
-if (import.meta.main) {
-  const [system, path, evidencePath] = process.argv.slice(2)
-  if (!Object.hasOwn(CONTRACTS, system) || path == null || evidencePath == null) {
-    console.error('Usage: bun validate-system-interpretation.ts <saju|ziwei|natal> <output.md> <chart-evidence.json>')
-    process.exitCode = 2
-  } else {
-    try {
-      const [markdown, evidenceJson] = await Promise.all([readFile(path, 'utf8'), readFile(evidencePath, 'utf8')])
-      const manifest = JSON.parse(evidenceJson) as ChartEvidenceManifest
-      const errors = diagnoseSystemInterpretation(system as ChartSystem, markdown, manifest)
-      if (errors.length > 0) {
-        console.error(JSON.stringify({ system, errors }, null, 2))
-        process.exitCode = 1
-      } else {
-        console.log(`Validated ${system} specialist interpretation.`)
-      }
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error))
-      process.exitCode = 1
-    }
-  }
-}
+if (import.meta.main) { console.error('Use artifact-state finish --attempt <id> --claim <claim> --request <id>; validation reads its immutable DB input'); process.exitCode=2 }

@@ -11,7 +11,7 @@ flowchart LR
     U[출생 정보와 옵션] --> O[generate-personalized-gdd]
     O --> C[1. generate-chart-report]
     C --> R[chart-report.md]
-    C --> E[chart-evidence.json]
+    C --> E[SQLite 체계별 근거]
     R --> S[2a. 사주 전문 에이전트]
     R --> Z[2b. 자미두수 전문 에이전트]
     R --> N[2c. 네이탈 전문 에이전트]
@@ -68,14 +68,14 @@ flowchart LR
 차트 단독 생성과 전체 GDD는 같은 번호 순서를 공유한다. 명시적 버전 지정은 받지 않으며
 실패·취소·비정상 종료된 실행의 번호도 재사용하지 않는다. 기존 아티팩트는 변경하지 않는다.
 
-예약은 버전 디렉터리와 `artifact-run.json`을 먼저 생성한다. manifest에는 종류, 목적,
-mode, 기준선 revision, source revision과 dirty 여부, 상태와 시각을 기록한다. 민감한 입력과
-생성 본문은 넣지 않는다. `release-candidate`는 clean working tree에서만 예약한다.
+첫 예약이 공용 `artifacts/state.sqlite`를 초기화하고 실행·버전·단계 상태를 DB에 기록한다.
+종류·목적·mode·기준선/source revision과 dirty 여부를 보존한다. 원시 출생 인자와 생성
+본문은 운영 로그에 넣지 않는다. `release-candidate`는 clean working tree에서만 예약한다.
+과거 아티팩트는 import하지 않고 기존 디렉터리 이름만 확인해 번호 충돌을 피한다.
 
 ```text
 artifacts/vX.Y.Z/docs/GDD/
 ├── chart-report.md
-├── chart-evidence.json
 ├── saju-interpretation.md
 ├── ziwei-interpretation.md
 ├── natal-interpretation.md
@@ -87,11 +87,11 @@ artifacts/vX.Y.Z/docs/GDD/
 
 ## 단계 1: 차트 보고서
 
-`generate-chart-report`가 사주팔자, 자미두수, 네이탈 차트를 계산해 `chart-report.md`에 그대로 저장한다. 동시에 같은 결정론적 출력에서 장식 구분선과 섹션 제목을 제외하고 내용 기반 해시 ID를 부여한 `chart-evidence.json`을 생성한다. 해석이나 요약은 하지 않는다.
+`generate-chart-report`가 사주팔자, 자미두수, 네이탈 차트를 계산해 `chart-report.md`에 그대로 저장한다. 동시에 같은 결정론적 출력에서 장식 구분선과 섹션 제목을 제외하고 내용 기반 해시 ID를 부여해 SQLite의 evidence에 저장한다. 해석이나 요약은 하지 않는다.
 
 ## 단계 2: 전문 해석 병렬 실행
 
-세 `interpret-chart-system` 에이전트가 같은 보고서에서 지정된 체계만 읽는다.
+세 `interpret-chart-system` 에이전트가 DB 입력 조회로 지정된 체계의 보고서·근거만 읽는다.
 
 에이전트의 역할·입출력·격리·검증 절차는 스킬이 맡고, 해석 질문과 출력 템플릿은
 `docs/prompts/saju-interpretation.md`, `ziwei-interpretation.md`, `natal-interpretation.md`가
@@ -113,7 +113,7 @@ artifacts/vX.Y.Z/docs/GDD/
 
 계산 전제, 출력된 앵글과 하우스, 모든 행성·노드·조건부 포인트, 별자리·도수·역행·하우스, 모든 주요 애스펙트와 오브를 다룬다. 출생 시각 미상이나 조건부 천체의 부재를 임의로 채우지 않는다. 결과는 `natal-interpretation.md`이며 ID는 `N-01`부터 시작한다.
 
-각 전문 문서는 직접 관찰과 해석을 구분하고 게임 설계는 하지 않는다. 모든 전문 항목은 체계 고유의 `해상도:`를 기록한다. 사주는 원국 구조·관계 작용·운의 변화, 자미두수는 궁위 역할·성요 상태·시간 층위, 네이탈은 심리 기능·삶의 영역·내적 역동을 각각 보존한다. `근거:`에는 `chart-evidence.json`의 해당 체계 ID만 사용하며, 모든 evidence ID를 문서 전체에서 최소 한 번 참조한다. 원문 행이나 검토표는 복제하지 않는다.
+각 전문 문서는 직접 관찰과 해석을 구분하고 게임 설계는 하지 않는다. 모든 전문 항목은 체계 고유의 `해상도:`를 기록한다. 사주는 원국 구조·관계 작용·운의 변화, 자미두수는 궁위 역할·성요 상태·시간 층위, 네이탈은 심리 기능·삶의 영역·내적 역동을 각각 보존한다. `근거:`에는 DB에 저장된 해당 체계의 evidence ID만 사용하며, 모든 evidence ID를 문서 전체에서 최소 한 번 참조한다. 원문 행이나 검토표는 복제하지 않는다.
 
 ## 단계 3: 통합 해석
 
@@ -140,7 +140,7 @@ artifacts/vX.Y.Z/docs/GDD/
 다른 후보 네 개를 비교한다. 후보는 해석 ID, 반대 근거, 약점과 점수를 포함하며 모든
 후보 쌍은 최소 세 축에서 달라야 한다.
 
-최초 선택이 `artifacts/registries/combat-concept-fingerprints.json`의 과거 지문과 일곱 축
+최초 선택이 DB의 성공 확정된 전투 지문과 일곱 축
 중 다섯 축 이상 같으면 다섯 번째 후보를 한 번 추가해 다시 비교한다. 과거 GDD 본문은
 읽지 않는다. 결과는 `gameplay-concept-brief.md`에 저장한다.
 
@@ -152,8 +152,7 @@ artifacts/vX.Y.Z/docs/GDD/
 `select-world-concept`는 통합 해석과 확정 전투 브리프를 읽고 지형·생태·이동·정착·위험·
 공간 규칙의 6축으로 서로 다른 세계 네 개를 비교한다. 해석 ID, 반대 근거, 전투 동사의
 환경별 번역, 탐험·해금·귀환 방식을 기록한다. anchor·route·flow를 곧바로 닻·항로·조류로
-문자화하지 않는다. 세계 지문은 전투와 별도인
-`artifacts/registries/world-concept-fingerprints.json`에서 비교한다.
+문자화하지 않는다. 세계 지문은 같은 DB 안에서 전투와 분리된 종류로 조회·비교한다.
 
 처음 후보 쌍은 최소 3축이 달라야 하고, 최소 세 지형과 비핵심 해양 대안 두 개를 포함한다.
 기존 세계와 4축 이상 같으면 추가 후보 한 개를 비교한다. 해양 세계와 유사 세계는 금지하지
@@ -189,7 +188,7 @@ GDD는 공통 계약의 화면·픽셀 표현, 이동·타격·높이·가림, �
 | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | 원시 출생 정보·옵션 | 읽기 | 미전달 | 미전달 | 미전달 | 미전달 | 미전달 |
 | `chart-report.md` | 생성 | 각자 지정 체계 읽기 | 미전달 | 미전달 | 미전달 | 근거 확인 |
-| `chart-evidence.json` | 생성 | 각자 지정 체계 ID 읽기 | 미전달 | 미전달 | 미전달 | 미전달 |
+| DB의 체계별 evidence | 생성 | 각자 지정 체계 ID 읽기 | 미전달 | 미전달 | 미전달 | 미전달 |
 | 전문 해석 3개 | 미전달 | 각자 생성·상호 미전달 | 읽기 | 미전달 | 미전달 | 미전달 |
 | `chart-interpretation.md` | 미전달 | 미전달 | 생성 | 주 입력 | 주 입력 | 주 입력 |
 | 전투 지문 레지스트리 | 미전달 | 미전달 | 미전달 | 지문만 읽기 | 미전달 | 미전달 |
@@ -225,65 +224,35 @@ GDD는 공통 계약의 화면·픽셀 표현, 이동·타격·높이·가림, �
 
 각 전문 문서는 evidence manifest의 해당 체계 ID가 모두 참조됐는지, 존재하지 않는 ID를 사용하지 않았는지, 순차 전문 ID와 `해석:` 계약을 충족하는지 검증한다. Markdown 장식, 공백, 구분선, 원문 행 복사는 검증 대상이 아니다. 통합 문서는 세 비교 분류, 순차 ID, 관계 유형, 서로 다른 두 체계 이상의 실제 전문 ID 참조를 검증한다. 원형 선택 문서는 후보 수, 축 값, 후보 간 거리, 해석 ID, 점수 선택, 지문 유사도와 추가 후보 조건을 검증한다. GDD는 통합 ID 추적성, 원본 보고서 비첨부와 선택 지문 일치를 검증한다.
 
-오케스트레이터는 차트 계산 전에 manifest를 `running`으로 변경한다. 모든 검증과 지문
-등록이 성공한 뒤에만 `succeeded`로 변경한다. 세계 브리프 검증과 GDD의 세계 구조 일치도
-필수다. 전투·세계 지문은 각각 등록하며 한쪽만 등록된 뒤 오류가 나면 부분 등록 사실과
-실패를 보고하고 같은 run을 재등록하지 않는다. 차트 단독 실행에서는 차트 runner가 같은
-상태 전이를 담당하며 GDD 하위 차트 실행에서는 부모 상태를 변경하지 않는다.
+오케스트레이터는 DB에서 run을 시작하고 선행 조건이 충족된 시도만 prepare한다.
+각 외부 agent 실행 직전에 dispatch를 기록하고 반환된 agent ID를 bind한다. 제출은 stdin으로
+기록하며 finish가 같은 snapshot을 검증한다. 에이전트의 자체 수정 루프는 허용하지 않는다.
 
-포착한 오류는 `failed`, 사용자 취소는 `cancelled`로 기록하며 종료 시각을 남긴다.
-실패 정보에는 단계와 짧은 비민감 요약만 넣는다. 원래 오류와 manifest 갱신 오류가 함께
-발생하면 둘 다 보고한다. 비정상 종료로 남은 `allocated` 또는 `running`은 결과를 추측해
-변경하지 않는다. 예약된 디렉터리는 지우지 않는다. 실패·취소된 생성은 지문을 등록하지 않는다.
+전문 해석의 최초 생성·수정·재생성은 체계당 총 3회 한도를 공유한다. 구조 검증 통과는
+`editing-required`이며 방어 편집 채택 후에만 정식 문서를 게시한다. 편집은 별도 총 3회
+한도에서 제출 실패 시에만 sentence→item→system으로 확대한다. 원본·입력·hash 변조와
+기록·게시 오류를 제출 오류로 바꾸지 않는다.
 
-전문 해석은 오케스트레이터가 체계별 전체 3회 한도 안에서 복구한다. 최초 생성·수정·새
-생성은 모두 같은 한도를 소비한다. 검증 실패는 기본적으로 실패 문서를 보존한 수정(B안),
-에이전트 실행 실패나 문서 미생성은 원천 자료에서 새 생성으로 처리한다. 각 에이전트는
-한 번 작성·검증하고 종료하며 자체 수정 루프를 실행하지 않는다.
+시도 입력·결과·진단·채택과 작업 이력은 DB에 기록한다. 시도별 Markdown은 garbage에
+보존하되 후속 설계 입력에 섞지 않는다. 파일 게시 의도와 hash를 DB에 먼저 남기고,
+게시 후 DB 완료 전에 중단되면 reconcile이 같은 파일을 확인해 완료를 반영한다.
 
-`bun scripts/manage-specialist-attempt.ts prepare <run-directory> <system>`으로 시도를
-예약하고 반환된 출력 경로로 격리 에이전트를 실행한다. 완료 후 `finish` 또는 실행 실패 시
-`error`와 시도 번호로 결과를 기록한다. 검증 실패도 기록에 성공했다면 명령은 정상 종료하므로
-반환된 `status`를 확인한다. 다음 시도는 직전 실패 기록이 있어야 예약할 수 있다.
+일시적 인프라 장애·입력 대기·실행 여부 불명은 blocked로 남기고 새 컨텍스트에서 DB의
+summary/next를 조회해 재개한다. worker가 살아 있거나 종료를 확인할 수 없으면 중복
+호출하지 않는다. 제출이 저장됐으면 재생성 없이 검증·게시부터 이어 간다. 사용자 취소와
+회복 불가능한 실패는 terminal이며 종료 run은 다시 열지 않는다.
 
-시도 문서와 로그는 `<run-directory>/garbage/attempts/<system>/NNN/`에 보존한다.
-통과 문서만 기존 `docs/GDD/` 정식 경로에 게시하고 같은 체계의 `accepted.json`에 채택 시도와
-해시를 기록한다. `garbage/`는 게임 개발 참고 자료 및 후속 설계 단계의 입력에서 제외한다.
-복구 에이전트만 전달받은 동일 체계의 직전 실패 문서·결과를 참조한다.
-
-복구 중에는 부모 상태를 `running`으로 유지하고 통과한 다른 체계를 재실행하지 않는다.
-3회 소진 또는 기록·검증 기반 도구·게시 오류 시 다른 병렬 작업은 안전하게 완료시킨 뒤
-부모 run을 실패로 종료한다. 세 체계가 모두 통과하기 전에는 통합을 실행하지 않는다.
-취소나 비정상 종료 및 기존 종료 run의 비재사용 규칙도 유지한다. 무제한 플래그는 향후
-작업이다. 상세 계약은 [전문 해석 복구 명세](../spec/specialist-interpretation-recovery.md)를 따른다.
+최종 검증 snapshot과 최신 지문 revision을 확인한 뒤 두 종류 지문과 run 성공을 한 DB
+트랜잭션으로 확정한다. 부분 등록은 rollback한다. 비교 이후 다른 run이 등록했으면
+registry-stale로 차단하고 최신 비교와 필요한 선택·의존 문서의 재검토를 요구한다.
+상세 CLI·재개·예산·입력 격리 계약은
+[SQLite 상태 관리와 작업 재개 명세](../spec/sqlite-artifact-state.md)를 따른다.
 
 ## 완료 결과
 
-새 run에는 아티팩트 루트 `TODO.md`가 예약 시 자동 생성된다. 차트 runner·전문 해석 관리자는
-진행 상태를 자동 기록하고, 오케스트레이터는 통합 이후 각 단계와 최종 검증·두 지문 등록의
-시작·검증 완료를 `scripts/update-artifact-progress.ts`로 기록한다. 부모 상태 변경도 TODO에
-반영된다. 중단 후에는 같은 run의 TODO·manifest·체크포인트와 실제 결과를 대조한다.
-하위 해석·설계 에이전트에는 TODO를 전달하지 않는다. 상세 계약은
-[진행 기록 명세](../spec/artifact-progress-handoff.md)를 따른다.
+새 run은 JSON/JSONL 상태 파일이나 루트 TODO를 생성하지 않는다. 진행과 다음 행동은
+읽기 CLI에서 조회하며 전체 DB나 운영 이력을 하위 설계 입력으로 전달하지 않는다.
 
-성공 시 모드, artifact version, purpose, 최종 상태, 검증된 아홉 산출물 및 루트 TODO 경로와 모델 대체
-여부를 보고한다. 출생 정보와 산출물 본문은 완료 메시지에 복제하지 않는다.
-
-## 기준선 승격 운영
-
-승격 조건과 v0.2 관문은 [버전 관리 명세](../spec/artifact-generation-versioning.md)를 따른다.
-일반 생성은 minor를 자동으로 변경하지 않는다. 검증 근거가 준비된 clean working tree에서
-다음 명령을 명시적으로 실행한다.
-
-```bash
-bun scripts/promote-artifact-series.ts <repository-root> <next-series> <decision-path> [known-issue-path ...]
-```
-
-도구는 정확히 다음 minor, 저장소 내부의 근거 문서와 known issue 파일, 기존 대상 series
-부재를 검사하고 설정만 변경한다. 기준선 revision은 승격 직전 HEAD다. 설정을 커밋한 뒤
-별도 `release-candidate` 또는 `regression` 실행으로 새 series의 `.0`을 예약한다.
-승격 도구는 근거 문서의 품질을 자동 판정하지 않으므로 운영자가 명세의 관문을 확인한다.
-
-초기 도입은 `0.1`을 유지하며 설정 작성 당시 HEAD를 기준선으로 기록한다. 자기 커밋의
-hash를 같은 커밋에 넣을 수 없으므로 구현 커밋을 초기 기준선으로 삼으려면 그 커밋 후
-`baselineRevision`을 별도 설정 커밋으로 갱신한다. 과거 실행에는 manifest를 소급 생성하지 않는다.
+성공 시 모드, artifact version, purpose, DB의 최종 상태, 검증된 여덟 Markdown 산출물
+경로와 DB 경로, 모델 대체 여부를 보고한다. 출생 정보와 산출물 본문은 완료 메시지에
+복제하지 않는다. 로컬 경로는 실행 안내이며 영구 검증 근거로 사용하지 않는다.

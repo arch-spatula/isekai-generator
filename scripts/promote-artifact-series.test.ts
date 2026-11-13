@@ -1,19 +1,19 @@
 import { expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { allocateRun, git, readSeriesConfig } from './artifacts/artifact-run'
+import { allocateRun, git, readSeriesConfig, readRunManifest } from './artifacts/artifact-run'
 import { commitFixture, makeRepository } from './artifacts/test-fixtures'
 import { promoteArtifactSeries } from './promote-artifact-series'
 
 test('promotion only changes config; after committing, the first run is new series .0', () => {
   const root = makeRepository()
   const old = allocateRun(root, 'chart-report')
-  const original = readFileSync(join(old, 'artifact-run.json'), 'utf8')
+  const original = readRunManifest(old)
   const head = git(root, ['rev-parse', 'HEAD'])
   promoteArtifactSeries(root, '0.2', 'decision.md', ['incident.md'])
   expect(readSeriesConfig(root)).toMatchObject({ activeSeries: '0.2', baselineRevision: head, knownIssues: ['incident.md'] })
   expect(existsSync(join(root, 'artifacts', 'v0.2.0'))).toBe(false)
-  expect(readFileSync(join(old, 'artifact-run.json'), 'utf8')).toBe(original)
+  expect(readRunManifest(old)).toEqual(original)
   commitFixture(root)
   expect(allocateRun(root, 'personalized-gdd', { purpose: 'release-candidate' })).toEndWith('/v0.2.0')
 })

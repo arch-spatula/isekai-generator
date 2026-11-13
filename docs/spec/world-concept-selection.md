@@ -4,6 +4,17 @@
 > 작성일: 2026-11-04
 > 결정: [세계 구조 선택 분리](../ADR/2026-11-04-independent-world-concept-selection.md)
 
+## SQLite 전환 적용
+
+> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
+
+신규 실행의 세계 지문은 공용 SQLite에서 조회한다. 전투 지문과 입력을 분리하며 기존
+6축·동률·challenger 계약을 유지한다. 최종 확정은 최신 registry revision과 채택 hash를
+확인하여 두 종류 지문과 run 성공을 한 트랜잭션으로 기록한다. 아래 별도 JSON 파일,
+부분 등록, 파일 init/register 설명은 전환 전 구현 기록이다.
+
+상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+
 ## 목적과 범위
 
 해양 세계를 금지하지 않고 군도·항로가 기본 해법이 되는 경로를 끊는다. 전투 선택 다음,
