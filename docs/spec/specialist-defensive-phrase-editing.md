@@ -151,6 +151,13 @@ artifacts/<version>/garbage/defensive-editing/<system>/
 
 ## 7. 완료·실패·진행 기록
 
+편집 제출의 형식·대상·링크·범위·리뷰 계약 오류는 `editing-contract` 진단과
+`editing-failed` 결과로 기록한다. 원본과 같은 후보 및 해시를 보존하고, 다음 허용 scope를
+준비할 때 실패 사유와 진단을 `retry_scheduled` 이벤트로 남긴다. 준비된 input·원본·source
+해시 불일치와 기록·게시 I/O 실패는 계속 예외로 중단하며 범위 확대를 허용하지 않는다.
+전문 해석의 `editing-required` 인계는 `validation_succeeded`로 기록하며 최종 게시를 뜻하지 않는다.
+
+
 완료 조건은 전체 validator 통과, 모든 확정 대상 해결, 판단 보류 없음, 변경 범위 및
 보존 조건 확인이다. ID·evidence·순서 등 기계 검증과 의미 보존에 대한 편집자의 확인을
 구별해 기록한다. validator만으로 의미 보존을 증명했다고 주장하지 않는다.

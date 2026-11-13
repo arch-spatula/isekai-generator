@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join } from 'node:path'
 import { allocateRun, readRunManifest, updateRun } from './artifact-run'
 import { makeRepository } from './test-fixtures'
@@ -25,6 +25,7 @@ function setup(): string {
 }
 
 const hash = (text: string): string => createHash('sha256').update(text).digest('hex')
+const events = (run: string): Record<string, any>[] => readFileSync(join(run, 'events.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
 function source(run: string, text = valid): void {
   const input = prepareSpecialistAttempt(run, 'saju')
   writeFileSync(join(run, input.output), text)
@@ -55,6 +56,7 @@ test('one top-level source hash binds review without a review hash and publishes
   expect(submission.sourceSha256).toBe(hash(valid))
   expect(Object.hasOwn(submission.review, 'inputSha256')).toBe(false)
   expect(finishDefensiveEdit(run, 'saju', 1).status).toBe('passed')
+  expect(events(run).at(-1)).toMatchObject({ event: 'validation_succeeded', stage: 'saju', attempt: 1 })
   expect(readFileSync(final(run), 'utf8')).toBe(valid)
   expect(readFileSync(join(run, input.candidate), 'utf8')).toBe(valid)
   const accepted = JSON.parse(readFileSync(join(run, 'garbage/defensive-editing/saju/accepted.json'), 'utf8'))
@@ -92,12 +94,123 @@ test('unresolved semantic targets expand scope only after recorded failure and s
   expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
 })
 
+test('an invalid secondary target is recorded as a recoverable editor submission failure', () => {
+  const run = setup(); source(run)
+  const first = prepareDefensiveEdit(run, 'saju')
+  proposal(run, first, [], { secondary: [{ id: 'invalid-target', target: 'S-99', status: 'preserved', reason: '존재하지 않는 대상을 검토했다고 제출함', editIds: [] }] })
+  const result = finishDefensiveEdit(run, 'saju', first.attempt)
+  expect(result.status).toBe('editing-failed')
+  expect(result.errors).toContainEqual({
+    code: 'editing-contract', message: 'Invalid secondary target',
+  })
+  expect(JSON.parse(readFileSync(join(run, first.result), 'utf8'))).toEqual(result)
+  expect(readFileSync(join(run, first.candidate), 'utf8')).toBe(valid)
+  expect(readFileSync(join(run, first.source.output), 'utf8')).toBe(valid)
+  expect(existsSync(final(run))).toBe(false)
+  const failureIndex = events(run).findIndex(event => event.event === 'validation_failed' && event.stage === 'saju' && event.attempt === 1)
+  expect(events(run)[failureIndex]).toMatchObject({
+    reason: expect.stringMatching(/contract|validation/i),
+    issues: [expect.objectContaining({ code: 'editing-contract', message: 'Invalid secondary target' })],
+  })
+  const second = prepareDefensiveEdit(run, 'saju')
+  expect(second.attempt).toBe(2)
+  expect(second.scope).toBe('item')
+  const retryIndex = events(run).findIndex(event => event.event === 'retry_scheduled' && event.stage === 'saju' && event.attempt === 2)
+  expect(retryIndex).toBeGreaterThan(failureIndex)
+  expect(events(run)[retryIndex]).toMatchObject({
+    reason: expect.stringMatching(/\S/),
+    issues: events(run)[failureIndex].issues,
+  })
+})
+
+test('event recording failure prevents an edit result and retry', () => {
+  const run = setup(); source(run)
+  const input = prepareDefensiveEdit(run, 'saju'); proposal(run, input, [], { secondary: [{ id: 'invalid-target', target: 'S-99', status: 'preserved', reason: '존재하지 않는 대상', editIds: [] }] })
+  rmSync(join(run, 'events.jsonl'))
+  mkdirSync(join(run, 'events.jsonl'))
+  expect(() => finishDefensiveEdit(run, 'saju', input.attempt)).toThrow()
+  expect(existsSync(join(run, input.result))).toBe(false)
+  expect(() => prepareDefensiveEdit(run, 'saju')).toThrow()
+})
+
+test('retry event recording failure does not allocate the next edit attempt', () => {
+  const run = setup(); source(run)
+  const first = prepareDefensiveEdit(run, 'saju')
+  proposal(run, first, [], { secondary: [{ id: 'pending', target: 'S-01', status: 'needs-expansion', reason: '항목 문맥까지 검토해야 함', editIds: [] }], unresolved: ['pending'], nextScopeReason: '항목 문맥까지 검토해야 함' })
+  expect(finishDefensiveEdit(run, 'saju', first.attempt).status).toBe('editing-failed')
+  const eventPath = join(run, 'events.jsonl')
+  const preservedEvents = readFileSync(eventPath, 'utf8')
+  rmSync(eventPath)
+  mkdirSync(eventPath)
+  try {
+    expect(() => prepareDefensiveEdit(run, 'saju')).toThrow()
+    const second = join(run, 'garbage/defensive-editing/saju/002')
+    expect(existsSync(second)).toBe(false)
+    expect(existsSync(join(second, 'input.json'))).toBe(false)
+  } finally {
+    rmSync(eventPath, { recursive: true })
+    writeFileSync(eventPath, preservedEvents)
+  }
+  expect(readFileSync(eventPath, 'utf8')).toBe(preservedEvents)
+})
+
+test('missing or mutated prepared sources and inputs remain non-recoverable integrity failures', () => {
+  for (const mode of ['mutated-source', 'missing-source', 'missing-input', 'mutated-input-hash'] as const) {
+    const run = setup(); source(run)
+    const input = prepareDefensiveEdit(run, 'saju'); proposal(run, input)
+    if (mode === 'mutated-source') writeFileSync(join(run, input.source.output), valid + '\n원문 변조.')
+    if (mode === 'missing-source') rmSync(join(run, input.source.output))
+    if (mode === 'missing-input') rmSync(join(run, input.input))
+    if (mode === 'mutated-input-hash') {
+      const prepared = JSON.parse(readFileSync(join(run, input.input), 'utf8'))
+      prepared.originalSha256 = '0'.repeat(64)
+      writeFileSync(join(run, input.input), JSON.stringify(prepared))
+    }
+    expect(() => finishDefensiveEdit(run, 'saju', input.attempt)).toThrow()
+    expect(existsSync(join(run, input.result))).toBe(false)
+    expect(() => prepareDefensiveEdit(run, 'saju')).toThrow()
+  }
+})
+
+test('publication failure is not converted into a recoverable editing failure', () => {
+  const run = setup(); source(run)
+  const input = prepareDefensiveEdit(run, 'saju'); proposal(run, input)
+  mkdirSync(final(run))
+  expect(() => finishDefensiveEdit(run, 'saju', input.attempt)).toThrow()
+  expect(JSON.parse(readFileSync(join(run, input.result), 'utf8')).status).toBe('passed')
+  expect(statSync(final(run)).isDirectory()).toBe(true)
+  expect(() => prepareDefensiveEdit(run, 'saju')).toThrow()
+})
+
+test('an existing system lock blocks finish without recording or publishing', () => {
+  const run = setup(); source(run)
+  const input = prepareDefensiveEdit(run, 'saju'); proposal(run, input)
+  const lock = join(run, 'garbage/defensive-editing/saju/.lock')
+  mkdirSync(lock)
+  try {
+    expect(() => finishDefensiveEdit(run, 'saju', input.attempt)).toThrow()
+    expect(existsSync(join(run, input.result))).toBe(false)
+    expect(existsSync(join(run, input.candidate))).toBe(false)
+    expect(existsSync(join(run, 'garbage/defensive-editing/saju/accepted.json'))).toBe(false)
+    expect(existsSync(final(run))).toBe(false)
+  } finally {
+    rmSync(lock, { recursive: true })
+  }
+})
+
 test('execution errors, recording failure and cancellation block additional editing while preserving siblings', () => {
   for (const mode of ['execution', 'record', 'cancel']) {
     const run = setup(); source(run)
     writeFileSync(join(run, 'docs/GDD/ziwei-interpretation.md'), 'accepted sibling')
     const input = prepareDefensiveEdit(run, 'saju')
-    if (mode === 'execution') expect(finishDefensiveEdit(run, 'saju', 1, true).status).toBe('execution-failed')
+    if (mode === 'execution') {
+      expect(finishDefensiveEdit(run, 'saju', 1, true).status).toBe('execution-failed')
+      expect(events(run).at(-1)).toMatchObject({
+        event: 'execution_failed', stage: 'saju', attempt: 1,
+        reason: expect.stringMatching(/execution|document/i),
+        issues: [expect.objectContaining({ code: expect.any(String), message: expect.stringMatching(/\S/) })],
+      })
+    }
     if (mode === 'record') {
       proposal(run, input); mkdirSync(join(run, input.result))
       expect(() => finishDefensiveEdit(run, 'saju', 1)).toThrow()
@@ -112,16 +225,24 @@ test('execution errors, recording failure and cancellation block additional edit
   }
 })
 
-test('deferred review, missing review report and unconfirmed preservation cannot be accepted', () => {
+test('deferred review, missing review report and unconfirmed preservation remain recoverable', () => {
   for (const mode of ['deferred', 'report', 'preservation']) {
     const run = setup(); source(run)
     const input = prepareDefensiveEdit(run, 'saju')
-    proposal(run, input, [], mode === 'deferred' ? { secondary: [{ id: 'uncertain', target: 'S-01', status: 'deferred', reason: '판단 보류', editIds: [] }], unresolved: ['uncertain'] } : mode === 'preservation' ? { preservationConfirmed: false } : {})
+    proposal(run, input, [], mode === 'deferred' ? { secondary: [{ id: 'uncertain', target: 'S-01', status: 'deferred', reason: '판단 보류', editIds: [] }], unresolved: ['uncertain'], nextScopeReason: '항목 문맥에서 의미 보존을 검토해야 함' } : mode === 'preservation' ? { preservationConfirmed: false, nextScopeReason: '항목 문맥에서 의미 보존을 확인해야 함' } : {})
     if (mode === 'report') writeFileSync(join(run, input.review), '')
-    let rejected = false
-    try { rejected = finishDefensiveEdit(run, 'saju', 1).status !== 'passed' } catch { rejected = true }
-    expect(rejected).toBe(true)
+    const result = finishDefensiveEdit(run, 'saju', input.attempt)
+    expect(result.status).toBe('editing-failed')
+    if (mode === 'report') expect(result.errors).toContainEqual({ code: 'editing-contract', message: 'Missing semantic review report' })
+    else {
+      expect(result.errors).toEqual([])
+      expect(result.unresolved).toContain(mode === 'deferred' ? 'uncertain' : 'meaning-preservation')
+    }
+    expect(readFileSync(join(run, input.candidate), 'utf8')).toBe(valid)
+    expect(result.sha256).toBe(hash(valid))
+    expect(JSON.parse(readFileSync(join(run, input.result), 'utf8'))).toEqual(result)
     expect(existsSync(final(run))).toBe(false)
+    expect(prepareDefensiveEdit(run, 'saju').scope).toBe('item')
   }
 })
 
@@ -139,16 +260,25 @@ test('public CLI prepares semantic review and records execution error without ex
   expect(call('finish', run, 'invalid', '1').exitCode).toBe(1)
 })
 
-test('automatic diagnostics cannot be silently omitted from review or left in a candidate', () => {
+test('automatic diagnostic omissions and unresolved decisions remain recoverable without publication', () => {
   for (const mode of ['omitted', 'unresolved', 'false-positive']) {
-    const run = setup(); source(run, valid + '\n단정하지 않는다.')
+    const run = setup(); const text = valid + '\n단정하지 않는다.'; source(run, text)
     const input = prepareDefensiveEdit(run, 'saju')
     expect(input.diagnostics.length).toBeGreaterThan(0)
-    proposal(run, input, [], { primary: mode === 'omitted' ? [] : input.diagnostics.map((_: unknown, diagnosticIndex: number) => ({ diagnosticIndex, status: mode, reason: '원문 유지', editIds: [] })) })
-    let rejected = false
-    try { rejected = finishDefensiveEdit(run, 'saju', 1).status !== 'passed' } catch { rejected = true }
-    expect(rejected).toBe(true)
+    proposal(run, input, [], { primary: mode === 'omitted' ? [] : input.diagnostics.map((_: unknown, diagnosticIndex: number) => ({ diagnosticIndex, status: mode, reason: '원문 유지', editIds: [] })), nextScopeReason: '항목 문맥에서 자동 진단을 다시 검토해야 함' })
+    const result = finishDefensiveEdit(run, 'saju', input.attempt)
+    expect(result.status).toBe('editing-failed')
+    if (mode === 'omitted') expect(result.errors).toContainEqual({ code: 'editing-contract', message: 'Every automatic diagnostic requires one review decision' })
+    else {
+      expect(result.errors).toContainEqual(expect.objectContaining({ code: 'responsibility-avoidance' }))
+      expect(result.errors.some(error => error.code === 'editing-contract')).toBe(false)
+      expect(result.unresolved).toContain('diagnostic:0')
+    }
+    expect(readFileSync(join(run, input.candidate), 'utf8')).toBe(text)
+    expect(result.sha256).toBe(hash(text))
+    expect(JSON.parse(readFileSync(join(run, input.result), 'utf8'))).toEqual(result)
     expect(existsSync(final(run))).toBe(false)
+    expect(prepareDefensiveEdit(run, 'saju').scope).toBe('item')
   }
 })
 
@@ -177,6 +307,25 @@ function expectProposalError(run: string, input: ReturnType<typeof prepareDefens
   expect(existsSync(join(run, input.candidate))).toBe(false)
   expect(existsSync(join(run, 'garbage/defensive-editing/saju/accepted.json'))).toBe(false)
 }
+function expectRecoverableProposalError(run: string, input: ReturnType<typeof prepareDefensiveEdit>, expected: RegExp): void {
+  const result = finishDefensiveEdit(run, 'saju', input.attempt)
+  expect(result.status).toBe('editing-failed')
+  expect(result.errors).toContainEqual({ code: 'editing-contract', message: expect.stringMatching(expected) })
+  expect(existsSync(final(run))).toBe(false)
+  const original = readFileSync(join(run, input.source.output), 'utf8')
+  expect(readFileSync(join(run, input.candidate), 'utf8')).toBe(original)
+  expect(result.sha256).toBe(hash(original))
+  expect(JSON.parse(readFileSync(join(run, input.result), 'utf8'))).toEqual(result)
+  expect(existsSync(join(run, 'garbage/defensive-editing/saju/accepted.json'))).toBe(false)
+}
+
+test('malformed edits JSON records a recoverable submission failure', () => {
+  const run = setup(); source(run)
+  const input = prepareDefensiveEdit(run, 'saju'); proposal(run, input)
+  writeFileSync(join(run, input.edits), '{')
+  expectRecoverableProposalError(run, input, /Invalid edits submission/)
+  expect(prepareDefensiveEdit(run, 'saju').scope).toBe('item')
+})
 
 test('item scope rejects independent protected metadata changes after a valid escalation', () => {
   const firstItem = valid.slice(valid.indexOf('### S-01'), valid.indexOf('### S-02'))
@@ -192,7 +341,7 @@ test('item scope rejects independent protected metadata changes after a valid es
     const input = expand(run)
     expect(input.scope).toBe('item')
     proposal(run, input, [edit])
-    expectProposalError(run, input, /Protected|preserv|보존/i)
+    expectRecoverableProposalError(run, input, /Protected|preserv|보존/i)
     expect(readFileSync(join(run, input.source.output), 'utf8')).toBe(valid)
   }
 })
@@ -205,12 +354,14 @@ test('unique original, overlap and source hash are rejected for their own contra
   for (const entry of cases) {
     const run = setup(); source(run); const input = prepareDefensiveEdit(run, 'saju')
     proposal(run, input, entry.edits)
-    expectProposalError(run, input, entry.error)
+    expectRecoverableProposalError(run, input, entry.error)
   }
   const run = setup(); source(run); const input = prepareDefensiveEdit(run, 'saju'); proposal(run, input)
   const data = JSON.parse(readFileSync(join(run, input.edits), 'utf8')); data.sourceSha256 = '0'.repeat(64)
   writeFileSync(join(run, input.edits), JSON.stringify(data))
   expectProposalError(run, input, /hash/i)
+  expect(existsSync(join(run, input.result))).toBe(false)
+  expect(() => prepareDefensiveEdit(run, 'saju')).toThrow()
 })
 
 test('a clause replacement preserves surrounding conditional explanation including decimals and abbreviations', () => {
@@ -228,7 +379,7 @@ test('sentence scope rejects expanding a short clause into multiple sentences or
     const run = setup(); source(run, valid.replace('## 계산 전제', '## 계산 전제\n계산 자료가 있다.'))
     const input = prepareDefensiveEdit(run, 'saju')
     proposal(run, input, [semanticEdit('## 계산 전제', '계산 자료가 있다.', replacement)])
-    expectProposalError(run, input, /sentence|scope|문장|범위/i)
+    expectRecoverableProposalError(run, input, /sentence|scope|문장|범위/i)
   }
 })
 
@@ -257,7 +408,7 @@ test('review links cannot claim a diagnostic at another location or a different 
     // Unique local clause avoids a duplicate-match rejection hiding the link check.
     edit.original = '영역: 성격과 기질'; edit.replacement = '영역: 성격과 기질'
     proposal(run, input, [edit], mode === 'reverse-link' ? { secondary: [{ id: 'other', target: 'S-02', status: 'fixed', reason: '다른 항목은 이 편집과 연결되지 않음', editIds: ['e'] }] } : {})
-    expectProposalError(run, input, /diagnostic|location|link|target|연결|위치/i)
+    expectRecoverableProposalError(run, input, /diagnostic|location|link|target|연결|위치/i)
   }
 })
 
@@ -304,14 +455,14 @@ test('a fixed secondary decision cannot borrow an edit linked only to another re
     { id: 'A', target: 'S-01', status: 'fixed', reason: 'A 수정 주장', editIds: ['edit-1'] },
     { id: 'B', target: 'S-02', status: 'fixed', reason: 'B와 연결된 제안', editIds: ['edit-1'] },
   ] })
-  expectProposalError(run, input, /link|target|연결|대상/i)
+  expectRecoverableProposalError(run, input, /link|target|연결|대상/i)
 })
 
 test('item order cannot be permuted even when the set of IDs remains identical', () => {
   const run = setup(); source(run)
   const input = expand(run)
   proposal(run, input, [semanticEdit('S-01', '### S-01', '### S-02'), { ...semanticEdit('S-02', '### S-02', '### S-01'), id: 'edit-2', reviewTargetId: 'semantic-2' }])
-  expectProposalError(run, input, /Protected|preserv|보존/i)
+  expectRecoverableProposalError(run, input, /Protected|preserv|보존/i)
 })
 
 test('integration independently checks original source, candidate and editing result provenance', () => {
@@ -382,7 +533,7 @@ test('review system, attempt and scope independently bind the prepared input wit
     const submission = JSON.parse(readFileSync(join(run, input.edits), 'utf8'))
     expect(submission.sourceSha256).toBe(hash(valid))
     expect(Object.hasOwn(submission.review, 'inputSha256')).toBe(false)
-    expectProposalError(run, input, /Review input mismatch/i)
+    expectRecoverableProposalError(run, input, /Review input mismatch/i)
     expect(existsSync(join(run, 'garbage/defensive-editing/saju/accepted.json'))).toBe(false)
   }
 })
@@ -391,7 +542,7 @@ test('preservation confirmation requires a boolean rather than explanatory prose
   const run = setup(); source(run)
   const input = prepareDefensiveEdit(run, 'saju')
   proposal(run, input, [], { preservationConfirmed: '기존 근거와 해석을 보존했다.' })
-  expectProposalError(run, input, /Incomplete review/i)
+  expectRecoverableProposalError(run, input, /Incomplete review/i)
 })
 
 test('sentence deletion rejects a trailing newline in original despite a valid diagnostic link', () => {
@@ -401,5 +552,5 @@ test('sentence deletion rejects a trailing newline in original despite a valid d
   expect(input.diagnostics).toHaveLength(1)
   expect(input.diagnostics[0].code).toBe('responsibility-avoidance')
   proposal(run, input, [{ id: 'delete-defense', target: 'S-01', original: `${phrase}\n`, replacement: '', diagnosticCode: 'responsibility-avoidance' }])
-  expectProposalError(run, input, /Sentence scope exceeded/i)
+  expectRecoverableProposalError(run, input, /Sentence scope exceeded/i)
 })

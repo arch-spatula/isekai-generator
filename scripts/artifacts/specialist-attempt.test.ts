@@ -20,6 +20,10 @@ function setup(): string {
   return run
 }
 
+function events(run: string): Record<string, unknown>[] {
+  return readFileSync(join(run, 'events.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line))
+}
+
 test('defensive-only and clean outputs require editing before publication and block regeneration', () => {
   for (const suffix of ['', '\n단정하지 않는다.']) {
     const run = setup()
@@ -33,6 +37,10 @@ test('defensive-only and clean outputs require editing before publication and bl
     expect(existsSync(join(run, 'docs/GDD/saju-interpretation.md'))).toBe(false)
     expect(existsSync(join(run, 'garbage/attempts/saju/accepted.json'))).toBe(false)
     expect(readFileSync(join(run, first.output), 'utf8')).toBe(source)
+    expect(events(run)).toContainEqual(expect.objectContaining({
+      event: 'validation_succeeded', stage: 'saju', attempt: 1,
+      operation: 'validate-system-interpretation', output: first.output,
+    }))
     expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
     expect(() => finishSpecialistAttempt(run, 'saju', 1)).toThrow('already completed')
   }
@@ -42,7 +50,17 @@ test('repair is fully revalidated and both generation and repair share a three-a
   const run = setup()
   const first = prepareSpecialistAttempt(run, 'saju')
   expect(first.mode).toBe('generate')
-  expect(finishSpecialistAttempt(run, 'saju', 1).status).toBe('execution-failed')
+  const executionFailure = finishSpecialistAttempt(run, 'saju', 1)
+  expect(executionFailure.status).toBe('execution-failed')
+  const executionEvent = events(run).find(event => event.event === 'execution_failed' && event.attempt === 1)
+  expect(executionEvent).toMatchObject({
+    event: 'execution_failed', stage: 'saju', attempt: 1,
+    reason: 'Specialist execution failed or produced no document.',
+  })
+  expect(executionEvent?.issues).toEqual(executionFailure.errors)
+  expect(executionEvent?.issues).toContainEqual(expect.objectContaining({
+    code: 'agent-execution', message: expect.stringMatching(/\S/),
+  }))
   const second = prepareSpecialistAttempt(run, 'saju')
   expect(second.mode).toBe('generate')
   expect(second.previous).toBeUndefined()
@@ -91,6 +109,14 @@ test('mixed structural and defensive errors retain the specialist repair route',
   expect(result.status).toBe('validation-failed')
   expect(result.errors.some(error => error.code === 'item-evidence')).toBe(true)
   expect(result.errors.some(error => error.code === 'responsibility-avoidance')).toBe(true)
+  expect(events(run)).toContainEqual(expect.objectContaining({
+    event: 'validation_failed', stage: 'saju', attempt: 1,
+    reason: 'Specialist document failed validation.',
+    issues: expect.arrayContaining([
+      expect.objectContaining({ code: 'item-evidence', message: expect.any(String) }),
+      expect.objectContaining({ code: 'responsibility-avoidance', message: expect.any(String) }),
+    ]),
+  }))
   const next = prepareSpecialistAttempt(run, 'saju')
   expect(next.mode).toBe('repair')
   expect(next.previous?.output).toBe(first.output)
@@ -129,4 +155,37 @@ test('an active writer blocks only its own system', () => {
   expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow()
   expect(prepareSpecialistAttempt(run, 'ziwei').attempt).toBe(1)
   expect(existsSync(join(run, 'garbage/attempts/saju/.lock'))).toBe(true)
+})
+
+// The event stream must retain the validator's actual diagnostics before a retry,
+// while attempt files remain available for repair and postmortem inspection.
+test('failure diagnostics precede retries and exhaustion records the final stop reason', () => {
+  const run = setup()
+  const log = () => events(run)
+  let priorResult = ''
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const prepared = prepareSpecialistAttempt(run, 'saju')
+    writeFileSync(join(run, prepared.output), valid.replaceAll('근거:', '출처:') + '\n단정하지 않는다.')
+    const result = finishSpecialistAttempt(run, 'saju', attempt)
+    const failed = log().find(event => event.event === 'validation_failed' && event.attempt === attempt)
+    expect(failed).toMatchObject({ stage: 'saju', attempt })
+    expect(failed.issues).toContainEqual(expect.objectContaining({ code: 'responsibility-avoidance', line: expect.any(Number) }))
+    expect(Boolean(failed.reason?.trim()) || failed.issues?.length > 0).toBe(true)
+    if (attempt > 1) {
+      const all = log()
+      const previousFailure = all.findIndex(event => event.event === 'validation_failed' && event.attempt === attempt - 1)
+      const retry = all.findIndex(event => event.event === 'retry_scheduled' && event.attempt === attempt)
+      expect(retry).toBeGreaterThan(previousFailure)
+      expect(all[retry].issues).toEqual(all[previousFailure].issues)
+      expect(readFileSync(join(run, `garbage/attempts/saju/${String(attempt - 1).padStart(3, '0')}/result.json`), 'utf8')).toBe(priorResult)
+    }
+    priorResult = readFileSync(join(run, `garbage/attempts/saju/${String(attempt).padStart(3, '0')}/result.json`), 'utf8')
+    expect(result.status).toBe('validation-failed')
+  }
+  expect(() => prepareSpecialistAttempt(run, 'saju')).toThrow('limit exhausted')
+  const stopped = log().at(-1)
+  expect(stopped).toMatchObject({ event: 'stage_stopped', stage: 'saju' })
+  expect(stopped.issues).toEqual(log().find(event => event.event === 'validation_failed' && event.attempt === 3).issues)
+  expect(readFileSync(join(run, 'garbage/attempts/saju/003/result.json'), 'utf8')).toBe(priorResult)
+  expect(readRunManifest(run).status).toBe('running')
 })

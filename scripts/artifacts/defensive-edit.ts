@@ -3,6 +3,7 @@ import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, rmSync, wri
 import { dirname, join, relative, resolve } from 'node:path'
 import { diagnoseSystemInterpretation, type ChartSystem, type InterpretationDiagnostic } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
 import type { ChartEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
+import { appendArtifactEvent } from './artifact-events'
 import { readRunManifest } from './artifact-run'
 import { recordStageProgress } from './artifact-progress'
 import type { AttemptResult } from './specialist-attempt'
@@ -78,6 +79,10 @@ export function prepareDefensiveEdit(runDirectory: string, system: ChartSystem):
       if (!result.sha256 || hash(read(join(prior, 'candidate.md'))) !== result.sha256) throw new Error('Previous candidate hash mismatch')
       sourceOutput = relative(run, join(prior, 'candidate.md'))
       previous = { candidate: sourceOutput, review: input.review, result: input.result }
+      const issues = result.errors.length
+        ? result.errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) }))
+        : [{ code: 'editing-unresolved', message: 'Defensive editing left unresolved review targets.' }]
+      appendArtifactEvent(run, { event: 'retry_scheduled', stage: system, attempt: attempts.length + 1, operation: 'prepare-defensive-edit', reason: 'Previous defensive edit failed validation.', issues })
     }
     const markdown = read(join(run, sourceOutput))
     const diagnostics = diagnoseSystemInterpretation(system, markdown, evidence(run))
@@ -186,22 +191,39 @@ export function finishDefensiveEdit(runDirectory: string, system: ChartSystem, a
     const result: DefensiveEditResult = { system, attempt, scope: input.scope, status: 'execution-failed', errors: [], sourceSha256: input.source.sha256, unresolved: [], calls: attempt, usage: null }
     let candidate: string | undefined
     if (!executionFailed) {
-      const proposal = json<{ sourceSha256: string; edits: Edit[]; review: Review }>(join(run, input.edits))
-      if (proposal.sourceSha256 !== input.source.sha256 || !Array.isArray(proposal.edits)) throw new Error('Proposal source hash mismatch or invalid edits')
-      if (!read(join(run, input.review)).trim()) throw new Error('Missing semantic review report')
-      validateReview(input, proposal.review, proposal.edits, source)
-      candidate = assemble(source, input, proposal.edits, proposal.review)
+      let proposal: { sourceSha256: string; edits: Edit[]; review: Review } | undefined
+      try { proposal = json(join(run, input.edits)) } catch { /* recorded below as an editor contract failure */ }
+      if (proposal && proposal.sourceSha256 !== input.source.sha256) throw new Error('Proposal source hash mismatch')
+      try {
+        if (!proposal || !Array.isArray(proposal.edits)) throw new Error('Invalid edits submission')
+        if (!read(join(run, input.review)).trim()) throw new Error('Missing semantic review report')
+        validateReview(input, proposal.review, proposal.edits, source)
+        candidate = assemble(source, input, proposal.edits, proposal.review)
+        const unresolved = [...proposal.review.unresolved,
+          ...proposal.review.primary.filter(item => item.status !== 'fixed').map(item => `diagnostic:${item.diagnosticIndex}`),
+          ...proposal.review.secondary.filter(item => ['needs-expansion', 'deferred'].includes(item.status)).map(item => item.id)]
+        if (!proposal.review.preservationConfirmed) unresolved.push('meaning-preservation')
+        if (unresolved.length && !proposal.review.nextScopeReason?.trim()) throw new Error('Unresolved targets require next scope reason')
+        result.unresolved = unresolved
+        result.usage = proposal.review.usage ?? null
+      } catch (error) {
+        candidate = source
+        result.errors = [{ code: 'editing-contract', message: error instanceof Error ? error.message : 'Defensive edit submission failed contract validation.' }]
+        result.unresolved = ['editing-contract']
+      }
       once(join(run, input.candidate), candidate)
-      result.errors = diagnoseSystemInterpretation(system, candidate, evidence(run))
-      const unresolved = [...proposal.review.unresolved,
-        ...proposal.review.primary.filter(item => item.status !== 'fixed').map(item => `diagnostic:${item.diagnosticIndex}`),
-        ...proposal.review.secondary.filter(item => ['needs-expansion', 'deferred'].includes(item.status)).map(item => item.id)]
-      if (!proposal.review.preservationConfirmed) unresolved.push('meaning-preservation')
-      if (unresolved.length && !proposal.review.nextScopeReason?.trim()) throw new Error('Unresolved targets require next scope reason')
-      result.unresolved = unresolved
+      if (!result.errors.length) result.errors = diagnoseSystemInterpretation(system, candidate, evidence(run))
       result.sha256 = hash(candidate)
-      result.usage = proposal.review.usage ?? null
-      result.status = result.errors.length || unresolved.length ? 'editing-failed' : 'passed'
+      result.status = result.errors.length || result.unresolved.length ? 'editing-failed' : 'passed'
+    }
+    const event = { stage: system, attempt, operation: 'finish-defensive-edit' }
+    if (result.status === 'passed') appendArtifactEvent(run, { ...event, event: 'validation_succeeded', output: input.candidate })
+    else if (result.status === 'execution-failed') appendArtifactEvent(run, { ...event, event: 'execution_failed', reason: 'Defensive editor execution failed or produced no submission.', issues: [{ code: 'editor-execution', message: 'Defensive editor execution failed or produced no submission.' }] })
+    else {
+      const issues = result.errors.length
+        ? result.errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) }))
+        : [{ code: 'editing-unresolved', message: 'Defensive editing left unresolved review targets.' }]
+      appendArtifactEvent(run, { ...event, event: 'validation_failed', output: input.candidate, reason: 'Defensive edit submission or candidate failed validation.', issues })
     }
     record(join(target, 'result.json'), result)
     if (result.status === 'passed') {
