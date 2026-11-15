@@ -199,7 +199,8 @@ chart-report
   ├─ ziwei (생성 → 구조 검증 → 방어 편집 → 게시)
   └─ natal (생성 → 구조 검증 → 방어 편집 → 게시)
        ↓ 세 체계 모두 채택·게시
-integration → selection → world-selection → gdd → final-validation
+integration (생성 → 구조·근거 검증 → 독립 방어 편집 → 게시)
+  → selection → world-selection → gdd → final-validation
        → fingerprint-registration → run succeeded
 ```
 
@@ -224,6 +225,9 @@ validation-failed/execution-failed`, 편집의 `passed/editing-failed/execution-
   repair, 출력 없는 실행 실패는 새 generate로 판단하는 기존 의미를 유지한다.
 - 편집도 체계당 최대 3회다. `editing-failed`가 확정된 경우에만
   `sentence → item → system`으로 확대한다. 남은 예산 없이 새 scope를 예약하지 않는다.
+- 통합 편집은 `integration --kind edit`로 최대 3회 예약한다. 자동 진단이 없어도 필수이며
+  생성 성공만으로 게시·전투 선정을 허용하지 않는다. 형식 오류는 같은 scope에서 예산을
+  소비하고 의미상 미해결일 때만 `sentence → item → system`으로 확대한다.
 - 통합·전투·세계·GDD의 일반 수정은 최초 1회와 허용된 수정 1회의 기존 한도를 유지한다.
   새 challenger 작성은 해당 선택 계약의 일부이며 임의 추가 agent 호출 근거가 아니다.
 - 예약이 예산을 소비한다. 동일 request 재호출은 추가 소비하지 않는다. 번호를 초기화하거나
@@ -236,6 +240,12 @@ validation-failed/execution-failed`, 편집의 `passed/editing-failed/execution-
 - `editing-required`는 구조 검증 성공이며 최종 채택은 아니다. 편집을 거쳐야 게시할 수 있다.
 - 잘못된 편집 제출은 `editing-contract` 진단과 원본 후보·hash를 남겨 `editing-failed`로
   확정한다. 원본/input/hash 변조와 DB·파일 I/O 실패는 제출 오류로 바꾸지 않는다.
+
+통합 편집의 자동 진단마다 수정 또는 사유 있는 보존 결정을 남긴다. `false-positive`는
+통합에서만 정당한 보존으로 채택할 수 있으며 전문 해석의 기존 거부 정책은 유지한다.
+원문 위치와 해시, 조립 후보 해시, immutable 제출 해시를 채택 문서에 연결하고 최종 확정에서
+같은 검토를 재검증한다. 새 후보의 미검토 진단·미해결 의미 대상은 게시를 막는다.
+자세한 범위·격리·보존 기준은 [통합 편집 명세](integrated-interpretation-defensive-editing.md)를 따른다.
 
 ## 6. 목적별 CLI 계약
 
@@ -298,7 +308,11 @@ bun scripts/read-artifact-state.ts fingerprints --attempt <id> --kind <combat|wo
   병렬 실행 가능한 세 체계는 각각 확정된 행동으로 반환한다. 모델이 미확정 후보들 사이의
   기계적인 선행 조건을 다시 계산하도록 하지 않는다.
 - input은 배정된 단계의 allowlist로 필터링한다. 전문 해석은 해당 체계, 편집은 해당 체계의
-  원본·진단·직전 후보/리뷰, 통합은 현재 run의 세 채택본을 제공한다.
+  원본·진단·직전 후보/리뷰, 통합 생성은 현재 run의 세 채택본을 제공한다. 통합 편집은
+  같은 run의 미채택 통합 원문과 세 채택 전문 해석만 받으며 출생정보·차트·이전 run을 받지 않는다.
+  `allowedTargets`는 `{target,startLine,endLine}` 목록이며 실제 I-NN 또는 도구가 생성한
+  항목 밖 영역 ID를 사용한다. 재시도 `previous`는 `{candidate:{text,sha256},payload,result}`로
+  직전 후보와 제출·리뷰·진단을 제공한다.
 - 전투 단계는 통합 해석과 전투 비교 결과, 세계 단계는 통합 해석·선택 전투와 세계 비교
   결과만 받는다. chart·다른 체계·이전 GDD·다른 종류 레지스트리의 본문은 전달하지 않는다.
 - DB에 있는 chart evidence는 해당 체계만 stdout으로 조회한다. 기존 validator는 DB를

@@ -17,6 +17,7 @@
 - [로컬 아티팩트와 영구 문서의 근거 분리](local-artifact-document-boundary.md)
 - [테스트 작성 가이드](test-writing-guide.md)
 - [전문 해석 실패 기록 및 재시도 작업 계획](specialist-interpretation-recovery.md)
+- [통합 해석의 방어문구 편집 검토](integrated-interpretation-defensive-editing.md)
 - [개인화 전투 원형 선택](personalized-combat-archetype-selection.md)
 - [개인화 세계 구조 선택](world-concept-selection.md)
 - [개인화 게임의 공통 화면·아트 계약](game-presentation-contract.md)
