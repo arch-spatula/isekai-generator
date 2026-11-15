@@ -6,6 +6,8 @@
 
 ## 명세 목록
 
+- [고정 제작 조건과 채택값의 문서 자동 조립](deterministic-design-document-assembly.md)
+
 - [생성 아티팩트의 책임별 폴더 분리 계획](artifact-directory-layout.md)
 
 - [SQLite 기반 아티팩트 상태 관리와 작업 재개 구현 계획](sqlite-artifact-state.md)
