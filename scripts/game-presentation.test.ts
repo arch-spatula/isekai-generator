@@ -85,7 +85,7 @@ test('public finish rejects a GDD missing its shared presentation and cannot reg
 
 test('invalid presentation never overwrites an already accepted GDD', () => {
   const { root, run, directory } = beforeFinalize()
-  const path = join(directory, 'docs/GDD/personalized-action-rpg-concept.md')
+  const path = join(directory, 'game/personalized-action-rpg-concept.md')
   const before = readFileSync(path, 'utf8')
   const attempted = call(root, ['prepare', '--run', run, '--stage', 'gdd', '--kind', 'generate', '--request', request()])
   expect(attempted.code).toBe(1)

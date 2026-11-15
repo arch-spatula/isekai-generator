@@ -17,6 +17,8 @@ Use the chart skill's birth input rules: an omitted calendar means Gregorian (ì–
 
 `bun <root>/scripts/artifact-state.ts start --run <run-id> --request <id>`
 
+New allocations publish chart to `charts/`, specialist/integrated interpretations to `interpretation/`, combat/world briefs to `design-rationale/`, and GDD to `game/`, retaining filenames. Revisions use the role folderâ€™s `revisions/<attempt-id>/`. Runs without the layout marker retain `docs/GDD/`, including unpublished stages. Use stored DB publication paths for completion/recovery; never move existing files or infer paths from current defaults. `garbage/` and the common DB remain unchanged.
+
 Use the returned version/directory. Requests identify logical calls: reuse the same request after response loss. Active series comes from Git configuration; never choose patch numbers or initialize registries manually.
 
 ## Execute the DAG

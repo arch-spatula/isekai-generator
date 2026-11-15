@@ -26,7 +26,7 @@ function proposal(input: Record<string, any>, edits: Edit[] = [], extra: Record<
 }
 const semantic = (target: string, original: string, replacement: string): Edit => ({ id: 'e1', target, original, replacement, reviewTargetId: 'secondary1' })
 function complete(root: string, input: Record<string, any>, payload: any) { submit(root, input, payload); return finish(root, input) }
-function finalPath(directory: string) { return join(directory, 'docs/GDD/saju-interpretation.md') }
+function finalPath(directory: string) { return join(directory, 'interpretation/saju-interpretation.md') }
 function recoverable(fixture: ReturnType<typeof setup>, input: Record<string, any>, payload: any, reason?: RegExp) {
   const result = complete(fixture.root, input, payload)
   expect(result.outcome).toBe('editing-failed')

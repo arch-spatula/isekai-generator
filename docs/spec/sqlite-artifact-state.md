@@ -33,7 +33,7 @@ JSON+CLI 비교 구현, 과거 실행 import, 구형 파일 fallback, 장기간 
 전투·세계 지문을 같은 DB에 저장한다. run별 DB는 만들지 않는다. 서로 다른 Git worktree는
 각자의 `artifacts/`를 사용하며 다른 worktree의 DB를 자동 탐색·공유하지 않는다.
 
-아래는 미래 저장 계약이며 실제 실행 자료가 아니다.
+아래는 신규 run의 저장 계약이며 실제 실행 자료가 아니다.
 
 ```text
 artifacts/
@@ -41,10 +41,18 @@ artifacts/
 ├── state.sqlite-wal           # SQLite가 필요할 때 관리
 ├── state.sqlite-shm           # SQLite가 필요할 때 관리
 └── <version>/
-    ├── docs/GDD/*.md          # 정식 생성 문서
+    ├── charts/chart-report.md
+    ├── interpretation/*.md   # 전문·통합 해석
+    ├── design-rationale/*.md # 전투·세계 선정 브리프
+    ├── game/personalized-action-rpg-concept.md
     └── garbage/              # 시도별 Markdown·게시 대기 파일
 ```
 
+- 신규 `allocate`는 `runs.config` snapshot에 `artifactLayout: "responsibility-v1"`을
+  기록한다. 식별자가 없는 기존 run은 미게시 단계도 `docs/GDD/`를 유지한다. DB 스키마와
+  CLI 옵션은 바꾸지 않는다. 저장된 `documents.final_path`는 게시·복구의 원본 경로이며
+  새 규칙으로 재계산하거나 기존 파일을 이동하지 않는다. 파일별 경로는
+  [책임별 폴더 계약](artifact-directory-layout.md)을 따른다.
 - 첫 `allocate`가 DB를 열고 스키마 v1을 초기화한다. 빈 DB의 초기화와 첫 실행 예약은
   동시 호출에도 한 번만 성립해야 한다. 이미 있는 정상 DB는 재사용한다.
 - 조회·재개·finish는 DB가 없으면 실패한다. 빈 DB를 만들어 과거 실행을 신규 실행처럼
@@ -408,8 +416,9 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
   성공 이력과 문서는 보존하되 현재 채택 snapshot을 stale로 표시해 후속 실행을 막는다.
   재검토 대상 단계는 남은 예산의 새 시도로만 갱신하며, 새 채택 뒤 의존 문서를 다시 검증한다.
   일반 start가 성공 단계를 다시 여는 것과 구별된 reconcile 경로로 처리한다.
-  이미 게시한 단계의 재선정본은 `docs/GDD/revisions/<attempt-id>/<document-name>.md`에
-  게시하여 옛 파일을 보존한다. DB의 채택 참조가 현재 정식본을 가리키며 다음 입력과 완료
+  이미 게시한 단계의 재선정본은 해당 책임 폴더의 `revisions/<attempt-id>/<document-name>.md`에
+  게시하여 옛 파일을 보존한다. 식별자 없는 기존 run은 `docs/GDD/revisions/`를 유지한다.
+  DB의 채택 참조가 현재 정식본을 가리키며 다음 입력과 완료
   경로 안내도 이 참조를 따른다. 최초 게시의 기존 파일명은 유지한다. 새 모델 호출은
   사용자의 재개 요청 및 남은 예산 안에서만 허용한다. 예산 소진이면 새 run이 필요하다.
 - 최종 snapshot이 유효하면 전투·세계 지문 두 행, 등록 단계 성공, run 성공과 이벤트를

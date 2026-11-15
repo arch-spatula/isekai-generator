@@ -25,7 +25,7 @@ test('synthetic full DAG publishes Markdown then atomically registers two finger
   expect(JSON.parse(resumed.stderr).error.code).toBe('run-terminal')
   expect(snapshot()).toBe(completedState)
   expect(read(root, 'summary', run).data.run.status).toBe('succeeded')
-  expect(readFileSync(join(directory, 'docs/GDD/personalized-action-rpg-concept.md'), 'utf8')).toBe(pipelineGdd())
+  expect(readFileSync(join(directory, 'game/personalized-action-rpg-concept.md'), 'utf8')).toBe(pipelineGdd())
   const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
   try { expect(db.query('SELECT kind FROM fingerprints ORDER BY kind').all()).toEqual([{ kind: 'combat' }, { kind: 'world' }]) } finally { db.close() }
   expect(tree(join(root, 'artifacts')).filter(path => /\.jsonl?$|TODO\.md$|\.lock/.test(path))).toEqual([])
@@ -53,7 +53,7 @@ test('failure inserting the second fingerprint rolls back first fingerprint and 
 // Each CLI opens a new process/connection: no conversation or in-memory checkpoint is used.
 test('a fresh process rejects adopted document hash mutation on resume', () => {
   const { root, run, directory } = beforeFinalize()
-  const gdd = join(directory, 'docs/GDD/personalized-action-rpg-concept.md')
+  const gdd = join(directory, 'game/personalized-action-rpg-concept.md')
   const original = readFileSync(gdd, 'utf8')
   writeFileSync(gdd, original + '\nchanged after adoption')
   const result = call(root, ['resume', '--run', run, '--request', request()])
@@ -63,8 +63,16 @@ test('a fresh process rejects adopted document hash mutation on resume', () => {
   expect(readFileSync(gdd, 'utf8')).toBe(original + '\nchanged after adoption')
 })
 
-function anotherChart(root: string) {
+function anotherChart(root: string, legacy = false) {
   const allocated = allocate(root), run = allocated.data.runId
+  if (legacy) {
+    const db = new Database(join(root, 'artifacts/state.sqlite'))
+    try {
+      const config = JSON.parse((db.query('SELECT config FROM runs WHERE id=?').get(run) as any).config)
+      delete config.artifactLayout
+      db.query('UPDATE runs SET config=? WHERE id=?').run(JSON.stringify(config), run)
+    } finally { db.close() }
+  }
   start(root, run)
   publish(root, run, 'chart-report', syntheticReport)
   return { root, run, directory: allocated.data.directory }
@@ -83,7 +91,7 @@ test('another successful run makes the prepared selection snapshot stale without
     expect(db.query('SELECT count(*) AS count FROM fingerprints WHERE run_id=?').get(first.run)).toEqual({ count: 2 })
   } finally { db.close() }
   expect(read(second.root, 'summary', second.run).data.run.status).not.toBe('succeeded')
-  expect(readFileSync(join(second.directory, 'docs/GDD/personalized-action-rpg-concept.md'), 'utf8')).toBe(pipelineGdd())
+  expect(readFileSync(join(second.directory, 'game/personalized-action-rpg-concept.md'), 'utf8')).toBe(pipelineGdd())
 }, 15000)
 
 test('unrelated document changes permit resume, dirty validator code changes block it', () => {
@@ -190,10 +198,11 @@ test('general stage repair has one correction budget and never reopens successfu
   for (const system of ['saju', 'ziwei', 'natal']) expect(read(root, 'summary', run).data.stages.find((stage: any) => stage.stage === system).status).toBe('succeeded')
 })
 
-test('explicit stale review uses remaining attempts and revision paths while preserving prior publications', () => {
-  const first = beforeFinalize(), second = beforeFinalize(anotherChart(first.root)), { root, run, directory } = second
+for (const legacy of [false, true]) {
+test(`explicit stale review preserves ${legacy ? 'legacy' : 'responsibility'} revision paths and prior publications`, () => {
+  const first = beforeFinalize(), second = beforeFinalize(anotherChart(first.root, legacy)), { root, run, directory } = second
   const firstVersion = read(root, 'summary', first.run).data.run.version
-  const originalPaths = ['gameplay-concept-brief.md', 'world-concept-brief.md', 'personalized-action-rpg-concept.md'].map(name => join(directory, 'docs/GDD', name))
+  const originalPaths = ['design-rationale/gameplay-concept-brief.md', 'design-rationale/world-concept-brief.md', 'game/personalized-action-rpg-concept.md'].map(path => join(directory, legacy ? 'docs/GDD/' + path.split('/').at(-1) : path))
   const originals = originalPaths.map(path => readFileSync(path, 'utf8'))
   const dbBefore = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
   let validations: any[], events: any[]
@@ -227,7 +236,7 @@ test('explicit stale review uses remaining attempts and revision paths while pre
   const gdd = publishWithLatestInput('gdd', pipelineGdd(), 'world-selection', revisedWorldBrief(firstVersion))
   expect(gdd.number).toBe(2)
   for (const [index, stage] of ['selection', 'world-selection', 'gdd'].entries()) {
-    const expectedPath = join(directory, 'docs/GDD/revisions', [selection, world, gdd][index].attemptId, originalPaths[index].split('/').at(-1)!)
+    const expectedPath = join(directory, legacy ? 'docs/GDD/revisions' : index === 2 ? 'game/revisions' : 'design-rationale/revisions', [selection, world, gdd][index].attemptId, originalPaths[index].split('/').at(-1)!)
     expect(readFileSync(originalPaths[index], 'utf8')).toBe(originals[index])
     const summary = read(root, 'summary', run).data.stages.find((row: any) => row.stage === stage)
     expect(resolve(root, summary.path)).toBe(expectedPath)
@@ -247,3 +256,5 @@ test('explicit stale review uses remaining attempts and revision paths while pre
     expect(reopened.query('SELECT count(*) AS count FROM fingerprints').get()).toEqual({ count: 4 })
   } finally { reopened.close() }
 }, 20000)
+
+}
