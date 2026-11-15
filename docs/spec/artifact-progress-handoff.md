@@ -14,6 +14,8 @@ summary/next/input 조회가 진행 인계의 원본이다. 미완료 실행은 
 아래 TODO·checkpoint 파일 구조와 CLI는 전환 전 구현 기록이다.
 
 상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+신규 게시 경로는 [책임별 폴더 계약](artifact-directory-layout.md)을 따른다. 아래
+`docs/GDD/` 경로는 전환 전 기록이며, 식별자 없는 기존 run에만 유지한다.
 
 ## 목적
 

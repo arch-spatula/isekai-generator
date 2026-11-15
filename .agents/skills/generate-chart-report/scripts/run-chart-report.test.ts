@@ -44,7 +44,7 @@ describe('reserved chart runs', () => {
 
   test('standalone success writes unchanged report and evidence before succeeding', async () => {
     const root = fixture(), directory = allocateRun(root, 'chart-report')
-    const output = join(directory, 'docs/GDD/chart-report.md')
+    const output = join(directory, 'charts/chart-report.md')
     await runChartReport(root, output, [])
     expect(readFileSync(output, 'utf8')).toBe(report)
     const state = new ArtifactState(root, false, true)
@@ -58,7 +58,7 @@ describe('reserved chart runs', () => {
 
   test('calculator failure consumes patch and stores only a short safe failure summary', async () => {
     const root = fixture(true), directory = allocateRun(root, 'chart-report')
-    await expect(runChartReport(root, join(directory, 'docs/GDD/chart-report.md'), [])).rejects.toThrow('private calculator details')
+    await expect(runChartReport(root, join(directory, 'charts/chart-report.md'), [])).rejects.toThrow('private calculator details')
     expect(readRunManifest(directory)).toMatchObject({ status: 'failed', failure: { stage: 'chart-report', summary: 'Chart calculation or evidence validation failed.' } })
     const state = new ArtifactState(root, false, true)
     try {
@@ -72,7 +72,7 @@ describe('reserved chart runs', () => {
   test('GDD chart stage does not allocate a second run or finalize its parent', async () => {
     const root = fixture(), directory = allocateRun(root, 'personalized-gdd', { mode: 'deep' })
     updateRun(directory, 'running')
-    await runChartReport(root, join(directory, 'docs/GDD/chart-report.md'), [])
+    await runChartReport(root, join(directory, 'charts/chart-report.md'), [])
     expect(readRunManifest(directory).status).toBe('running')
     expect(() => failRun(directory, 'specialist', 'Specialist validation failed.', new Error('validation failed'))).toThrow('validation failed')
     expect(readRunManifest(directory).failure?.stage).toBe('specialist')
@@ -81,7 +81,7 @@ describe('reserved chart runs', () => {
 
   test('refuses a free-form output path and an unstarted GDD run', async () => {
     const root = fixture(), directory = allocateRun(root, 'personalized-gdd')
-    await expect(runChartReport(root, join(directory, 'docs/GDD/chart-report.md'), [])).rejects.toThrow('Parent GDD run must be running')
+    await expect(runChartReport(root, join(directory, 'charts/chart-report.md'), [])).rejects.toThrow('Parent GDD run must be running')
     await expect(runChartReport(root, join(root, 'chart-report.md'), [])).rejects.toThrow()
     expect(readRunManifest(directory).status).toBe('allocated')
   })

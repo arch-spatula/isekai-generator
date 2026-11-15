@@ -14,6 +14,8 @@
 아래 파일 기록 구조와 구형 관리 CLI는 전환 전 구현 기록이다.
 
 상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+신규 게시 경로는 [책임별 폴더 계약](artifact-directory-layout.md)을 따른다. 아래
+`docs/GDD/` 경로는 전환 전 기록이며, 식별자 없는 기존 run에만 유지한다.
 
 ## 1. 문제와 목표
 

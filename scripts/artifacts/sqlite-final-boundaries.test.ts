@@ -14,7 +14,7 @@ test('standalone chart publication I/O failure remains blocked with a safe durab
   writeFileSync(join(root, 'scripts/chart-report.ts'), `process.stdout.write(${JSON.stringify(syntheticReport)})`)
   commitFixture(root)
   const allocated = allocate(root, 'chart-report'), run = allocated.data.runId
-  const output = join(allocated.data.directory, 'docs/GDD/chart-report.md')
+  const output = join(allocated.data.directory, 'charts/chart-report.md')
   // EISDIR at the real publication boundary; no permission assumptions or storage mocks.
   mkdirSync(output, { recursive: true })
   let failure: unknown

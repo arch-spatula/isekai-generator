@@ -16,6 +16,7 @@ export class StateError extends Error { constructor(public code: string, message
 export const DAG: Record<string, string[]> = { 'chart-report': [], saju: ['chart-report'], ziwei: ['chart-report'], natal: ['chart-report'], integration: ['saju', 'ziwei', 'natal'], selection: ['integration'], 'world-selection': ['selection'], gdd: ['world-selection'], 'final-validation': ['gdd'], 'fingerprint-registration': ['final-validation'] }
 const systems = ['saju', 'ziwei', 'natal']
 const finalNames: Record<string, string> = { 'chart-report': 'chart-report.md', saju: 'saju-interpretation.md', ziwei: 'ziwei-interpretation.md', natal: 'natal-interpretation.md', integration: 'chart-interpretation.md', selection: 'gameplay-concept-brief.md', 'world-selection': 'world-concept-brief.md', gdd: 'personalized-action-rpg-concept.md' }
+const publicationFolders: Record<string, string> = { 'chart-report': 'charts', saju: 'interpretation', ziwei: 'interpretation', natal: 'interpretation', integration: 'interpretation', selection: 'design-rationale', 'world-selection': 'design-rationale', gdd: 'game' }
 const hash = (value: string | Uint8Array): string => createHash('sha256').update(value).digest('hex')
 const json = (value: any): string => JSON.stringify(value)
 const parse = (value: string | null): any => value == null ? null : JSON.parse(value)
@@ -109,7 +110,7 @@ export class ArtifactState {
       patch++; requireState(Number.isSafeInteger(patch), 'version-overflow')
       const version = `v${config.activeSeries}.${patch}`, id = randomUUID()
       this.db.query('INSERT INTO series_counters VALUES(?,?) ON CONFLICT(series) DO UPDATE SET patch=excluded.patch').run(config.activeSeries, patch)
-      this.db.query("INSERT INTO runs(id,version,kind,mode,purpose,source_revision,baseline_revision,dirty,config,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,'allocated',?)").run(id, version, kind, mode, purpose, state.revision, config.baselineRevision, +state.dirty, json(config), now())
+      this.db.query("INSERT INTO runs(id,version,kind,mode,purpose,source_revision,baseline_revision,dirty,config,status,created_at) VALUES(?,?,?,?,?,?,?,?,?,'allocated',?)").run(id, version, kind, mode, purpose, state.revision, config.baselineRevision, +state.dirty, json({ ...config, artifactLayout: 'responsibility-v1' }), now())
       for (const stage of kind === 'chart-report' ? ['chart-report'] : Object.keys(DAG)) this.db.query("INSERT INTO stages(run_id,stage,status) VALUES(?,?,'pending')").run(id, stage)
       this.event(id, 'allocated', request)
       return reply('allocated', { runId: id, version, directory: join(this.root, 'artifacts', version) })
@@ -128,6 +129,10 @@ export class ArtifactState {
   registry(kind: string): any { const entries = this.all("SELECT f.*,r.version FROM fingerprints f JOIN runs r ON r.id=f.run_id WHERE f.kind=? AND r.status='succeeded' ORDER BY r.version", kind).map(row => kind === 'combat' ? { version: row.version, candidateId: row.candidate_id, fingerprint: parse(row.axes) } : { version: row.version, candidateId: row.candidate_id, ...parse(row.axes) }); return { schemaVersion: 1, entries } }
   revision(): number { return this.one('SELECT count(*) AS n FROM fingerprints').n }
   document(run: string, stage: string): any { return this.one('SELECT d.* FROM stages s JOIN documents d ON d.id=s.accepted_document WHERE s.run_id=? AND s.stage=?', run, stage) }
+  publicationPath(id: string, stage: string, revisionAttemptId?: string): string {
+    const run = this.run(id), folder = parse(run.config).artifactLayout === 'responsibility-v1' ? publicationFolders[stage] : 'docs/GDD'
+    return join('artifacts', run.version, folder, ...(revisionAttemptId ? ['revisions', revisionAttemptId] : []), finalNames[stage])
+  }
   text(run: string, stage: string): string { const document = this.document(run, stage); requireState(this.one('SELECT status FROM stages WHERE run_id=? AND stage=?',run,stage)?.status==='succeeded' && document?.status === 'published', 'prerequisite-incomplete'); return this.checked(document.path, document.sha256) }
   checked(path: string, expected: string): string { const full = this.path(path); const bytes = readFileSync(full); requireState(hash(bytes) === expected, 'integrity-error'); return bytes.toString('utf8') }
   path(path: string): string { const full = resolve(this.root, path); requireState(!isAbsolute(relative(this.root, full)) && !relative(this.root, full).startsWith('..'), 'invalid-path'); let ancestor=full; while(!existsSync(ancestor)&&ancestor!==dirname(ancestor))ancestor=dirname(ancestor); requireState(!relative(this.root,realpathSync(ancestor)).startsWith('..'), 'invalid-path'); return full }
@@ -228,7 +233,7 @@ export class ArtifactState {
         this.event(a.run_id, status, request, a.stage, id, null, errors)
         return reply(status, { attemptId: id, result }, status === 'editing-required' ? 'prepare-edit' : 'prepare-retry')
       }
-      const documentId = randomUUID(), existing=this.document(a.run_id,a.stage), final = join('artifacts', this.run(a.run_id).version, 'docs/GDD', ...(existing ? ['revisions',a.id,finalNames[a.stage]] : [finalNames[a.stage]]))
+      const documentId = randomUUID(), existing=this.document(a.run_id,a.stage), final = this.publicationPath(a.run_id, a.stage, existing ? a.id : undefined)
       this.db.query("INSERT INTO documents VALUES(?,?,?,?,?,?,'ready-to-publish',?)").run(documentId, a.run_id, id, a.stage, payload.path, payload.sha256, final)
       this.db.query('INSERT INTO validations VALUES(?,?,?,?,?,?,?,?)').run(randomUUID(), documentId, payload.sha256, a.stage, snapshot.validatorRevision, 'passed', '[]', now())
       this.db.query('UPDATE attempts SET result=?,payload=? WHERE id=?').run(json(result), json(payload), id)

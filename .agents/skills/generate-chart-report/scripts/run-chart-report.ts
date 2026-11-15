@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { ArtifactState } from '../../../../scripts/artifacts/artifact-state-store'
 import { writeFile } from 'node:fs/promises'
-import { dirname, join, resolve } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import { failRun, updateRun } from '../../../../scripts/artifacts/artifact-run'
 
 
@@ -16,11 +16,11 @@ export function isCompleteChartReport(report: string): boolean {
 
 /** Run the repository calculator and save its stdout without modification. */
 export async function runChartReport(repositoryRoot:string,outputPath:string,chartArguments:string[]):Promise<void> {
- const root=resolve(repositoryRoot),runDirectory=resolve(dirname(outputPath),'../..'),state=new ArtifactState(root)
+ const root=resolve(repositoryRoot),version=relative(join(root,'artifacts'),resolve(outputPath)).split(sep)[0],runDirectory=join(root,'artifacts',version),state=new ArtifactState(root)
  let activeRun:any
  try {
-  const run=state.run(runDirectory.split('/').at(-1)!)
-  if(resolve(outputPath)!==join(root,'artifacts',run.version,'docs/GDD/chart-report.md'))throw new Error('Chart output must belong to reserved run')
+  const run=state.run(version)
+  if(resolve(outputPath)!==state.path(state.publicationPath(run.id,'chart-report')))throw new Error('Chart output must belong to reserved run')
   if(run.kind==='chart-report'&&run.status==='allocated')updateRun(runDirectory,'running')
   else if(run.status!=='running')throw new Error('Parent GDD run must be running before chart calculation')
   activeRun=run

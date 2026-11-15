@@ -74,16 +74,25 @@ flowchart LR
 과거 아티팩트는 import하지 않고 기존 디렉터리 이름만 확인해 번호 충돌을 피한다.
 
 ```text
-artifacts/vX.Y.Z/docs/GDD/
-├── chart-report.md
-├── saju-interpretation.md
-├── ziwei-interpretation.md
-├── natal-interpretation.md
-├── chart-interpretation.md
-├── gameplay-concept-brief.md
-├── world-concept-brief.md
-└── personalized-action-rpg-concept.md
+artifacts/<version>/
+├── charts/
+│   └── chart-report.md
+├── interpretation/
+│   ├── saju-interpretation.md
+│   ├── ziwei-interpretation.md
+│   ├── natal-interpretation.md
+│   └── chart-interpretation.md
+├── design-rationale/
+│   ├── gameplay-concept-brief.md
+│   └── world-concept-brief.md
+└── game/
+    └── personalized-action-rpg-concept.md
 ```
+
+신규 run은 책임별 폴더를 사용한다. 식별자 없는 기존 run은 미게시 단계도 기존
+`docs/GDD/`를 유지하며, 재선정본은 해당 폴더의 `revisions/<attempt-id>/`에 게시한다.
+본문·파일명은 유지하고 완료 안내와 게시 복구는 DB에 저장된 경로를 따른다.
+단독 차트는 `charts/`만 만들며, 후보의 `garbage/`와 공용 DB 위치는 바꾸지 않는다.
 
 ## 단계 1: 차트 보고서
 
