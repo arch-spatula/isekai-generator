@@ -63,6 +63,65 @@ just report -- \
   --timezone <IANA timezone> [--flow-year <year>]
 ```
 
+## 스킬 호출 예시
+
+아래 예시는 저장소를 연 에이전트의 채팅 입력입니다. 터미널 명령이 아니며,
+`<...>`는 실제 입력이나 경로로 바꿉니다.
+
+일반 수정이나 spec 구현은 단일 에이전트로 요청합니다.
+
+```text
+docs/spec/<명세 파일>.md를 구현해줘.
+```
+
+구현·테스트 작성·테스트 리뷰를 별도 에이전트로 진행하려면
+[implement-with-test-review](.agents/skills/implement-with-test-review/SKILL.md)를 명시적으로 호출합니다.
+일반 구현 요청이나 spec의 참조만으로 이 방식을 자동 실행하지 않습니다.
+
+```text
+$implement-with-test-review docs/spec/<명세 파일>.md를 구현해줘.
+```
+
+명식 계산 보고서만 필요하면 다음과 같이 요청합니다.
+
+달력 구분을 생략한 생년월일은 **양력**으로 처리하며 양력·음력 여부를 다시 묻지 않습니다.
+시간대는 명확한 출생지에서 정합니다. 예를 들어 대한민국 천안시는 `Asia/Seoul`을
+적용하므로 시간대를 별도로 입력할 필요가 없습니다. 명시한 달력·시간대는 기본값보다 우선합니다.
+
+```text
+$generate-chart-report
+생년월일: <연월일>
+태어난 시간: <시:분>
+성별: <성별>
+태어난 도시: <국가와 도시>
+```
+
+개인화 GDD 전체 생성을 요청하려면 다음 스킬을 사용합니다. 이 호출은 명식 계산부터
+해석·전투 및 세계 선택·GDD 작성까지 여러 에이전트가 수행하는 생성 요청입니다.
+
+```text
+$generate-personalized-gdd
+생년월일: <연월일>
+태어난 시간: <시:분>
+성별: <성별>
+태어난 도시: <국가와 도시>
+모드: light
+목적: experiment
+```
+
+단계별 스킬은 다음과 같습니다. 각 스킬에 필요한 입력과 실행 조건은 연결된 지침을 따릅니다.
+아래 경로는 입출력 이름을 설명하는 예시입니다.
+
+| 스킬 | 용도 |
+| --- | --- |
+| [generate-chart-report](.agents/skills/generate-chart-report/SKILL.md) | 출생정보로 `chart-report.md` 계산 |
+| [interpret-chart-system](.agents/skills/interpret-chart-system/SKILL.md) | 명식 보고서에서 사주·자미두수·네이탈 중 한 체계 해석 |
+| [edit-defensive-phrases](.agents/skills/edit-defensive-phrases/SKILL.md) | 배정된 전문 해석의 방어적 표현 검토 |
+| [interpret-chart-report](.agents/skills/interpret-chart-report/SKILL.md) | 세 전문 해석을 `chart-interpretation.md`로 통합 |
+| [select-gameplay-concept](.agents/skills/select-gameplay-concept/SKILL.md) | 통합 해석을 바탕으로 전투 콘셉트 선택 |
+| [select-world-concept](.agents/skills/select-world-concept/SKILL.md) | 전투 선택 이후 세계 콘셉트 선택 |
+| [generate-gdd-from-interpretation](.agents/skills/generate-gdd-from-interpretation/SKILL.md) | 통합 해석과 검증된 전투·세계 브리프로 GDD 작성 |
+
 ## 크레딧
 
 이 프로젝트의 사주팔자·자미두수·네이탈 차트 계산에는 [Orrery의 `@orrery/core`](https://github.com/rath/orrery/tree/main/packages/core)를 사용할 예정입니다. Orrery가 밝힌 계산 엔진의 계보와 기반 기술은 다음과 같습니다.

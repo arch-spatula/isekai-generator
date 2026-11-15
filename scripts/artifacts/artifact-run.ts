@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { initializeProgress, refreshProgress } from './artifact-progress'
+import { ArtifactState, StateError } from './artifact-state-store'
 
 export const PURPOSES = ['experiment', 'regression', 'new-profile', 'incident-reproduction', 'release-candidate'] as const
 export const MODES = ['light', 'deep'] as const
 export const KINDS = ['chart-report', 'personalized-gdd'] as const
-export const STATUSES = ['allocated', 'running', 'succeeded', 'failed', 'cancelled'] as const
+export const STATUSES = ['allocated', 'running', 'blocked', 'succeeded', 'failed', 'cancelled'] as const
 export type RunStatus = typeof STATUSES[number]
 export type RunOptions = { purpose?: typeof PURPOSES[number]; mode?: typeof MODES[number] }
 export type SeriesConfig = {
@@ -119,57 +119,36 @@ export function writeJsonAtomic(path: string, value: unknown): void {
 }
 
 export function readRunManifest(runDirectory: string): RunManifest {
-  const manifest = validateRunManifest(JSON.parse(readFileSync(join(runDirectory, 'artifact-run.json'), 'utf8')))
-  requireCondition(resolve(runDirectory).endsWith(`/artifacts/${manifest.artifactVersion}`), 'Manifest does not match its run directory')
-  return manifest
+  const root = resolve(runDirectory, '../..'), state = new ArtifactState(root, false, true)
+  try { const run = state.run(runDirectory.split('/').at(-1)!); return { schemaVersion: 1, artifactVersion: run.version, series: JSON.parse(run.config).activeSeries, artifactKind: run.kind, purpose: run.purpose, mode: run.mode, baselineRevision: run.baseline_revision, sourceRevision: run.source_revision, workingTreeDirty: !!run.dirty, status: run.status, allocatedAt: run.created_at, startedAt: run.started_at, finishedAt: run.finished_at, failure: run.status === 'failed' ? { stage: run.failure_stage ?? 'generation', summary: run.reason } : null } } finally { state.close() }
 }
 
-/** Directory creation reserves a patch even if the process dies before writing JSON. */
 export function allocateRun(repositoryRoot: string, artifactKind: RunManifest['artifactKind'], options: RunOptions = {}): string {
-  const root = resolve(repositoryRoot)
-  const config = readSeriesConfig(root)
-  const state = repositoryState(root)
-  const purpose = options.purpose ?? 'experiment'
-  const mode = options.mode ?? 'light'
-  requireCondition(Object.keys(object(options)).every(key => ['purpose', 'mode'].includes(key)), 'Unexpected allocation option')
-  requireCondition(PURPOSES.includes(purpose) && MODES.includes(mode) && KINDS.includes(artifactKind), 'Invalid allocation options')
-  requireCondition(purpose !== 'release-candidate' || !state.dirty, 'release-candidate requires a clean working tree')
-  const artifacts = join(root, 'artifacts')
-  mkdirSync(artifacts, { recursive: true })
-  for (;;) {
-    let max = -1
-    for (const entry of readdirSync(artifacts, { withFileTypes: true })) {
-      const match = VERSION.exec(entry.name)
-      if (entry.isDirectory() && match?.[1] === config.activeSeries) {
-        const patch = Number(match[2])
-        requireCondition(Number.isSafeInteger(patch), 'Artifact patch exceeds safe integer range')
-        max = Math.max(max, patch)
-      }
-    }
-    const patch = max + 1
-    requireCondition(Number.isSafeInteger(patch), 'Artifact patch exceeds safe integer range')
-    const artifactVersion = `v${config.activeSeries}.${patch}`
-    const directory = join(artifacts, artifactVersion)
-    try { mkdirSync(directory) } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'EEXIST' && lstatSync(directory).isDirectory()) continue
-      throw error
-    }
-    const manifest = validateRunManifest({ schemaVersion: 1, artifactVersion, series: config.activeSeries, artifactKind, purpose, mode, baselineRevision: config.baselineRevision, sourceRevision: state.revision, workingTreeDirty: state.dirty, status: 'allocated', allocatedAt: new Date().toISOString(), startedAt: null, finishedAt: null, failure: null })
-    writeFileSync(join(directory, 'artifact-run.json'), `${JSON.stringify(manifest, null, 2)}\n`, { flag: 'wx' })
-    initializeProgress(directory, manifest)
-    return directory
-  }
+  requireCondition(Object.keys(options).every(key => ['mode','purpose'].includes(key)), 'Unexpected allocation option')
+  readSeriesConfig(repositoryRoot)
+  const revision = repositoryState(repositoryRoot)
+  if(options.purpose === 'release-candidate' && revision.dirty) throw new StateError('dirty-release-candidate')
+  const state = new ArtifactState(repositoryRoot, true)
+  try { return state.allocate(artifactKind, options.mode ?? 'light', options.purpose ?? 'experiment', randomUUID()).data.directory } finally { state.close() }
 }
 
 export function updateRun(runDirectory: string, status: RunStatus, failure: RunManifest['failure'] = null): RunManifest {
-  const current = readRunManifest(runDirectory)
-  const allowed: Record<RunStatus, RunStatus[]> = { allocated: ['running', 'failed', 'cancelled'], running: ['succeeded', 'failed', 'cancelled'], succeeded: [], failed: [], cancelled: [] }
-  requireCondition(allowed[current.status].includes(status), `Invalid run transition: ${current.status} -> ${status}`)
-  const now = new Date().toISOString()
-  const updated = validateRunManifest({ ...current, status, startedAt: status === 'running' ? now : current.startedAt, finishedAt: status === 'running' ? null : now, failure })
-  writeJsonAtomic(join(runDirectory, 'artifact-run.json'), updated)
-  refreshProgress(runDirectory, updated)
-  return updated
+  const state = new ArtifactState(resolve(runDirectory, '../..'))
+  try {
+    const id = runDirectory.split('/').at(-1)!, run = state.run(id)
+    if (status === 'succeeded') state.finalize(id, randomUUID())
+    else state.operation(randomUUID(), 'update-run', { id, status, failure }, () => {
+      const allowed:Record<string,string[]>={allocated:['running','failed','cancelled'],running:['blocked','failed','cancelled'],blocked:['running','failed','cancelled']}
+      requireCondition(allowed[run.status]?.includes(status), 'Invalid run transition')
+      if(failure)requireCondition(/^[a-z][a-z0-9-]{0,63}$/.test(failure.stage)&&failure.summary.length<=240&&failure.summary.trim().length>0&&!/[\r\n]/.test(failure.summary),'Invalid failure')
+      const started = status === 'running' ? run.started_at ?? new Date().toISOString() : run.started_at
+      state.db.query('UPDATE runs SET status=?,started_at=?,finished_at=?,reason=?,failure_stage=? WHERE id=?').run(status, started, ['failed','cancelled'].includes(status) ? new Date().toISOString() : null, failure?.summary ?? null, failure?.stage ?? null, run.id)
+      if(['failed','cancelled'].includes(status))state.db.query('UPDATE attempts SET claim=?,generation=generation+1 WHERE run_id=?').run(randomUUID(),run.id)
+      state.event(run.id, status, 'update-run')
+      return { schemaVersion: 1, outcome: status, data: { runId: run.id } }
+    })
+  } finally { state.close() }
+  return readRunManifest(runDirectory)
 }
 
 /** Do not hide the original failure if recording the terminal state also fails. */

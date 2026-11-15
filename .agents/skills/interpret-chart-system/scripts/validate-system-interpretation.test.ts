@@ -67,8 +67,13 @@ for (const [system, fixture] of Object.entries(cases)) {
       expect(isValidSystemInterpretation(system as ChartSystem, valid.replace('영역: 재물', '영역: 성격과 기질'), manifest)).toBe(false)
     })
 
-    test('rejects a shallow interpretation', () => {
-      expect(isValidSystemInterpretation(system as ChartSystem, valid.replace(/^해석:.+$/m, '해석: 구조적 긴장'), manifest)).toBe(false)
+    test('accepts a concise interpretation with the required evidence', () => {
+      expect(isValidSystemInterpretation(system as ChartSystem, valid.replace(/^해석:.+$/m, '해석: 재량이 주어지면 꾸준히 완성한다.'), manifest)).toBe(true)
+    })
+
+    test.each(['해석:', '해석:   ', '해석: \t'])('diagnoses an empty interpretation: %s', line => {
+      const errors = diagnoseSystemInterpretation(system as ChartSystem, valid.replace(/^해석:.+$/m, line), manifest)
+      expect(errors).toEqual([expect.objectContaining({ code: 'item-reading', itemId: `${fixture.prefix}-01` })])
     })
 
     test('diagnoses responsibility wording with a location and no quoted content', () => {

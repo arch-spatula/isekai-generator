@@ -1,6 +1,9 @@
+import { Database } from 'bun:sqlite'
+import { beforeGdd } from './fixtures/sqlite-pipeline-runtime'
+import { pipelineGdd as fullPipelineGdd } from './fixtures/sqlite-pipeline'
+import { prepare, submit, finish, call, request } from './artifacts/sqlite-test-fixtures'
 import { expect, test } from 'bun:test'
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import * as validator from '../.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd'
 import { gddSections, gddTemplateFixture, gddTitle } from './fixtures/gdd-template'
@@ -51,21 +54,14 @@ test('isValidGdd enforces structure on otherwise valid declarations and evidence
   for (const markdown of invalidOutlines) expect(validator.isValidGdd(declarations + markdown, ...args)).toBe(false)
 })
 
-test('both six argument CLIs reject an invalid outline while valid inputs succeed', () => {
-  const root = mkdtempSync(join(tmpdir(), 'gdd-template-'))
-  try {
-    const sources = [fullGdd, '합성 차트 원본', fixtureInterpretation, combat, serializeWorldBrief()]
-    const paths = sources.map((source, index) => { const path = join(root, `${index}.md`); writeFileSync(path, source); return path })
-    const presentation = resolve(import.meta.dir, '../docs/prompts/game-presentation-contract.md')
-    for (const skill of ['generate-gdd-from-interpretation', 'generate-personalized-gdd']) {
-      const cli = resolve(import.meta.dir, '../.agents/skills', skill, 'scripts/validate-gdd.ts')
-      writeFileSync(paths[0], fullGdd)
-      expect(Bun.spawnSync(['bun', cli, ...paths, presentation]).exitCode).toBe(0)
-      writeFileSync(paths[0], fullGdd.replace(gddTitle, '# 임의 제목'))
-      const result = Bun.spawnSync(['bun', cli, ...paths, presentation])
-      expect(result.exitCode).toBe(1)
-      expect(result.stderr.toString()).toContain('Invalid GDD')
-      expect(Bun.spawnSync(['bun', cli, ...paths, presentation, 'extra']).exitCode).toBe(2)
-    }
-  } finally { rmSync(root, { recursive: true, force: true }) }
+test('public finish rejects an invalid GDD outline and preserves registration state', () => {
+  const { root, run } = beforeGdd()
+  const attempt = prepare(root, run, 'gdd').data
+  writeFileSync(attempt.output, fullPipelineGdd().replace(gddTitle, '# 임의 제목'))
+  submit(root, attempt)
+  expect(finish(root, attempt).outcome).toBe('validation-failed')
+  const result = call(root, ['finalize', '--run', run, '--request', request()])
+  expect(result.code).toBe(1)
+  const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
+  try { expect(db.query('SELECT count(*) AS count FROM fingerprints').get()).toEqual({ count: 0 }) } finally { db.close() }
 })

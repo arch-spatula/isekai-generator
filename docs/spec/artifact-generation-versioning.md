@@ -5,6 +5,17 @@
 > 근거 결정: [생성 아티팩트 버전을 기준선과 실행 이력으로 구분](../ADR/2026-11-04-artifact-generation-versioning.md)
 > 범위: `artifacts/vX.Y.Z` 생성 실행의 series 승격, patch 예약, 실행 상태와 계보 기록
 
+## SQLite 전환 적용
+
+> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
+
+신규 실행의 예약·상태·카운터·이벤트는 단일 `artifacts/state.sqlite`를 사용한다.
+`.agents/artifact-series.json`은 Git 기준선 설정으로 유지한다. 구형 폴더는 이름만 확인하여
+번호 충돌을 피하고 내용 import는 하지 않는다. 아래 manifest 파일 생성·갱신 설명은 전환 전
+구현 기록이며 신규 실행 계약이 아니다.
+
+상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+
 ## 1. 목적과 성공 조건
 
 생성 파이프라인의 채택된 품질 기준은 minor로, 각 생성 시도는 patch로 식별한다. 자동

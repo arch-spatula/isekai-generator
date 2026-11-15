@@ -5,234 +5,40 @@ description: Orchestrate a versioned personalized Action RPG GDD through chart c
 
 # Orchestrate a personalized GDD
 
-Run isolated agents in dependency order. Execute the three specialist interpretation agents concurrently. Do not calculate, interpret, integrate, select combat or world concepts, or design in the parent conversation.
+Use isolated agents in dependency order, with three specialist agents concurrently. Never calculate, interpret, integrate, select or design in the parent. Every stage agent uses `fork_turns="none"`, the matching named skill and only the assigned inputs. Default mode light and purpose experiment; accept deep and the existing purpose enum. Birth defaults: current flow-year, unified jasi-method, P house-system. Ask only for genuinely missing or ambiguous birth inputs. Never inspect previous artifact content.
 
-## Accept the request
+Before asking any input question, check explicit user values, existing agreements and applicable settings, then apply every defined default, including mode, purpose and chart options. Omission of an option with a default is not missing or ambiguous input; do not request confirmation of defaults or values already resolved from supplied information. Explicit user values override defaults. Ask only for required information still missing or conflicts still unresolved after this step. Pass the resolved values to stage agents so they do not ask again.
 
-Pass user-stated birth details to the chart stage without inventing a date, exact time, gender, or ambiguous birthplace. Accept optional `mode` and `purpose`. Reject explicit `version` / `--version`; versions are reserved only through the active series allocator.
+Use the chart skill's birth input rules: an omitted calendar means Gregorian (양력), and an unambiguous birthplace determines timezone (South Korean cities use `Asia/Seoul`). Never silently treat an explicitly lunar date as Gregorian.
 
-Use these defaults unless overridden:
+## Reserve and start
 
-- `mode`: `light`
-- `purpose`: `experiment` (also accepts `regression`, `new-profile`, `incident-reproduction`, `release-candidate`)
-- `flow-year`: current calendar year
-- `jasi-method`: `unified`
-- `house-system`: `P`
+`bun <root>/scripts/artifact-state.ts allocate --kind personalized-gdd --mode <mode> --purpose <purpose> --request <id>`
 
-Supported modes are `light` and `deep`. Before generation, briefly confirm only non-default choices and clarifications made for an ambiguous place.
+`bun <root>/scripts/artifact-state.ts start --run <run-id> --request <id>`
 
-## Allocate the version
+Use the returned version/directory. Requests identify logical calls: reuse the same request after response loss. Active series comes from Git configuration; never choose patch numbers or initialize registries manually.
 
-Resolve the repository root containing `scripts/chart-report.ts`. Run:
+## Execute the DAG
 
-`bun <skill-path>/scripts/resolve-output.ts <repository-root> --purpose <purpose> --mode <mode>`
+Call `read-artifact-state.ts next --run <id>` after each confirmed result. Chart calls the chart skill and its runner with only the user birth inputs. After chart publication, prepare `saju`, `ziwei`, `natal` concurrently. Each uses `--kind generate`; each successful structure result requires a separate `--kind edit` attempt. Following their published acceptance, execute `integration`, `selection`, `world-selection`, and `gdd`, all `--kind generate`. Match the stage skill: interpret-chart-system, edit-defensive-phrases, interpret-chart-report, select-gameplay-concept, select-world-concept, generate-gdd-from-interpretation.
 
-This command atomically reserves a new version directory and writes `artifact-run.json` with status `allocated`. Read the allocated version from that manifest; never calculate a version yourself. `.agents/artifact-series.json` is the only active-series authority. A dirty `release-candidate` is rejected before consuming a patch. Generation never guesses a new minor. If the user explicitly adopts a new series (for example “now v0.3.x”), treat that declaration as authorization for the separate promotion workflow: record the decision, validate and commit the intended baseline, promote from a clean tree with `scripts/promote-artifact-series.ts`, and commit the configuration before allocation. Do not request the same authorization again. Ordinary generation only increments the active patch; explicit artifact versions remain unsupported.
+For each model invocation:
 
-Derive these sibling paths from the returned GDD path:
+1. `artifact-state.ts prepare --run <id> --stage <stage> --kind <generate|edit> --request <id>` returns attemptId, claim, scope, mode and output.
+2. Read `read-artifact-state.ts input --attempt <id> --claim <claim>` and pass only its filtered data, matching skill, mode, shared prompt/template/presentation inputs to an isolated agent. Specialist agents receive only the selected system prompt and common guidelines. Input paths are not permission to inspect sibling files.
+3. Record `artifact-state.ts dispatch --attempt <id> --claim <claim> --request <id>` immediately before spawning; then `bind-worker --attempt <id> --claim <claim> --agent <agent-id> --request <id>`. Never spawn twice when dispatch result is unknown.
+4. Agent writes reserved Markdown; edit agent instead returns `{sourceSha256,edits,review,reviewMarkdown}`. Pipe directly to `artifact-state.ts submit --attempt <id> --claim <claim> --request <id>`. Ordinary Markdown submit payload is `{}` or `{path,sha256}` for the reserved output. Never write temporary JSON.
+5. `artifact-state.ts finish --attempt <id> --claim <claim> --request <id>` performs validation and safe publication. Use outcome and nextAction, not exit code alone. Tool assigns repair mode, scopes and remaining budgets. A normal submission failure is not a new run.
 
-- `chart-report.md`
-- `chart-evidence.json`
-- `saju-interpretation.md`
-- `ziwei-interpretation.md`
-- `natal-interpretation.md`
-- `chart-interpretation.md`
-- `gameplay-concept-brief.md`
-- `world-concept-brief.md`
+Shared presentation is `docs/prompts/game-presentation-contract.md`; GDD template is `docs/prompts/personalized-action-rpg-concept.md`. Stage contracts and semantic presentation review remain mandatory. Unresolved camera/control/art/readability conflicts block dependent work.
 
-Use `<repository-root>/artifacts/registries/combat-concept-fingerprints.json` as the fingerprint registry. Initialize it before the selection stage with:
+## Resume and finalize
 
-`bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts init <registry-path>`
+For explicit continuation query runs --unfinished or the specified summary, then next. Do not guess among multiple unfinished runs. Use reconcile for stored submissions/publication; never regenerate accepted documents. If external execution is uncertain, query the actual worker, then resume with stdin `{workers:[{attemptId,status:"terminated|alive|unknown",observer,reference}]}`. A timeout is not proof of termination. Alive means wait; unknown remains blocked. Explicit resume returns `data.resumedAttempts` with a renewed claim and reserved output for each prepared/submitted attempt. Use those returned claims to read input, submit or finish the same attempt; never depend on previous conversation claims. Running/dispatching claims remain unavailable before worker verification. Confirmed terminated workers with existing ordinary Markdown resume as submitted in that same attempt; only absent output or absent edit payload permits an interrupted invocation and a budgeted retry. Terminal runs cannot reopen; no JSON import or fallback exists.
 
-Use `<repository-root>/artifacts/registries/world-concept-fingerprints.json` as the independent world registry. Initialize it before world selection:
+After all documents are accepted, `artifact-state.ts finalize --run <id> --request <id>` revalidates the complete snapshot and atomically registers combat+world fingerprints and run success. Registry-stale requires latest comparison/review within remaining budgets; do not overwrite old documents or reset attempts. On infrastructure failure stop calls and retain the same run for recovery. Cancel/fail require a short safe reason; do not log birth arguments or raw stderr.
 
-`bun <world-skill-path>/scripts/manage-world-registry.ts init <world-registry-path>`
+## Models and completion
 
-Never overwrite or reuse an existing version directory. Do not inspect previous artifact content.
-
-Before starting the chart agent, record the start:
-
-`bun <repository-root>/scripts/update-artifact-run.ts <version-directory> running`
-
-The orchestrator owns this run's status. Subagents use the reserved paths without allocating or finalizing the parent run. On any caught stage error (including registry initialization, final validation, or fingerprint registration), stop dependent work and record:
-
-`bun <repository-root>/scripts/update-artifact-run.ts <version-directory> failed <stage> "<short non-sensitive error summary>"`
-
-Use stage identifiers such as `chart-report`, `saju`, `ziwei`, `natal`, `integration`, `selection`, `world-selection`, `gdd`, `final-validation`, or `fingerprint-registration`. Never put raw birth details, generated content, command arguments, or raw calculator stderr in the summary. Report the original error separately. If manifest update also fails, report both errors. On user cancellation, stop dependent work and record `cancelled` with the same command, without a failure object. Let active parallel specialists finish safely before finalizing. Never remove a reserved directory. After an abnormal interruption, leave unfinished status unchanged; do not guess the result or reassign the version.
-
-## Persist progress and handoff
-
-Allocation creates `<version-directory>/TODO.md` and per-stage checkpoints under `garbage/progress/`. The TODO is a readable handoff for the orchestrator, not a source artifact for downstream agents. Do not put birth arguments, chart or interpretation text, raw stderr, or a conversation summary in it. Do not hand-edit its generated contents.
-
-The allocator, parent status updater, chart runner, and specialist attempt manager update it automatically. For all remaining stages, the orchestrator must record `start` **before** launching work and `done` **only after** the stage's validator succeeds:
-
-`bun <repository-root>/scripts/update-artifact-progress.ts start <version-directory> <stage>`
-
-`bun <repository-root>/scripts/update-artifact-progress.ts done <version-directory> <stage>`
-
-Use stages `integration`, `selection`, `world-selection`, `gdd`, `final-validation`, `combat-registration`, and `world-registration`. After spawning an agent, repeat `start` with its agent identifier as the last argument to retain a lookup hint. Specialists already have a running checkpoint allocated by `prepare`; record their agent identifier with `start <version-directory> <system> <agent-id>` after spawning. The manager retains the attempt number.
-
-Record `final-validation` around all final validators. Record each registration separately: start before that registration command, done after its confirmed success. On a caught stage error, record `fail <version-directory> <stage>` before finalizing the parent failure; if progress recording also fails, report both errors and still attempt the terminal manifest update. A progress command failure blocks dependent work. Parent status changes refresh TODO automatically; they do not silently check off unfinished stages.
-
-Before yielding with unfinished work or after a context interruption, ensure durable checkpoints reflect the latest confirmed result. `sync <version-directory>` rebuilds TODO from manifest and checkpoints if rendering was interrupted. Do not mark a stage complete based solely on file existence.
-
-If the user explicitly continues an existing **unfinished** run, read only its manifest, TODO, checkpoints, and relevant same-run attempt records first. Do not allocate a replacement version. Check recorded agent/process liveness before launching another, revalidate completed outputs, and continue only unmet dependencies using the isolated inputs below. An allocated/running status is not evidence that the previous agent stopped. Do not delete locks or classify unfinished attempts automatically. If a tool succeeded before its checkpoint was written, reconcile the existing output and validator result instead of rerunning it. Before registering fingerprints, inspect both registries for this version to avoid duplicate registration. Terminal runs remain closed; TODO is a recovery hint, not authorization to reopen one.
-
-Never pass TODO or the progress directory to specialist, integration, selection, or GDD agents. Preserve their data isolation. Existing versions without TODO are not backfilled automatically.
-
-## Run isolated stages
-
-Invoke every agent with `fork_turns="none"`. Tell every agent to read and follow its named skill at the absolute path. Do not include other user messages, a conversation summary, inferred preferences, conclusions, or previous artifact content.
-
-### 1. Generate the chart report
-
-Invoke `$generate-chart-report` with only:
-
-- the user-stated birth details and explicit chart options, including defaults;
-- repository root, version, and exact `chart-report.md` and sibling `chart-evidence.json` output paths;
-- absolute skill path.
-
-Use a lightweight model. If the stage reports a missing or ambiguous required input, relay one focused question to the user; do not guess. Stop on calculation failure.
-
-### 2. Run three specialist interpretations in parallel
-
-After stage 1 succeeds, run the three systems concurrently, with independent recovery. For each system, before each agent invocation run:
-
-`bun <repository-root>/scripts/manage-specialist-attempt.ts prepare <version-directory> <system>`
-
-This allocates an immutable attempt under `<version-directory>/garbage/attempts/<system>/NNN/` and returns its run-relative output path, attempt number, and `mode` (`generate` or `repair`). Resolve returned paths against the version directory. Never allocate attempts yourself. The shared budget is **three total invocations per system, including initial generation, repairs, and fresh generations**. There is no unlimited flag. A fresh generation also consumes this budget; it is not three additional attempts.
-
-Give each `$interpret-chart-system` agent only:
-
-- its system name;
-- exact chart report, evidence manifest, and allocated attempt output paths;
-- exact `docs/prompts/interpretation-guidelines.md` path;
-- exact `docs/prompts/<system>-interpretation.md` task prompt path, matching the selected system (`saju`, `ziwei`, or `natal`);
-- selected interpretation mode (`light` or `deep`);
-- absolute skill path;
-- for `repair` only: the exact previous failed output and result paths returned by the manager.
-
-Use `fork_turns="none"` for every attempt. Agents must not receive raw birth arguments, conversation context, other systems' outputs, or any other garbage content. Each invocation writes once and validates once; agents must not perform their own repair loop.
-
-After an agent returns, run:
-
-`bun <repository-root>/scripts/manage-specialist-attempt.ts finish <version-directory> <system> <attempt>`
-
-If execution failed, use `error`. `finish` runs the full validator and durably records diagnostics first. Inspect status: `validation-failed` means structural or mixed errors and uses the existing specialist repair policy; `execution-failed` allows fresh generation within the same three-call budget. `editing-required` means only defensive diagnostics or no diagnostics remain. Do not invoke the specialist again for this result.
-
-For every such system, including zero-diagnostic documents, run:
-
-`bun <repository-root>/scripts/manage-defensive-edit.ts prepare <version-directory> <system>`
-
-Launch `$edit-defensive-phrases` with `fork_turns="none"`, the mode, specialist instructions, allocated input.json, exact source output, and returned system-only chart/evidence files. Never pass the multi-system chart report, other interpretations, raw birth arguments, TODO, or conversation history. On retry supply only the immediately preceding candidate/review/result, current diagnostics and confirmed targets. Use the mode's specialist model policy.
-
-After spawning the editor, record its agent ID with `bun <repository-root>/scripts/update-artifact-progress.ts start <version-directory> <system> <agent-id>`. The manager retains generation and editing checkpoints. Reuse available specialist slots for independent system editors within the tool concurrency limit; no scheduler is added.
-
-The editor writes only edits.json and review.md. Then run:
-
-`bun <repository-root>/scripts/manage-defensive-edit.ts finish <version-directory> <system> <attempt>`
-
-Use `error` for editor execution failure. The manager checks hashes, exact matches, scope, review completeness, preservation and the full validator before publishing. A no-change review consumes one call. Only `editing-failed` permits another allocation: sentence → item → related system items/paragraphs. This separate lifetime budget is three calls per system, never reset by changing specialist source. Operational failures, missing records, unresolved uncertainty and exhausted budget block integration; do not regenerate to bypass them. On `passed`, retain the final and both accepted records, and never restart the specialist.
-
-Keep the parent running during recovery. On tool, record or publication errors stop dependent work, allow active parallel agents to finish safely and record parent failure under that system. Cancellation launches no further agents. Never remove locks, overwrite records or reopen terminal runs. Resume checks source/candidate/final hashes and full validation, acceptance records and process liveness. All three systems must have accepted edits with matching final hashes before integration; the progress tool verifies this gate. Never pass editing reports to integration or later agents.
-
-### 3. Integrate the specialist interpretations
-
-After all three systems pass defensive editing and acceptance verification, invoke `$interpret-chart-report` with only:
-
-- exact Saju, Zi Wei Dou Shu, natal, and integrated interpretation paths;
-- exact `docs/prompts/interpretation-guidelines.md` path;
-- selected mode;
-- absolute skill path.
-
-The integration agent must not receive the chart report, raw birth arguments, or conversation context.
-
-### 4. Select the gameplay concept
-
-Resolve `<presentation-input>` to the absolute `<repository-root>/docs/prompts/game-presentation-contract.md` path. This is a shared repository input, not a generated artifact. Before launching each of stages 4, 5 and 6, record that stage's progress start and run:
-
-`bun <repository-root>/scripts/game-presentation.ts <presentation-input>`
-
-Missing, empty or invalid input fails the current stage through the existing progress and manifest failure workflow; do not launch its agent or dependent work. Pass this exact path to all three isolated agents, including standalone-equivalent invocations. Do not pass the shared game contract to chart, specialist or integration agents. Preserve the same contract throughout the run; a changed contract requires stopping dependent work rather than silently mixing inputs.
-
-After stage 3 succeeds, invoke `$select-gameplay-concept` with only:
-
-- exact integrated interpretation, concept brief output, and fingerprint registry paths;
-- exact shared presentation input path;
-- selected mode;
-- absolute skill path.
-
-The selection agent must not receive the chart report, specialist outputs, raw birth arguments, conversation context, or prior GDD content.
-
-### 5. Select the world concept
-
-After stage 4 succeeds, invoke `$select-world-concept` with only:
-
-- exact integrated interpretation, selected gameplay brief, world brief output, and world registry paths;
-- exact shared presentation input path;
-- selected mode;
-- absolute world skill path.
-
-The world agent must not receive raw birth details, chart report, specialist outputs, conversation history, combat registry, or prior GDDs. It preserves the selected combat contract and independently compares world structures. Stop if world validation fails.
-
-### 6. Generate the GDD
-
-After stage 5 succeeds, read `<repository-root>/docs/prompts/personalized-action-rpg-concept.md` in full as the shared output template, then invoke `$generate-gdd-from-interpretation` with only:
-
-- exact chart report, interpretation, gameplay concept brief, world concept brief, and GDD paths;
-- exact shared presentation input path;
-- exact `<repository-root>/docs/prompts/personalized-action-rpg-concept.md` template input path;
-- selected mode;
-- absolute skill path.
-
-Use a lightweight model for `light` and a deep-reasoning model for `deep`. The stage must not receive raw birth arguments or conversation context.
-
-## Models
-
-When available, use:
-
-- chart stage: `gpt-5.6-terra`, low reasoning
-- light specialist, integration, combat/world selection, and GDD: `gpt-5.6-terra`, low reasoning
-- deep specialist, integration, combat/world selection, and GDD: `gpt-5.6-sol`, high reasoning
-
-Use the closest exposed model if unavailable and report the substitution.
-
-## Final validation
-
-Run all specialist, integration, combat, world and GDD validators:
-
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts saju <saju-output> <chart-evidence-output>`
-
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts ziwei <ziwei-output> <chart-evidence-output>`
-
-`bun <system-skill-path>/scripts/validate-system-interpretation.ts natal <natal-output> <chart-evidence-output>`
-
-`bun <interpret-skill-path>/scripts/validate-interpretation.ts <interpretation-output> <saju-output> <ziwei-output> <natal-output>`
-
-`bun <selection-skill-path>/scripts/validate-concept-brief.ts <concept-brief-output> <interpretation-output> <registry-path> <presentation-input>`
-
-`bun <world-skill-path>/scripts/validate-world-brief.ts <world-brief-output> <interpretation-output> <concept-brief-output> <world-registry-path> <presentation-input>`
-
-`bun <skill-path>/scripts/validate-gdd.ts <gdd-output> <chart-report-output> <interpretation-output> <concept-brief-output> <world-brief-output> <presentation-input>`
-
-Do not silently rewrite a stage's valid result. If final validation fails, return the exact error and the stage responsible.
-
-Stage success requires both its semantic review under the shared presentation contract and its validator. An agent-reported unresolved camera, control, art or readability conflict blocks dependent stages and final registration even if declarations pass. Final validators prove declaration consistency, not semantic quality; do not report otherwise.
-
-After every validation succeeds, register both selected fingerprints exactly once:
-
-`bun <selection-skill-path>/scripts/manage-fingerprint-registry.ts register <registry-path> <version> <concept-brief-output>`
-
-`bun <world-skill-path>/scripts/manage-world-registry.ts register <world-registry-path> <version> <world-brief-output>`
-
-If either registration fails, record `failed` and report which registrations already completed. The two files are not a transaction; do not mark success, silently remove an entry, or retry registration of the same run. Revalidate current registry comparisons before registration if another run registered in the meantime.
-
-Only after all validators and fingerprint registration succeed, record:
-
-`bun <repository-root>/scripts/update-artifact-run.ts <version-directory> succeeded`
-
-## Complete
-
-Report the mode, artifact version, purpose, final manifest status, all nine validated artifact paths, the root TODO.md path, and whether a model substitution occurred. On failure or cancellation, report the reserved version, purpose, final status and any errors without claiming unvalidated outputs succeeded. Do not reproduce birth arguments, chart content, interpretation, concept briefs, or GDD content.
-
-Returned artifact paths identify local runtime files; they are valid in the user response but are not permanent repository evidence. If persistent documentation is requested, preserve only necessary non-identifying observations or committed synthetic cases and follow `docs/spec/local-artifact-document-boundary.md`. Do not link persistent docs to a specific local run or require its files or original birth input for regression.
+When exposed use gpt-5.6-terra low for chart and light stages; gpt-5.6-sol high for deep interpretation/integration/selection/design. Otherwise use the closest available model and report substitution. Report mode, purpose, version, DB summary status and local final Markdown paths. Do not reproduce birth inputs or generated contents. Markdown paths identify local outputs, not permanent repository evidence.

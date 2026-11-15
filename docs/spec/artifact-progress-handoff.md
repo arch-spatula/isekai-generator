@@ -4,6 +4,17 @@
 > 작성일: 2026-11-05
 > 범위: 새 차트·개인화 GDD run의 루트 `TODO.md`
 
+## SQLite 전환 적용
+
+> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
+
+신규 실행은 run TODO와 단계 JSON을 만들지 않는다. `read-artifact-state.ts`의
+summary/next/input 조회가 진행 인계의 원본이다. 미완료 실행은 DB의 시도·제출·게시 상태와
+필요한 worker 생존 확인을 거쳐 재개한다. 구형 파일을 조회해 DB를 소급 생성하지 않는다.
+아래 TODO·checkpoint 파일 구조와 CLI는 전환 전 구현 기록이다.
+
+상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+
 ## 목적
 
 대화 컨텍스트나 실행이 중단되어도 다음 에이전트가 어디까지 검증됐고 무엇을 확인해야

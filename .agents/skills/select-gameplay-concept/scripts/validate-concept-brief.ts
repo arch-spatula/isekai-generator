@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import { parseGamePresentation, readGamePresentationContract } from '../../../../scripts/game-presentation'
+import { parseGamePresentation } from '../../../../scripts/game-presentation'
 
 import {
   AXIS_KEYS,
@@ -311,29 +310,4 @@ export function isValidConceptBrief(markdown: string, interpretation: string, re
   }
 }
 
-if (import.meta.main) {
-  const [briefPath, interpretationPath, registryPath, presentationPath, ...extra] = process.argv.slice(2)
-  if (briefPath == null || interpretationPath == null || registryPath == null || presentationPath == null || extra.length > 0) {
-    console.error('Usage: bun validate-concept-brief.ts <gameplay-concept-brief.md> <chart-interpretation.md> <combat-concept-fingerprints.json> <game-presentation-contract.md>')
-    process.exitCode = 2
-  } else {
-    try {
-      readGamePresentationContract(presentationPath)
-      const [brief, interpretation, registryJson] = await Promise.all([
-        readFile(briefPath, 'utf8'),
-        readFile(interpretationPath, 'utf8'),
-        readFile(registryPath, 'utf8'),
-      ])
-      const errors = validateConceptBrief(brief, interpretation, parseRegistry(registryJson))
-      if (errors.length > 0) {
-        errors.forEach(error => console.error(error))
-        process.exitCode = 1
-      } else {
-        console.log('Validated gameplay concept brief.')
-      }
-    } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error))
-      process.exitCode = 1
-    }
-  }
-}
+if (import.meta.main) { console.error('Use artifact-state finish --attempt <id> --claim <claim> --request <id>; validation reads its immutable DB input'); process.exitCode=2 }

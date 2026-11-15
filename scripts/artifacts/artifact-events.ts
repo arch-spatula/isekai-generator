@@ -1,7 +1,5 @@
-import { appendFileSync, mkdirSync, rmSync } from 'node:fs'
-import { join } from 'node:path'
-import { readRunManifest } from './artifact-run'
-
+import { resolve, basename } from 'node:path'
+import { ArtifactState } from './artifact-state-store'
 export type ArtifactIssue = { code: string; message: string; item?: string; field?: string; line?: number }
 export type ArtifactEventInput = {
   event: 'validation_failed' | 'validation_succeeded' | 'execution_failed' | 'retry_scheduled' | 'stage_stopped' | 'run_started' | 'run_succeeded' | 'run_failed' | 'run_cancelled'
@@ -26,19 +24,8 @@ export function validateArtifactEvent(value: unknown): ArtifactEventInput {
   return e as ArtifactEventInput
 }
 
-/** Append a whole line under the same bounded locking policy as progress writers. */
 export function appendArtifactEvent(run: string, event: ArtifactEventInput): void {
   validateArtifactEvent(event)
-  readRunManifest(run)
-  const lock = join(run, '.events.lock')
-  const deadline = Date.now() + 5000
-  for (;;) {
-    try { mkdirSync(lock); break } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
-      if (Date.now() >= deadline) throw new Error('Event writer lock remains; inspect .events.lock before continuing')
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10)
-    }
-  }
-  try { appendFileSync(join(run, 'events.jsonl'), `${JSON.stringify({ ...event, timestamp: new Date().toISOString() })}\n`) }
-  finally { rmSync(lock, { recursive: true }) }
+  const state = new ArtifactState(resolve(run, '../..'))
+  try { const row = state.run(basename(run)); state.tx(() => state.event(row.id,event.event,event.operation,event.stage,null,event.reason ?? null,event.issues ?? [])) } finally { state.close() }
 }

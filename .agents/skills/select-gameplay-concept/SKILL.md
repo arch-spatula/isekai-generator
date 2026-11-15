@@ -3,44 +3,16 @@ name: select-gameplay-concept
 description: Extract gameplay tendencies from an integrated chart interpretation, compare structurally distinct personalized Action RPG combat candidates, check prior fingerprints, and write a validated gameplay-concept-brief.md. Use between chart interpretation and GDD generation when selecting the protagonist's combat archetype without reading prior GDD content.
 ---
 
-# Select a gameplay concept
+# select-gameplay-concept
 
-Select one combat archetype through structured comparison. Do not write the GDD or reinterpret the source charts.
+Select structurally distinct personalized Action RPG combat candidates from integrated interpretation only. Read `references/selection-prompt.md`, `references/<mode>-mode.md`, and shared `docs/prompts/game-presentation-contract.md`. Preserve existing candidate, scoring, challenger, fingerprint and semantic differentiation contracts. Obtain only combat comparisons with `read-artifact-state.ts fingerprints --attempt <id> --kind combat`; use all closest ties and the fixed registry snapshot. Never read chart, specialist output, other registry or previous GDD.
 
-## Inputs
+## SQLite invocation contract
 
-Require exact paths for:
+The caller supplies repository root, run ID, attempt ID, claim, mode, and the reserved Markdown output. Read your input only with:
 
-- `chart-interpretation.md`
-- `gameplay-concept-brief.md`
-- `combat-concept-fingerprints.json`
-- shared `docs/prompts/game-presentation-contract.md`
-- mode: `light` or `deep`
+`bun <root>/scripts/read-artifact-state.ts input --attempt <id> --claim <claim> --root <root>`
 
-Read only those inputs and this skill's references. Do not search for or read the chart report, specialist interpretations, raw birth data, prior artifacts, or prior GDDs.
+Use the returned allowlist. Do not read other artifact directories, conversation history, another system, or prior runs. Evidence, diagnostics, previous results and registry snapshots are returned from SQLite; never create an intermediate JSON file. The DB assigns numbers and scopes. Write only your reserved Markdown. The orchestrator submits and finishes the attempt; do not publish final paths or allocate another attempt. Return a concise status and output path without reproducing content. A semantic conflict blocks completion even when structural validation passes.
 
-Require the shared contract's exact path even for standalone calls; do not infer a default. Resolve the repository root from this skill's location and run `bun <repository-root>/scripts/game-presentation.ts <presentation-input>` before creating candidates. Stop on missing, empty or invalid input. Read the contract in full.
-
-## Select
-
-Read `references/selection-prompt.md` and the selected mode contract in `references/light-mode.md` or `references/deep-mode.md`.
-
-Extract tendencies for all seven axes with interpretation evidence, counter-evidence, and confidence. Generate four structurally distinct candidates and score them using the required criteria. Select by the deterministic score and tie-break order.
-
-Compare the initial selection with the fingerprint registry. If any closest match shares five or more axes, add exactly one challenger as `C-05`, score it, and select again across all candidates. Do not change the first four candidates or their scores after adding the challenger.
-
-Write the brief directly to the exact output path. Preserve the fixed Markdown headings and fields from the selection prompt.
-
-Apply the shared contract to every candidate's core loop and growth path, including challengers. Review all candidates before scoring and the final prose before writing. Copy its `game-presentation` block exactly once at the end; common production conditions do not need interpretation IDs or new fingerprint axes.
-
-## Validate
-
-Run:
-
-`bun <skill-path>/scripts/validate-concept-brief.ts <brief-output> <interpretation-input> <registry-input> <presentation-input>`
-
-If validation or the shared contract's semantic review fails, repair only the current brief once and validate and review again. Return an unresolved semantic conflict as failure even when the declaration validator passes. Return the second failure unchanged. Do not register the selected fingerprint; the orchestrator does that only after the GDD also passes validation. Validator success covers declarations, not prose consistency.
-
-## Complete
-
-Return only the output path, mode, candidate count, validation result, and a one-sentence status. Do not reproduce the interpretation or brief content.
+For each proposed fingerprint pass `--candidate '<JSON axes>'` to the fingerprints command. It returns comparedEntries, every closest tie, requiresChallenger and deterministic registryReview values. Copy these tool values into the brief, then write only semantic differences and reasons yourself. Never count history or decide threshold flags by hand. Without candidate the query returns snapshot revision and count only.

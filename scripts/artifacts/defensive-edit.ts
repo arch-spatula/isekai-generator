@@ -1,13 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { existsSync, linkSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative, resolve } from 'node:path'
+import { basename, relative, resolve } from 'node:path'
+import { ArtifactState } from './artifact-state-store'
 import { diagnoseSystemInterpretation, type ChartSystem, type InterpretationDiagnostic } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
-import type { ChartEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
-import { appendArtifactEvent } from './artifact-events'
-import { readRunManifest } from './artifact-run'
-import { recordStageProgress } from './artifact-progress'
-import type { AttemptResult } from './specialist-attempt'
-
 type Scope = 'sentence' | 'item' | 'system'
 type Edit = { id: string; target: string; original: string; replacement: string; diagnosticCode?: string; reviewTargetId?: string }
 type Decision = { reason: string; editIds: string[] }
@@ -24,86 +18,7 @@ export type DefensiveEditInput = {
   originalSha256: string; diagnostics: InterpretationDiagnostic[]; previous?: { candidate: string; review: string; result: string }
 }
 export type DefensiveEditResult = { system: ChartSystem; attempt: number; scope: Scope; status: 'passed' | 'editing-failed' | 'execution-failed'; errors: InterpretationDiagnostic[]; sha256?: string; sourceSha256: string; unresolved: string[]; calls: number; usage: Review['usage'] | null }
-const hash = (text: string): string => createHash('sha256').update(text).digest('hex')
-const read = (path: string): string => readFileSync(path, 'utf8')
-const json = <T>(path: string): T => JSON.parse(read(path)) as T
-function requireRunning(run: string): void { if (readRunManifest(run).status !== 'running') throw new Error('Defensive editing requires a running run') }
-function directory(run: string, system: ChartSystem): string {
-  if (!['saju', 'ziwei', 'natal'].includes(system)) throw new Error('Invalid chart system')
-  return join(run, 'garbage', 'defensive-editing', system)
-}
-function once(path: string, content: string): void {
-  const temporary = join(dirname(path), `.${randomUUID()}.tmp`)
-  try { writeFileSync(temporary, content, { flag: 'wx' }); linkSync(temporary, path) } finally { rmSync(temporary, { force: true }) }
-}
-function record(path: string, value: unknown): void { once(path, `${JSON.stringify(value, null, 2)}\n`) }
-function locked<T>(run: string, system: ChartSystem, action: (dir: string) => T): T {
-  requireRunning(run)
-  const dir = directory(run, system)
-  mkdirSync(dir, { recursive: true })
-  const lock = join(dir, '.lock'); mkdirSync(lock)
-  try { return action(dir) } finally { rmSync(lock, { recursive: true }) }
-}
-function evidence(run: string): ChartEvidenceManifest { return json(join(run, 'docs/GDD/chart-evidence.json')) }
-function finalPath(run: string, system: ChartSystem): string { return join(run, 'docs/GDD', `${system}-interpretation.md`) }
-function sourceAttempt(run: string, system: ChartSystem): AttemptResult {
-  const dir = join(run, 'garbage/attempts', system)
-  const attempts = readdirSync(dir).filter(name => /^\d{3}$/.test(name)).sort()
-  const result = json<AttemptResult>(join(dir, attempts.at(-1)!, 'result.json'))
-  if (result.status !== 'editing-required') throw new Error('Specialist needs structural repair before editing')
-  return result
-}
-function checkedSource(run: string, input: DefensiveEditInput): string {
-  const original = sourceAttempt(run, input.system)
-  if (original.attempt !== input.source.attempt) throw new Error('Specialist source changed')
-  if (hash(read(join(run, original.output))) !== input.originalSha256) throw new Error('Original specialist hash mismatch')
-  const source = read(join(run, input.source.output))
-  if (hash(source) !== input.source.sha256) throw new Error('Source hash mismatch')
-  return source
-}
-export function prepareDefensiveEdit(runDirectory: string, system: ChartSystem): DefensiveEditInput {
-  const run = resolve(runDirectory)
-  return locked(run, system, dir => {
-    if (existsSync(join(dir, 'accepted.json')) || existsSync(finalPath(run, system))) throw new Error('Defensive edit already accepted')
-    const source = sourceAttempt(run, system)
-    const attempts = readdirSync(dir).filter(name => /^\d{3}$/.test(name)).sort()
-    if (attempts.length >= 3) throw new Error('Defensive edit limit exhausted (3 total)')
-    let sourceOutput = source.output
-    let previous: DefensiveEditInput['previous']
-    if (attempts.length) {
-      const prior = join(dir, attempts.at(-1)!)
-      const result = json<DefensiveEditResult>(join(prior, 'result.json'))
-      if (result.status !== 'editing-failed') throw new Error('Previous edit is not a recoverable recorded failure')
-      const input = json<DefensiveEditInput>(join(prior, 'input.json'))
-      checkedSource(run, input)
-      if (!result.sha256 || hash(read(join(prior, 'candidate.md'))) !== result.sha256) throw new Error('Previous candidate hash mismatch')
-      sourceOutput = relative(run, join(prior, 'candidate.md'))
-      previous = { candidate: sourceOutput, review: input.review, result: input.result }
-      const issues = result.errors.length
-        ? result.errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) }))
-        : [{ code: 'editing-unresolved', message: 'Defensive editing left unresolved review targets.' }]
-      appendArtifactEvent(run, { event: 'retry_scheduled', stage: system, attempt: attempts.length + 1, operation: 'prepare-defensive-edit', reason: 'Previous defensive edit failed validation.', issues })
-    }
-    const markdown = read(join(run, sourceOutput))
-    const diagnostics = diagnoseSystemInterpretation(system, markdown, evidence(run))
-    if (!attempts.length && diagnostics.some(error => error.code !== 'responsibility-avoidance')) throw new Error('Structural errors require specialist repair')
-    const attempt = attempts.length + 1
-    const target = join(dir, String(attempt).padStart(3, '0')); mkdirSync(target)
-    const path = (name: string): string => relative(run, join(target, name))
-    const input: DefensiveEditInput = { system, attempt, scope: (['sentence', 'item', 'system'] as const)[attempt - 1], source: { output: sourceOutput, sha256: hash(markdown), attempt: source.attempt }, input: path('input.json'), edits: path('edits.json'), review: path('review.md'), candidate: path('candidate.md'), result: path('result.json'), chart: path('chart.md'), evidence: path('evidence.json'), originalSha256: hash(read(join(run, source.output))), diagnostics, ...(previous ? { previous } : {}) }
-    const chart = read(join(run, 'docs/GDD/chart-report.md'))
-    const markers = { saju: ['四柱八字', '紫微斗數 命盤'], ziwei: ['紫微斗數 命盤', 'Natal Chart'], natal: ['Natal Chart', null] } as const
-    const [startMarker, endMarker] = markers[system]
-    const start = chart.indexOf(startMarker); const end = endMarker ? chart.indexOf(endMarker, start + startMarker.length) : chart.length
-    if (start < 0 || end < start) throw new Error('Missing system chart section')
-    once(join(run, input.chart), chart.slice(start, end))
-    record(join(run, input.evidence), { version: 1, systems: { [system]: evidence(run).systems[system] } })
-    record(join(target, 'input.json'), input)
-    recordStageProgress(run, readRunManifest(run), system, 'running', { attempt: source.attempt, editing: { attempt, sourceSha256: input.source.sha256, status: 'running', result: input.result } })
-    return input
-  })
-}
-
+const hash = (text:string):string => createHash('sha256').update(text).digest('hex')
 type Region = { target: string; start: number; end: number }
 function regions(markdown: string): Region[] {
   const headings = [...markdown.matchAll(/^#{1,3} .+$/gm)]
@@ -179,73 +94,22 @@ function validateReview(input: DefensiveEditInput, review: Review, edits: Edit[]
     if (!['fixed', 'preserved', 'needs-expansion', 'deferred'].includes(decision.status)) throw new Error('Invalid secondary decision')
   }
 }
-export function finishDefensiveEdit(runDirectory: string, system: ChartSystem, attempt: number, executionFailed = false): DefensiveEditResult {
-  const run = resolve(runDirectory)
-  return locked(run, system, dir => {
-    if (!Number.isInteger(attempt) || attempt < 1 || attempt > 3) throw new Error('Invalid edit attempt')
-    const target = join(dir, String(attempt).padStart(3, '0'))
-    if (existsSync(join(target, 'result.json'))) throw new Error('Edit attempt already completed')
-    const input = json<DefensiveEditInput>(join(target, 'input.json'))
-    if (input.system !== system || input.attempt !== attempt) throw new Error('Edit input mismatch')
-    const source = checkedSource(run, input)
-    const result: DefensiveEditResult = { system, attempt, scope: input.scope, status: 'execution-failed', errors: [], sourceSha256: input.source.sha256, unresolved: [], calls: attempt, usage: null }
-    let candidate: string | undefined
-    if (!executionFailed) {
-      let proposal: { sourceSha256: string; edits: Edit[]; review: Review } | undefined
-      try { proposal = json(join(run, input.edits)) } catch { /* recorded below as an editor contract failure */ }
-      if (proposal && proposal.sourceSha256 !== input.source.sha256) throw new Error('Proposal source hash mismatch')
-      try {
-        if (!proposal || !Array.isArray(proposal.edits)) throw new Error('Invalid edits submission')
-        if (!read(join(run, input.review)).trim()) throw new Error('Missing semantic review report')
-        validateReview(input, proposal.review, proposal.edits, source)
-        candidate = assemble(source, input, proposal.edits, proposal.review)
-        const unresolved = [...proposal.review.unresolved,
-          ...proposal.review.primary.filter(item => item.status !== 'fixed').map(item => `diagnostic:${item.diagnosticIndex}`),
-          ...proposal.review.secondary.filter(item => ['needs-expansion', 'deferred'].includes(item.status)).map(item => item.id)]
-        if (!proposal.review.preservationConfirmed) unresolved.push('meaning-preservation')
-        if (unresolved.length && !proposal.review.nextScopeReason?.trim()) throw new Error('Unresolved targets require next scope reason')
-        result.unresolved = unresolved
-        result.usage = proposal.review.usage ?? null
-      } catch (error) {
-        candidate = source
-        result.errors = [{ code: 'editing-contract', message: error instanceof Error ? error.message : 'Defensive edit submission failed contract validation.' }]
-        result.unresolved = ['editing-contract']
-      }
-      once(join(run, input.candidate), candidate)
-      if (!result.errors.length) result.errors = diagnoseSystemInterpretation(system, candidate, evidence(run))
-      result.sha256 = hash(candidate)
-      result.status = result.errors.length || result.unresolved.length ? 'editing-failed' : 'passed'
-    }
-    const event = { stage: system, attempt, operation: 'finish-defensive-edit' }
-    if (result.status === 'passed') appendArtifactEvent(run, { ...event, event: 'validation_succeeded', output: input.candidate })
-    else if (result.status === 'execution-failed') appendArtifactEvent(run, { ...event, event: 'execution_failed', reason: 'Defensive editor execution failed or produced no submission.', issues: [{ code: 'editor-execution', message: 'Defensive editor execution failed or produced no submission.' }] })
-    else {
-      const issues = result.errors.length
-        ? result.errors.map(({ itemId, line, ...issue }) => ({ ...issue, ...(line != null && line > 0 ? { line } : {}), ...(itemId ? { item: itemId } : {}) }))
-        : [{ code: 'editing-unresolved', message: 'Defensive editing left unresolved review targets.' }]
-      appendArtifactEvent(run, { ...event, event: 'validation_failed', output: input.candidate, reason: 'Defensive edit submission or candidate failed validation.', issues })
-    }
-    record(join(target, 'result.json'), result)
-    if (result.status === 'passed') {
-      requireRunning(run)
-      const original = sourceAttempt(run, system)
-      const originalHash = hash(read(join(run, original.output)))
-      const accepted = { system, attempt: original.attempt, editAttempt: attempt, output: relative(run, finalPath(run, system)), source: original.output, sourceSha256: originalHash, candidate: input.candidate, sha256: result.sha256, acceptedAt: new Date().toISOString() }
-      record(join(dir, 'accepted.json'), accepted)
-      record(join(run, 'garbage/attempts', system, 'accepted.json'), accepted)
-      once(finalPath(run, system), candidate!)
-    }
-    recordStageProgress(run, readRunManifest(run), system, result.status === 'passed' ? 'succeeded' : 'failed', { attempt: input.source.attempt, editing: { attempt, sourceSha256: input.source.sha256, status: result.status, result: input.result } })
-    return result
-  })
+/** Pure edit contract shared by SQLite submissions and validators. */
+export function evaluateDefensivePayload(source: string, input: Pick<DefensiveEditInput, 'system' | 'attempt' | 'scope' | 'diagnostics'>, proposal: { sourceSha256?: string; edits: Edit[]; review: Review; reviewMarkdown?: string }): { candidate: string; errors: InterpretationDiagnostic[]; passed: boolean; unresolved: string[] } {
+  if (proposal.sourceSha256 && proposal.sourceSha256 !== hash(source)) throw new Error('Source hash mismatch')
+  if (!Array.isArray(proposal.edits) || !proposal.reviewMarkdown?.trim()) throw new Error('Missing edits or semantic review report')
+  validateReview(input as DefensiveEditInput, proposal.review, proposal.edits, source)
+  const candidate = assemble(source, input as DefensiveEditInput, proposal.edits, proposal.review)
+  const unresolved = [...proposal.review.unresolved, ...proposal.review.primary.filter(item => item.status !== 'fixed').map(item => `diagnostic:${item.diagnosticIndex}`), ...proposal.review.secondary.filter(item => ['needs-expansion','deferred'].includes(item.status)).map(item => item.id)]
+  if (!proposal.review.preservationConfirmed) unresolved.push('meaning-preservation')
+  if (unresolved.length && !proposal.review.nextScopeReason?.trim()) throw new Error('Unresolved targets require next scope reason')
+  const errors = diagnoseSystemInterpretation(input.system, candidate)
+  return { candidate, errors, passed: !errors.length && !unresolved.length, unresolved }
 }
 
-/** Revalidate adopted documents and both provenance records before integration or resume. */
-export function verifyDefensiveAcceptance(run: string, system: ChartSystem): void {
-  const accepted = json<{ source: string; sourceSha256: string; candidate: string; sha256: string; editAttempt: number }>(join(directory(run, system), 'accepted.json'))
-  const specialist = json<unknown>(join(run, 'garbage/attempts', system, 'accepted.json'))
-  if (JSON.stringify(accepted) !== JSON.stringify(specialist)) throw new Error('Acceptance records disagree')
-  if (hash(read(join(run, accepted.source))) !== accepted.sourceSha256 || hash(read(join(run, accepted.candidate))) !== accepted.sha256 || hash(read(finalPath(run, system))) !== accepted.sha256) throw new Error('Accepted source or candidate hash mismatch')
-  const result = json<DefensiveEditResult>(join(directory(run, system), String(accepted.editAttempt).padStart(3, '0'), 'result.json'))
-  if (result.status !== 'passed' || result.sha256 !== accepted.sha256 || diagnoseSystemInterpretation(system, read(finalPath(run, system)), evidence(run)).length) throw new Error('Accepted edit validation failed')
+export function prepareDefensiveEdit(runDirectory:string,system:ChartSystem): DefensiveEditInput & {attemptId:string;claim:string} {
+ const state=new ArtifactState(resolve(runDirectory,'../..'))
+ try {const result=state.prepare(basename(runDirectory),system,'edit',randomUUID()).data,a=state.attempt(result.attemptId),snapshot=JSON.parse(a.input);return {system,attempt:result.number,scope:result.scope,source:{output:relative(runDirectory,state.path(snapshot.source.path)),sha256:snapshot.source.sha256,attempt:state.attempt(snapshot.source.attemptId).number},originalSha256:snapshot.source.sha256,diagnostics:snapshot.diagnostics,candidate:relative(runDirectory,result.output),review:relative(runDirectory,result.output.replace('candidate.md','review.md')),input:'',edits:'',result:'',chart:'',evidence:'',attemptId:result.attemptId,claim:result.claim}}finally{state.close()}
 }
+export function finishDefensiveEdit(_runDirectory:string,_system:ChartSystem,_attempt:number,_executionFailed=false): DefensiveEditResult {throw new Error('Submit edits on stdin using artifact-state submit, then finish the assigned attempt')}
+export function verifyDefensiveAcceptance(runDirectory:string,system:ChartSystem):void {const state=new ArtifactState(resolve(runDirectory,'../..'),false,true);try{const run=state.run(basename(runDirectory));state.text(run.id,system)}finally{state.close()}}

@@ -1,9 +1,13 @@
 ---
 name: implement-with-test-review
-description: Coordinate repository code implementation with independent test writing and test review agents, or the two test roles for test-only changes. Use for features, bug fixes, refactors, and validator development; exclude document-only work and GDD generation itself.
+description: Coordinate repository implementation, independent test writing, and test review only when the user explicitly requests $implement-with-test-review or this multi-agent workflow. Do not automatically apply to ordinary code changes. Exclude document-only work and GDD generation itself.
 ---
 
 # 구현과 독립 테스트 리뷰
+
+사용자가 `$implement-with-test-review` 또는 이 다중 에이전트 작업 방식을 명시적으로
+요청한 경우에만 실행한다. 일반 코드 수정은 단일 에이전트가 처리한다. 필요하면 이
+스킬의 사용을 제안할 수 있지만, 사용자 동의 전에 작업 에이전트를 호출하지 않는다.
 
 상위 조정자가 [개발 작업 명세](../../../docs/spec/three-agent-implementation-workflow.md)를
 읽고 실행한다. 기존 GDD 생성 단계·에이전트 구성·재시도 예산은 변경하지 않는다.

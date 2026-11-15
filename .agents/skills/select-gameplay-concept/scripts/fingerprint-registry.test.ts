@@ -1,57 +1,20 @@
 import { describe, expect, test } from 'bun:test'
-import { mkdtemp, readFile } from 'node:fs/promises'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
-
-import {
-  closestEntries,
-  initializeRegistry,
-  loadRegistry,
-  registerFingerprint,
-  type Axes,
-} from './fingerprint-registry'
-
-const fingerprint: Axes = {
-  combatRange: 'long',
-  powerMedium: 'spell',
-  initiative: 'reactive',
-  spaceUse: 'swap',
-  combatRhythm: 'cycle',
-  mastery: 'aim',
-  risk: 'focus_break',
-}
-
-describe('fingerprint registry', () => {
-  test('initializes a missing registry', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'fingerprint-registry-'))
-    const path = join(root, 'registries', 'combat.json')
-    await initializeRegistry(path)
-    expect(await loadRegistry(path)).toEqual({ schemaVersion: 1, entries: [] })
+import { closestEntries, parseRegistry, type Axes } from './fingerprint-registry'
+const fingerprint: Axes = { combatRange: 'long', powerMedium: 'spell', initiative: 'reactive', spaceUse: 'swap', combatRhythm: 'cycle', mastery: 'aim', risk: 'focus_break' }
+// Runtime registration is covered through the atomic two-kind finalize in sqlite-pipeline.test.ts.
+describe('combat registry pure comparison contract', () => {
+  test('accepts an empty snapshot and rejects duplicate versions or malformed axes', () => {
+    expect(parseRegistry('{"schemaVersion":1,"entries":[]}').entries).toEqual([])
+    const entry = { version: 'v0.1.0', candidateId: 'C-01', fingerprint }
+    expect(() => parseRegistry(JSON.stringify({ schemaVersion: 1, entries: [entry, entry] }))).toThrow('Duplicate')
+    expect(() => parseRegistry(JSON.stringify({ schemaVersion: 1, entries: [{ ...entry, fingerprint: { ...fingerprint, extra: true } }] }))).toThrow('axes')
   })
-
-  test('registers only the version, candidate, and fingerprint', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'fingerprint-registry-'))
-    const path = join(root, 'combat.json')
-    await registerFingerprint(path, { version: 'v0.1.0', candidateId: 'C-01', fingerprint })
-    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({
-      schemaVersion: 1,
-      entries: [{ version: 'v0.1.0', candidateId: 'C-01', fingerprint }],
-    })
-  })
-
-  test('refuses to overwrite the same version', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'fingerprint-registry-'))
-    const path = join(root, 'combat.json')
-    await registerFingerprint(path, { version: 'v0.1.0', candidateId: 'C-01', fingerprint })
-    expect(registerFingerprint(path, { version: 'v0.1.0', candidateId: 'C-02', fingerprint }))
-      .rejects.toThrow('Fingerprint already registered')
-  })
-
-  test('returns every entry tied for the closest fingerprint', () => {
+  test('preserves every entry tied at the minimum distance rather than top one', () => {
     const entries = [
       { version: 'v0.1.0', candidateId: 'C-01', fingerprint },
-      { version: 'v0.1.1', candidateId: 'C-02', fingerprint: { ...fingerprint, risk: 'health' } },
+      { version: 'v0.1.1', candidateId: 'C-02', fingerprint: { ...fingerprint } },
+      { version: 'v0.1.2', candidateId: 'C-03', fingerprint: { ...fingerprint, risk: 'health' } },
     ]
-    expect(closestEntries(fingerprint, entries).map(entry => entry.equalAxes)).toEqual([7])
+    expect(closestEntries(fingerprint, entries).map(entry => [entry.version, entry.equalAxes])).toEqual([['v0.1.0', 7], ['v0.1.1', 7]])
   })
 })
