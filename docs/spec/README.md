@@ -6,6 +6,8 @@
 
 ## 명세 목록
 
+- [생성 아티팩트의 책임별 폴더 분리 계획](artifact-directory-layout.md)
+
 - [SQLite 기반 아티팩트 상태 관리와 작업 재개 구현 계획](sqlite-artifact-state.md)
 
 - [생성 아티팩트 버전 및 기준선 관리](artifact-generation-versioning.md)
