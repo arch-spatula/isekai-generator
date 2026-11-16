@@ -2,8 +2,9 @@
 
 > 상태: 제안 — 구현 전
 > 작성일: 2026-11-15
-> 관련: [이슈 #12](https://github.com/arch-spatula/isekai-generator/issues/12), PR #4
-> 작업 기준: `docs/ccgs-workflow-evaluation`
+> 관련: [이슈 #22](https://github.com/arch-spatula/isekai-generator/issues/22) — [이슈 #12](https://github.com/arch-spatula/isekai-generator/issues/12)에서 분리
+> 작업 브랜치: `feat/deterministic-design-assembly`
+> 분기 기준: `docs/ccgs-workflow-evaluation` (PR #4)
 
 ## 1. 문제와 목표
 
@@ -130,7 +131,7 @@
 
 ## 7. 실행 명령과 완료 기준
 
-PR #4 브랜치의 이 문서를 기준으로 다음 Codex 스킬을 명시적으로 호출한다.
+`feat/deterministic-design-assembly` 브랜치의 이 문서를 기준으로 다음 Codex 스킬을 명시적으로 호출한다.
 문서 작성만으로 구현이나 하위 에이전트를 자동 실행하지 않는다.
 
 ```text
