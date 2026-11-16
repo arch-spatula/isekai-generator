@@ -1,3 +1,4 @@
+import { designDraft } from './fixtures/design-assembly'
 import { Database } from 'bun:sqlite'
 import { beforeGdd, beforeFinalize } from './fixtures/sqlite-pipeline-runtime'
 import { pipelineGdd as fullPipelineGdd } from './fixtures/sqlite-pipeline'
@@ -71,12 +72,14 @@ test('world and final GDD validation require matching presentation in every upst
   }
 })
 
-test('public finish rejects a GDD missing its shared presentation and cannot register it', () => {
+test('public finish rejects model presentation conflicts and cannot register them', () => {
   const { root, run } = beforeGdd()
   const attempt = prepare(root, run, 'gdd').data
-  writeFileSync(attempt.output, fullPipelineGdd().replace(presentationFixture, ''))
+  writeFileSync(attempt.output, designDraft('gdd', fullPipelineGdd()) + presentationFixture.replace('top-down', 'side-scrolling'))
   submit(root, attempt)
-  expect(finish(root, attempt).outcome).toBe('validation-failed')
+  const failed = call(root, ['finish', '--attempt', attempt.attemptId, '--claim', attempt.claim, '--request', request()])
+  expect(failed.code).toBe(1)
+  expect(JSON.parse(failed.stderr).error.code).toBe('assembly-managed-field')
   const result = call(root, ['finalize', '--run', run, '--request', request()])
   expect(result.code).toBe(1)
   const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })

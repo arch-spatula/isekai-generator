@@ -22,7 +22,9 @@
 ## 1. 게임 개요
 
 게임명, 한 문장 소개, 장르, 핵심 플레이어 판타지와 게임을 관통하는 설계 중심축을 제시한다.
-공통 화면·아트 조건이 이 게임에서 어떻게 보이는지 설명한다.
+게임별 팔레트·실루엣·가독성과 조작 표현을 설명한다. 고정 제작 사양 문단은 작성하지 않는다.
+
+<!-- design-assembly:production -->
 
 ## 2. 플레이어 경험과 핵심 재미
 
@@ -68,12 +70,11 @@
 
 ## 11. 구조화된 설계 선언
 
-선정 브리프의 최종 일곱 축 키와 값을 그대로 복사한 `combat-fingerprint` JSON fenced block을
-정확히 한 번 작성한다. 추가 키를 넣지 않는다.
-`world-structure` JSON fenced block도 정확히 한 번 작성한다. 키는 `topology`, `ecology`,
-`traversal`, `settlement`, `hazard`, `spatialLogic`이며 각 값은 정확히 `value`와
-`manifestation`을 가진 객체다. `value`는 선정 세계 fingerprint 값, `manifestation`은
-본문에 구현한 구체적인 공간·연결·이동·위험·귀환 방식이다.
-마지막에 공통 계약의 `game-presentation` block을 정확히 한 번 그대로 복사한다.
+초안에는 `combat-fingerprint`와 `game-presentation`을 출력하지 않는다. 조립기가 채택된
+전투 일곱 축과 공통 선언을 문서 끝에 추가한다.
+`world-structure` JSON fenced block을 정확히 한 번 작성한다. 키는 `topology`, `ecology`,
+`traversal`, `settlement`, `hazard`, `spatialLogic`이며 각 값은 정확히 `manifestation`만
+가진 객체다. `manifestation`은 본문에 구현한 구체적인 공간·연결·이동·위험·귀환 방식이다.
+`value`는 초안에 넣지 않는다. 조립기가 같은 run의 채택 세계 fingerprint 값으로 채운다.
 선언과 본문의 전투·세계·조작·카메라·아트가 일치하는지 의미 검토한다.
 <!-- gdd-template:end -->

@@ -1,6 +1,6 @@
 # World selection contract
 
-Read the supplied `docs/prompts/game-presentation-contract.md` as the fixed production brief. Follow its candidate design and semantic review requirements before scoring. Append exactly one copy of its `game-presentation` block outside the world JSON. Presentation conditions are not world fingerprint axes.
+Read the supplied `docs/prompts/game-presentation-contract.md` as the fixed production brief. Follow its candidate design and semantic review requirements before scoring. Omit `game-presentation` from the model draft; deterministic assembly appends it after SQLite submission. Presentation conditions are not world fingerprint axes.
 
 Use one `world-concept` JSON fenced block with this exact top-level schema:
 
@@ -62,4 +62,4 @@ For an empty registry all match arrays are empty. If any initial closest entry h
 
 ## GDD handoff
 
-The winner's fingerprint and spatial play are the fixed world contract. The GDD must realize this world's structure while preserving the separate combat contract. It declares exactly one `world-structure` JSON block. That block has the six fingerprint keys, each containing exactly `{ "value": "selected-axis-value", "manifestation": "concrete named spaces, traversal or resupply rules in this GDD" }`. It is an explicit playable structure description, not a keyword counter or proof that every prose sentence agrees. Review prose consistency before returning.
+The winner's fingerprint and spatial play are the fixed world contract. The GDD must realize this world's structure while preserving the separate combat contract. It declares exactly one `world-structure` JSON block. That block has the six fingerprint keys, each containing only `{ "manifestation": "concrete named spaces, traversal or resupply rules in this GDD" }` in the draft. The assembler adds each selected `value` to the final document. It is an explicit playable structure description, not a keyword counter or proof that every prose sentence agrees. Review prose consistency before returning.

@@ -1,3 +1,4 @@
+import { designDraft } from './design-assembly'
 import { expect } from 'bun:test'
 import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -5,8 +6,9 @@ import { integratedInterpretation, combatBrief, worldBrief, pipelineGdd } from '
 import { chartFixture, interpretation, specialist, prepare, call, ok, submit, finish, request, sha256 } from '../artifacts/sqlite-test-fixtures'
 export function publish(root: string, run: string, stage: string, markdown: string) {
   const attempt = prepare(root, run, stage).data
-  writeFileSync(resolve(root, attempt.output), markdown)
-  submit(root, attempt, { path: attempt.output, sha256: sha256(markdown) })
+  const draft = designDraft(stage, markdown)
+  writeFileSync(resolve(root, attempt.output), draft)
+  submit(root, attempt, { path: attempt.output, sha256: sha256(draft) })
   expect(finish(root, attempt).outcome).toMatch(/passed|published|succeeded/)
   return attempt
 }

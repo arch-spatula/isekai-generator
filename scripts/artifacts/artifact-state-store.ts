@@ -1,3 +1,6 @@
+import { assembleDesignDocument, AssemblyError } from '../design-document-assembly'
+import { readGamePresentationContract } from '../game-presentation'
+import { fileURLToPath } from 'node:url'
 import { Database } from 'bun:sqlite'
 import { createHash, randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, linkSync, writeFileSync } from 'node:fs'
@@ -14,6 +17,9 @@ import { isValidGdd } from '../../.agents/skills/generate-gdd-from-interpretatio
 export type Reply = { schemaVersion: 1; outcome: string; data: Record<string, any>; nextAction?: string }
 export class StateError extends Error { constructor(public code: string, message = code, public exitCode = 1) { super(message) } }
 export const DAG: Record<string, string[]> = { 'chart-report': [], saju: ['chart-report'], ziwei: ['chart-report'], natal: ['chart-report'], integration: ['saju', 'ziwei', 'natal'], selection: ['integration'], 'world-selection': ['selection'], gdd: ['world-selection'], 'final-validation': ['gdd'], 'fingerprint-registration': ['final-validation'] }
+const designStages = ['selection', 'world-selection', 'gdd']
+const assemblyFormat = 'design-assembly-v1'
+const assemblySchema = `CREATE TABLE IF NOT EXISTS design_assemblies(attempt_id TEXT PRIMARY KEY REFERENCES attempts(id),format TEXT NOT NULL,source_hash TEXT NOT NULL,draft_path TEXT,draft_hash TEXT,candidate_path TEXT,candidate_hash TEXT)`
 const systems = ['saju', 'ziwei', 'natal']
 const finalNames: Record<string, string> = { 'chart-report': 'chart-report.md', saju: 'saju-interpretation.md', ziwei: 'ziwei-interpretation.md', natal: 'natal-interpretation.md', integration: 'chart-interpretation.md', selection: 'gameplay-concept-brief.md', 'world-selection': 'world-concept-brief.md', gdd: 'personalized-action-rpg-concept.md' }
 const publicationFolders: Record<string, string> = { 'chart-report': 'charts', saju: 'interpretation', ziwei: 'interpretation', natal: 'interpretation', integration: 'interpretation', selection: 'design-rationale', 'world-selection': 'design-rationale', gdd: 'game' }
@@ -65,6 +71,7 @@ export class ArtifactState {
       const meta = this.db.query('SELECT * FROM store_meta').get() as any
       requireState(meta?.schema_version === 1, 'schema-version-mismatch')
       requireState(meta.repository === this.root, 'repository-mismatch')
+      if (!readonly) this.db.exec(assemblySchema)
     } catch (error) { this.db?.close(); this.translate(error) }
   }
   blockFailure(code:string, reference:string, isAttempt=false):void {
@@ -75,6 +82,7 @@ export class ArtifactState {
   close(): void { this.db.close() }
   translate(error: unknown): never {
     if (error instanceof StateError) throw error
+    if (error instanceof AssemblyError) throw new StateError(error.code, error.message)
     if (/locked|busy/i.test(String(error))) throw new StateError('state-busy')
     throw new StateError('state-error', String(error))
   }
@@ -161,8 +169,15 @@ export class ArtifactState {
       const inputs: any = { registry: stage === 'selection' ? this.registry('combat') : stage === 'world-selection' ? this.registry('world') : null, mode, ...(previous ? { previous: { output: previous.output, result: previousResult } } : {}), documents: [], validatorRevision: contractRevision, registryRevision: this.revision() }
       const allowed = specialist ? ['chart-report'] : stage === 'integration' ? systems : stage === 'selection' ? ['integration'] : stage === 'world-selection' ? ['integration', 'selection'] : stage === 'gdd' ? ['chart-report','integration','selection','world-selection'] : DAG[stage]
       for (const dependency of allowed) { const doc = this.document(run.id, dependency); if (doc) inputs.documents.push({ stage: dependency, id: doc.id, path: doc.path, sha256: doc.sha256 }) }
+      if (designStages.includes(stage)) {
+        const path = fileURLToPath(new URL('../../docs/prompts/game-presentation-contract.md', import.meta.url))
+        let text: string
+        try { text = readGamePresentationContract(path) } catch (error) { throw new StateError('assembly-source-invalid', String(error)) }
+        inputs.assembly = { format: assemblyFormat, presentationContract: { path, sha256: hash(text), text } }
+      }
       if (source) { const original = parse(source.payload), payload = previous?.payload && parse(previous.payload).path ? parse(previous.payload) : previous?.input && parse(previous.input).source ? parse(previous.input).source : original; inputs.originalSource={attemptId:source.id,path:original.path,sha256:original.sha256}; inputs.source = { attemptId: source.id, path: payload.path, sha256: payload.sha256 }; inputs.diagnostics = sourceDiagnostics.get(`${payload.path}:${payload.sha256}`); requireState(inputs.diagnostics,'input-revision-mismatch'); if (previous) inputs.previous = { payload: parse(previous.payload), result: previousResult } }
       this.db.query("INSERT INTO attempts(id,run_id,stage,kind,number,scope,status,claim,input,output,source_hash,registry_revision,created_at) VALUES(?,?,?,?,?,?,'prepared',?,?,?,?,?,?)").run(attemptId, run.id, stage, kind, number, scope, claim, json(inputs), output, inputs.source?.sha256 ?? null, this.revision(), now())
+      if (inputs.assembly) this.db.query('INSERT INTO design_assemblies(attempt_id,format,source_hash) VALUES(?,?,?)').run(attemptId, assemblyFormat, hash(json({ assembly: inputs.assembly, documents: inputs.documents })))
       this.db.query("UPDATE stages SET status='running',current_attempt=?,reason=NULL WHERE run_id=? AND stage=?").run(attemptId, run.id, stage)
       this.event(run.id, 'prepared', request, stage, attemptId)
       return reply('prepared', { attemptId, claim, stage, kind, number, ...(scope ? { scope } : {}), output: this.path(output), mode, ...(previous ? { previous: inputs.previous } : {}) }, 'dispatch')
@@ -171,28 +186,32 @@ export class ArtifactState {
   }
   input(id: string, claim: string): Reply {
     const a = this.attempt(id); this.live(a, claim); const snapshot = parse(a.input); requireState(snapshot.validatorRevision===validatorRevision(),'validator-revision-mismatch')
+    this.checkAssemblySources(a, snapshot)
     const documents = snapshot.documents.map((doc: any) => ({ stage: doc.stage, sha256: doc.sha256, text: this.checked(doc.path, doc.sha256) }))
     if (systems.includes(a.stage)) {
       const markers: any = { saju: ['四柱八字','紫微斗數 命盤'], ziwei: ['紫微斗數 命盤','Natal Chart'], natal: ['Natal Chart',null] }
       for (const doc of documents) { const [start,end] = markers[a.stage]; const offset = doc.text.indexOf(start); doc.text = doc.text.slice(offset, end ? doc.text.indexOf(end, offset + start.length) : undefined) }
     }
-    return reply('input', { attemptId: id, stage: a.stage, kind: a.kind, number: a.number, scope: a.scope, mode:snapshot.mode, ...(snapshot.previous && !snapshot.source ? {previous:snapshot.previous} : {}), documents, ...(systems.includes(a.stage) ? { evidence: { version: 1, systems: { [a.stage]: this.evidence(a.run_id).systems[a.stage as 'saju'] } } } : {}), ...(snapshot.source ? { source: { ...snapshot.source, text: this.checked(snapshot.source.path, snapshot.source.sha256) }, diagnostics: snapshot.diagnostics, previous: snapshot.previous } : {}) })
+    return reply('input', { ...(snapshot.assembly ? { assembly: snapshot.assembly, presentationContract: snapshot.assembly.presentationContract } : {}), attemptId: id, stage: a.stage, kind: a.kind, number: a.number, scope: a.scope, mode:snapshot.mode, ...(snapshot.previous && !snapshot.source ? {previous:snapshot.previous} : {}), documents, ...(systems.includes(a.stage) ? { evidence: { version: 1, systems: { [a.stage]: this.evidence(a.run_id).systems[a.stage as 'saju'] } } } : {}), ...(snapshot.source ? { source: { ...snapshot.source, text: this.checked(snapshot.source.path, snapshot.source.sha256) }, diagnostics: snapshot.diagnostics, previous: snapshot.previous } : {}) })
   }
   submit(id: string, claim: string, payload: any, request: string): Reply {
     const a = this.attempt(id); this.live(a, claim)
     requireState(['prepared','running','submitted'].includes(a.status), 'attempt-completed')
-    const snapshot = parse(a.input); for (const doc of snapshot.documents) this.checked(doc.path, doc.sha256)
+    const snapshot = parse(a.input); requireState(snapshot.validatorRevision === validatorRevision(), 'validator-revision-mismatch'); this.checkAssemblySources(a, snapshot); for (const doc of snapshot.documents) this.checked(doc.path, doc.sha256)
     if(snapshot.originalSource)this.checked(snapshot.originalSource.path,snapshot.originalSource.sha256)
     if (snapshot.source) { this.checked(snapshot.source.path, snapshot.source.sha256); requireState(!payload.sourceSha256 || payload.sourceSha256 === snapshot.source.sha256, 'integrity-error') }
     const edit = !!a.scope
     let normalized: any = payload.executionFailed ? {executionFailed:true} : payload
     if (!edit && !payload.executionFailed) {
       const path = relative(this.root, this.path(payload.path ?? a.output)); requireState(path === a.output, 'output-path-mismatch')
-      const digest = hash(readFileSync(this.path(path))); requireState(!payload.sha256 || payload.sha256 === digest, 'integrity-error'); normalized = { path, sha256: digest }
+      let digest: string
+      try { digest = hash(readFileSync(this.path(path))) } catch (error) { if (designStages.includes(a.stage)) throw new StateError('assembly-io', String(error)); throw error }
+      requireState(!payload.sha256 || payload.sha256 === digest, 'integrity-error'); normalized = { path, sha256: digest }
     }
     return this.operation(request, 'submit', { id, claim, payload: normalized }, () => {
       const current = this.attempt(id); this.live(current, claim)
       requireState(!current.payload || current.payload_hash === hash(json(normalized)), 'submission-immutable')
+      if (snapshot.assembly && !normalized.executionFailed) this.pinDraft(a, normalized)
       this.db.query("UPDATE attempts SET status='submitted',payload=?,payload_hash=? WHERE id=?").run(json(normalized), hash(json(normalized)), id)
       this.event(a.run_id, 'submitted', request, a.stage, id)
       return reply('submitted', { attemptId: id, payloadHash: hash(json(normalized)) }, 'validate')
@@ -200,13 +219,14 @@ export class ArtifactState {
   }
   finish(id: string, claim: string, request: string): Reply {
     const priorOperation = this.one('SELECT * FROM operations WHERE request_id=?', request)
-    if (priorOperation?.response) { requireState(priorOperation.command === 'finish' && priorOperation.args_hash === hash(json({id,claim})), 'request-conflict'); const response=parse(priorOperation.response); return response.data.documentId && response.outcome === 'ready-to-publish' ? this.publish(response.data.documentId,request) : response }
+    if (priorOperation?.response) { requireState(priorOperation.command === 'finish' && priorOperation.args_hash === hash(json({id,claim})), 'request-conflict'); const response=parse(priorOperation.response); const replayAttempt=this.attempt(id); if (designStages.includes(replayAttempt.stage)) { const snapshot=parse(replayAttempt.input); requireState(snapshot.validatorRevision === validatorRevision(), 'validator-revision-mismatch'); this.checkAssemblySources(replayAttempt,snapshot); if (!parse(replayAttempt.payload)?.executionFailed) this.assembleCandidate(replayAttempt,snapshot,parse(replayAttempt.payload)) } return response.data.documentId && response.outcome === 'ready-to-publish' ? this.publish(response.data.documentId,request) : response }
     const a = this.attempt(id); this.live(a, claim)
-    if (a.status === 'completed') return reply(parse(a.result).status, { attemptId: id, result: parse(a.result) })
+    if (a.status === 'completed') { if (designStages.includes(a.stage) && !parse(a.payload)?.executionFailed) this.assembleCandidate(a,parse(a.input),parse(a.payload)); return reply(parse(a.result).status, { attemptId: id, result: parse(a.result) }) }
     requireState(a.status === 'submitted', 'submission-required')
     this.tx(()=>{const old=this.one('SELECT * FROM operations WHERE request_id=?',request);if(old)requireState(old.command==='finish'&&old.args_hash===hash(json({id,claim})),'request-conflict');else this.db.query("INSERT INTO operations VALUES(?,?,?,?,'pending',NULL)").run(request,'finish',hash(json({id,claim})),id);})
     const snapshot = parse(a.input)
     requireState(snapshot.validatorRevision === validatorRevision(), 'validator-revision-mismatch')
+    this.checkAssemblySources(a, snapshot)
     for (const doc of snapshot.documents) this.checked(doc.path, doc.sha256)
     let payload = parse(a.payload), markdown: string, errors: any[] = [], unresolved:string[]=[], status = 'passed'
     if(snapshot.originalSource)this.checked(snapshot.originalSource.path,snapshot.originalSource.sha256)
@@ -221,6 +241,7 @@ export class ArtifactState {
       else writeFileSync(output, markdown, { flag: 'wx' })
       payload = { ...payload, path: a.output, sha256: hash(markdown) }
     } else {
+      if (designStages.includes(a.stage)) payload = this.assembleCandidate(a, snapshot, payload)
       markdown = this.checked(payload.path, payload.sha256)
       errors = systems.includes(a.stage) ? diagnoseSystemInterpretation(a.stage as 'saju', markdown, this.evidence(a.run_id)) : this.validate(a.stage, markdown, a.run_id)
       status = errors.some(error => error.code !== 'responsibility-avoidance') ? 'validation-failed' : systems.includes(a.stage) ? 'editing-required' : 'passed'
@@ -228,20 +249,67 @@ export class ArtifactState {
     const result = { status, errors, ...(a.scope ? {unresolved,sourceSha256:snapshot.source.sha256,calls:a.number,usage:payload.review?.usage??null} : {}) }
     const response = this.operation(request, 'finish', { id, claim }, () => {
       const current = this.attempt(id); this.live(current, claim); requireState(current.status === 'submitted', 'attempt-completed')
+      if (designStages.includes(a.stage)) { this.checkAssemblySources(a,snapshot); if (!payload.executionFailed) { this.checked(a.output,parse(a.payload).sha256); this.checked(payload.path,payload.sha256) } }
       if (status !== 'passed') {
-        this.db.query("UPDATE attempts SET status='completed',result=?,payload=? WHERE id=?").run(json(result), json(payload), id)
+        this.db.query("UPDATE attempts SET status='completed',result=?,payload=? WHERE id=?").run(json(result), json(designStages.includes(a.stage) ? parse(a.payload) : payload), id)
         this.event(a.run_id, status, request, a.stage, id, null, errors)
         return reply(status, { attemptId: id, result }, status === 'editing-required' ? 'prepare-edit' : 'prepare-retry')
       }
       const documentId = randomUUID(), existing=this.document(a.run_id,a.stage), final = this.publicationPath(a.run_id, a.stage, existing ? a.id : undefined)
       this.db.query("INSERT INTO documents VALUES(?,?,?,?,?,?,'ready-to-publish',?)").run(documentId, a.run_id, id, a.stage, payload.path, payload.sha256, final)
       this.db.query('INSERT INTO validations VALUES(?,?,?,?,?,?,?,?)').run(randomUUID(), documentId, payload.sha256, a.stage, snapshot.validatorRevision, 'passed', '[]', now())
-      this.db.query('UPDATE attempts SET result=?,payload=? WHERE id=?').run(json(result), json(payload), id)
+      this.db.query('UPDATE attempts SET result=?,payload=? WHERE id=?').run(json(result), json(designStages.includes(a.stage) ? parse(a.payload) : payload), id)
       this.event(a.run_id, 'ready-to-publish', request, a.stage, id)
       return reply('ready-to-publish', { attemptId: id, documentId }, 'reconcile-publication')
     },true)
     if (response.data.documentId) return this.publish(response.data.documentId, request)
     return response
+  }
+  checkAssemblySources(a: any, snapshot: any): void {
+    if (!designStages.includes(a.stage)) return
+    requireState(snapshot.validatorRevision === validatorRevision(), 'validator-revision-mismatch')
+    requireState(snapshot.assembly?.format === assemblyFormat, 'assembly-format-mismatch')
+    const binding = this.one('SELECT * FROM design_assemblies WHERE attempt_id=?', a.id)
+    requireState(binding?.format === assemblyFormat && binding.source_hash === hash(json({ assembly: snapshot.assembly, documents: snapshot.documents })), 'integrity-error')
+    const contract = snapshot.assembly.presentationContract
+    requireState(hash(contract.text) === contract.sha256, 'integrity-error')
+    try { requireState(hash(readFileSync(contract.path)) === contract.sha256, 'integrity-error') }
+    catch (error) { if (error instanceof StateError) throw error; throw new StateError('assembly-io', String(error)) }
+    const allowed = a.stage === 'selection' ? ['integration'] : a.stage === 'world-selection' ? ['integration','selection'] : ['chart-report','integration','selection','world-selection']
+    requireState(snapshot.documents.length === allowed.length && allowed.every(stage => snapshot.documents.filter((doc: any) => doc.stage === stage).length === 1), 'assembly-source-invalid')
+    for (const source of snapshot.documents) {
+      const ownerStage = this.one('SELECT * FROM stages WHERE run_id=? AND stage=?', a.run_id, a.stage)
+      const currentRequired = a.status !== 'completed' || (ownerStage.status === 'succeeded' && ownerStage.accepted_attempt === a.id)
+      const accepted = currentRequired ? this.document(a.run_id, source.stage) : this.one('SELECT * FROM documents WHERE id=?', source.id)
+      requireState(accepted?.id === source.id && accepted.run_id === a.run_id && accepted.role === source.stage && accepted.status === 'published' && accepted.sha256 === source.sha256 && accepted.path === source.path && (!currentRequired || this.one('SELECT status FROM stages WHERE run_id=? AND stage=?', a.run_id, source.stage)?.status === 'succeeded'), 'input-revision-mismatch')
+      try { this.checked(source.path, source.sha256); this.checked(accepted.final_path, source.sha256) }
+      catch (error) { if (error instanceof StateError) throw error; throw new StateError('assembly-io', String(error)) }
+    }
+  }
+  pinDraft(a: any, payload: any): void {
+    const binding = this.one('SELECT * FROM design_assemblies WHERE attempt_id=?', a.id)
+    requireState(binding, 'assembly-format-mismatch')
+    requireState(!binding.draft_hash || (binding.draft_hash === payload.sha256 && binding.draft_path === payload.path), 'integrity-error')
+    this.db.query('UPDATE design_assemblies SET draft_path=?,draft_hash=? WHERE attempt_id=?').run(payload.path, payload.sha256, a.id)
+  }
+  assembleCandidate(a: any, snapshot: any, draft: any): { path: string; sha256: string } {
+    this.checkAssemblySources(a, snapshot)
+    let text: string
+    try { text = this.checked(draft.path, draft.sha256) } catch (error) { if (error instanceof StateError) throw error; throw new StateError('assembly-io', String(error)) }
+    const binding = this.one('SELECT * FROM design_assemblies WHERE attempt_id=?', a.id)
+    requireState(binding.draft_path === draft.path && binding.draft_hash === draft.sha256, 'integrity-error')
+    const source = (stage: string): string | undefined => { const doc = snapshot.documents.find((doc: any) => doc.stage === stage); return doc ? this.checked(doc.path, doc.sha256) : undefined }
+    let markdown: string
+    try { markdown = assembleDesignDocument({ stage: a.stage, draft: text, presentationContract: snapshot.assembly.presentationContract.text, combatBrief: source('selection'), worldBrief: source('world-selection') }) }
+    catch (error) { if (error instanceof AssemblyError) throw new StateError(error.code, error.message); throw new StateError('assembly-io', String(error)) }
+    const path = join(dirname(a.output), 'assembled-candidate.md'), sha256 = hash(markdown)
+    requireState(!binding.candidate_hash || (binding.candidate_path === path && binding.candidate_hash === sha256), 'integrity-error')
+    try {
+      if (existsSync(this.path(path))) this.checked(path, sha256)
+      else { requireState(!binding.candidate_hash, 'integrity-error'); writeFileSync(this.path(path), markdown, { flag: 'wx' }) }
+    } catch (error) { if (error instanceof StateError) throw error; throw new StateError('assembly-io', String(error)) }
+    this.db.query('UPDATE design_assemblies SET candidate_path=?,candidate_hash=? WHERE attempt_id=?').run(path, sha256, a.id)
+    return { path, sha256 }
   }
   validate(stage: string, text: string, run: string): any[] {
     let errors: any[] = []
@@ -256,10 +324,16 @@ export class ArtifactState {
   publish(id: string, request: string): Reply {
     const doc = this.one('SELECT * FROM documents WHERE id=?', id); requireState(doc, 'document-not-found')
     requireState(!terminal(this.run(doc.run_id).status), 'run-terminal')
+    const owner = this.attempt(doc.attempt_id)
+    this.checkAssemblySources(owner, parse(owner.input))
+    if (designStages.includes(owner.stage)) { const candidate = this.assembleCandidate(owner, parse(owner.input), parse(owner.payload)); requireState(candidate.path === doc.path && candidate.sha256 === doc.sha256, 'integrity-error') }
     this.checked(doc.path, doc.sha256)
-    const destination = this.path(doc.final_path); mkdirSync(dirname(destination), { recursive: true })
-    if (!existsSync(destination)) { try { linkSync(this.path(doc.path), destination) } catch (error) { if (!existsSync(destination)) throw error } }
-    this.checked(doc.final_path, doc.sha256)
+    const destination = this.path(doc.final_path)
+    try {
+      mkdirSync(dirname(destination), { recursive: true })
+      if (!existsSync(destination)) { try { linkSync(this.path(doc.path), destination) } catch (error) { if (!existsSync(destination)) throw error } }
+      this.checked(doc.final_path, doc.sha256)
+    } catch (error) { if (error instanceof StateError || !designStages.includes(owner.stage)) throw error; throw new StateError('assembly-io', String(error)) }
     const chartEvidence=doc.role==='chart-report'?buildEvidenceManifest(this.checked(doc.path,doc.sha256)):null
     return this.tx(() => {
       const a = this.attempt(doc.attempt_id); requireState(!terminal(this.run(doc.run_id).status), 'run-terminal')
@@ -311,6 +385,7 @@ export class ArtifactState {
         && ['terminated', 'alive', 'unknown'].includes(worker.status)
         && worker.observer && worker.reference, 'invalid-observation')
       if (worker.status === 'terminated' && !attempt.scope && existsSync(this.path(attempt.output))) {
+        this.checkAssemblySources(attempt, parse(attempt.input))
         recoveredOutputs.set(attempt.id, { path: attempt.output, sha256: hash(readFileSync(this.path(attempt.output))) })
       }
     }
@@ -322,6 +397,7 @@ export class ArtifactState {
         if (worker.status === 'terminated') {
           const payload = recoveredOutputs.get(attempt.id)
           if (payload) {
+            if (designStages.includes(attempt.stage)) this.pinDraft(attempt, payload)
             this.db.query("UPDATE attempts SET status='submitted',payload=?,payload_hash=? WHERE id=?")
               .run(json(payload), hash(json(payload)), attempt.id)
           } else {
@@ -355,6 +431,8 @@ export class ArtifactState {
   reconcile(id: string, request: string): Reply {
     const run = this.run(id); requireState(!terminal(run.status), 'run-terminal'); this.ensureDirectory(run)
     for (const doc of this.all('SELECT * FROM documents WHERE run_id=?', run.id)) {
+      const attempt=this.attempt(doc.attempt_id)
+      if (designStages.includes(attempt.stage)) { const candidate=this.assembleCandidate(attempt,parse(attempt.input),parse(attempt.payload)); requireState(candidate.path === doc.path && candidate.sha256 === doc.sha256,'integrity-error') }
       this.checked(doc.path, doc.sha256)
       const validation = this.one('SELECT * FROM validations WHERE document_id=? ORDER BY created_at DESC LIMIT 1', doc.id)
       requireState(validation?.revision === validatorRevision(), 'validator-revision-mismatch')
@@ -373,7 +451,7 @@ export class ArtifactState {
     if (run.kind === 'personalized-gdd') {
       for(const stage of ['selection','world-selection']){const accepted=this.one('SELECT accepted_attempt FROM stages WHERE run_id=? AND stage=?',run.id,stage);if(accepted?.accepted_attempt)requireState(this.attempt(accepted.accepted_attempt).registry_revision===this.revision(),'registry-stale')}
       for (const stage of ['chart-report',...systems,'integration','selection','world-selection','gdd']) this.text(run.id, stage)
-      for (const stage of ['chart-report',...systems,'integration','selection','world-selection','gdd']) requireState(this.validate(stage,this.text(run.id,stage),run.id).length===0,'final-validation-failed')
+      for (const stage of ['chart-report',...systems,'integration','selection','world-selection','gdd']) { const errors=this.validate(stage,this.text(run.id,stage),run.id); requireState(this.revision()===registrySnapshot,'registry-stale'); requireState(errors.length===0,'final-validation-failed') }
       const selection = this.text(run.id, 'selection'), selected = selectedWorld(parseWorldBrief(this.text(run.id, 'world-selection')))
       combat = { candidate: parseSelectedCandidateId(selection), axes: parseFinalFingerprint(selection) }
       world = { candidate: selected.id, axes: { fingerprint: selected.fingerprint, spatialPlay: selected.spatialPlay } }
@@ -394,7 +472,7 @@ export class ArtifactState {
   }
 }
 function validatorRevision(): string {
-  const paths = ['../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation.ts','../../.agents/skills/interpret-chart-report/scripts/validate-interpretation.ts','../../.agents/skills/select-gameplay-concept/scripts/validate-concept-brief.ts','../../.agents/skills/select-world-concept/scripts/validate-world-brief.ts','../../.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd.ts','../../.agents/skills/generate-chart-report/scripts/chart-evidence.ts','artifact-state-store.ts','../../scripts/game-presentation.ts','../../.agents/skills/select-world-concept/scripts/world-contract.ts','../../docs/prompts/game-presentation-contract.md','../../docs/prompts/interpretation-guidelines.md','../../docs/prompts/saju-interpretation.md','../../docs/prompts/ziwei-interpretation.md','../../docs/prompts/natal-interpretation.md','../../docs/prompts/personalized-action-rpg-concept.md']
+  const paths = ['../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation.ts','../../.agents/skills/interpret-chart-report/scripts/validate-interpretation.ts','../../.agents/skills/select-gameplay-concept/scripts/validate-concept-brief.ts','../../.agents/skills/select-world-concept/scripts/validate-world-brief.ts','../../.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd.ts','../../.agents/skills/generate-chart-report/scripts/chart-evidence.ts','artifact-state-store.ts','../../scripts/game-presentation.ts','../../scripts/design-document-assembly.ts','../../.agents/skills/select-world-concept/scripts/world-contract.ts','../../docs/prompts/game-presentation-contract.md','../../docs/prompts/interpretation-guidelines.md','../../docs/prompts/saju-interpretation.md','../../docs/prompts/ziwei-interpretation.md','../../docs/prompts/natal-interpretation.md','../../docs/prompts/personalized-action-rpg-concept.md']
   return hash(paths.map(path => readFileSync(new URL(path, import.meta.url))).join('\0'))
 }
 import { evaluateDefensivePayload } from './defensive-edit'
