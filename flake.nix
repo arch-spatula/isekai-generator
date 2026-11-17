@@ -13,14 +13,16 @@
     in
     {
       devShells.${system}.default = pkgs.mkShell {
+        ANTHROPIC_MODEL = "claude-opus-5-5";
+
         packages = with pkgs; [
           codex
           (claude-code.override {
             manifest = {
-              version = "2.1.311";
+              version = "2.1.326";
               platforms.linux-x64 = {
                 binary = "claude.zst";
-                checksum = "d0c00b80761f3030f34cf0812266f6c6f8210ff9af7242f7c6c76c5600499caf";
+                checksum = "8a6e8f4fdc137f93359285d0677640dcd73e67a35ffabeab8c042d433d685abd";
               };
             };
           })
