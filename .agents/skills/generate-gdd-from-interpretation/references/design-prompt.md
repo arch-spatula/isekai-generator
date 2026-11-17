@@ -1,4 +1,4 @@
-Read the supplied exact repository path `docs/prompts/personalized-action-rpg-concept.md` in full as the output template. Preserve its boundary-defined H1 and ordered H2 headings, fill every section, and place all three structured declarations in section 11. Do not output template boundaries or writing instructions.
+Read the supplied exact repository path `docs/prompts/personalized-action-rpg-concept.md` in full as the model-draft template. Preserve its boundary-defined H1 and ordered H2 headings and write the game-specific design content in every section. In section 11, write only the `world-structure` block with a concrete `manifestation` for each axis. After submission, the assembler inserts the common production paragraph and `game-presentation`, copies `combat-fingerprint` and world-axis `value` fields from this run's accepted briefs, and completes the final document's three structured declarations. Do not output template boundaries or writing instructions.
 
 # Role
 
