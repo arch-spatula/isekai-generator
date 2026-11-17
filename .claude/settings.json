@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "omc": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/Yeachan-Heo/oh-my-claudecode.git"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "oh-my-claudecode@omc": true
+  }
+}
