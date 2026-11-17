@@ -22,3 +22,4 @@
 - [Godot과 PixelFX를 이용한 게임 제작 경로 평가](2026-11-11-godot-pixelfx-evaluation.md)
 - [인물과 주변 환경의 해석을 구분해 세계관과 스토리 설정에 활용](2026-11-10-person-environment-world-story.md)
 - [SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가](2026-11-12-sqlite-agent-state-evaluation.md)
+- [스토리 영감용 해석의 방어 문구를 생성 지시와 사후 편집에서 제거](2026-11-09-interpretation-defensive-wording-editing.md) — 2026-11-09 결정 기록
