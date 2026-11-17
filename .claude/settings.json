@@ -5,9 +5,27 @@
         "source": "git",
         "url": "https://github.com/Yeachan-Heo/oh-my-claudecode.git"
       }
+    },
+    "pixelfx": {
+      "source": {
+        "source": "github",
+        "repo": "patch-gg/pixelfx",
+        "ref": "5294518ce7c72e48b6100a744596e0acf57f2826"
+      }
+    },
+    "awesome-gamedev-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "gamedev-skills/awesome-gamedev-agent-skills",
+        "ref": "c6ca6c41c839b68319ffc08430b99ab768debc32"
+      }
     }
   },
   "enabledPlugins": {
-    "oh-my-claudecode@omc": true
+    "oh-my-claudecode@omc": true,
+    "pixelfx@pixelfx": true,
+    "router@awesome-gamedev-agent-skills": true,
+    "godot@awesome-gamedev-agent-skills": true,
+    "disciplines@awesome-gamedev-agent-skills": true
   }
 }
