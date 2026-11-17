@@ -24,3 +24,4 @@
 - [Claude Code Game Studios의 게임 제작 워크플로 선택적 활용 검토](2026-11-10-claude-code-game-studios-evaluation.md)
 - [인물과 주변 환경의 해석을 구분해 세계관과 스토리 설정에 활용](2026-11-10-person-environment-world-story.md)
 - [SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가](2026-11-12-sqlite-agent-state-evaluation.md)
+- [Godot 게임 제작용 에이전트 도구 생태계 도입](2026-11-17-godot-agent-tooling-ecosystem.md)
