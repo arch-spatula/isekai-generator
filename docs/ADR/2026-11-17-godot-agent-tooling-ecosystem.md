@@ -62,6 +62,27 @@ Godot 4.7.x와 GDScript로 격리된 전투 프로토타입을 만들고, PixelF
 * 서버는 `PATH`의 `godot`을 먼저 찾으므로, `nix develop` 셸에서 Claude Code를 실행하면
   `GODOT_PATH` 설정이 필요 없다.
 
+#### 보안 검토 (2026-11-17)
+
+고정 커밋의 `src/index.ts`와 `src/scripts/godot_operations.gd`를 읽어 검토했다. 공격을 실제로
+재현하지는 않았다.
+
+* 확인한 보호: stdio 전송만 쓰고 네트워크 포트를 열지 않는다. Godot 실행은 모두 인자 배열의
+  `execFile`·`spawn`이라 셸을 거치지 않는다. #95 수정으로 노드 유형 이름은 식별자 형식만
+  허용하고, 원시 경로를 `load()`하던 우회도 제거됐다.
+* **남은 위험 (중간):** `add_node`의 `properties` 값이 `res://`로 시작하면 그대로 `load()`해
+  `set()`한다(`godot_operations.gd` 521–525행). `script` 속성에 프로젝트 안의 스크립트 경로를
+  넘기면 #95와 같은 방식으로 그 스크립트가 Godot 프로세스에서 실행될 가능성이 있다.
+* 남은 위험 (낮음): 경로 검사는 `..` 포함 여부뿐이라 절대 경로의 어떤 프로젝트든
+  `run_project`·`launch_editor`로 실행할 수 있다. `run_project`의 `scene` 값은 `-`로 시작하면
+  Godot 옵션으로 해석될 수 있다. `npx github:` 설치는 첫 실행 때 `prepare` 빌드를 실행하고,
+  쓰지 않는 `axios`와 오래된 MCP SDK `0.6.0`을 함께 설치한다.
+* 운영 원칙: godot MCP 도구를 권한 허용 목록에 넣지 않고 호출마다 승인한다. `add_node`의
+  `properties`에 `script`가 있으면 거부한다. `run_project`·`launch_editor`는 이 레포의 템플릿처럼
+  내용을 아는 프로젝트에만 쓴다. 디버그 모드(`--debug-godot`)는 환경 변수 일부를 출력하므로
+  켜지 않는다.
+* 상류에 보고하거나 포크에서 `properties`의 스크립트 경로를 막는 패치를 고정할지는 별도로 정한다.
+
 ### 2. PixelFX — 전부
 
 * 기존 평가 ADR은 PixelFX를 **게임 에셋 출력**으로 다뤘다. 이 결정은 같은 저장소가 함께 배포하는
@@ -166,6 +187,8 @@ Godot 4.7.x와 GDScript로 격리된 전투 프로토타입을 만들고, PixelF
 
 ### 비용과 위험
 
+* Godot MCP에는 1절 보안 검토의 남은 위험이 있다. 호출마다 승인하는 운영 원칙으로 완화하며,
+  허용 목록에 넣으면 이 완화가 사라진다.
 * 외부 도구 네 개의 갱신을 각각 추적해야 한다. 특히 Godot MCP는 npm 배포가 보안 수정을
   따라오지 못했으므로, 커밋 갱신 시 변경 내역을 직접 확인해야 한다.
 * 스킬 수가 늘어 상시 컨텍스트가 커지고, 스킬 설명 예산을 넘으면 OMC·GDD 스킬을 포함한 자동

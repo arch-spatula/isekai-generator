@@ -1,0 +1,65 @@
+{
+  "fingerprint": {
+    "combatRange": "mid",
+    "powerMedium": "weapon",
+    "initiative": "transform",
+    "spaceUse": "swap",
+    "combatRhythm": "cycle",
+    "mastery": "form_shift",
+    "risk": "focus_break"
+  },
+  "player": {
+    "moveSpeed": 72,
+    "maxHealth": 6,
+    "dodge": { "distance": 40, "duration": 0.22, "invulnerable": 0.18 }
+  },
+  "forms": [
+    {
+      "id": "spear",
+      "shape": "thrust",
+      "range": 40,
+      "width": 10,
+      "damage": 2,
+      "windup": 0.12,
+      "active": 0.06,
+      "recovery": 0.18,
+      "combo": 3,
+      "effect": "melee/thrust"
+    },
+    {
+      "id": "ring",
+      "shape": "arc",
+      "range": 28,
+      "arcDegrees": 220,
+      "damage": 1,
+      "windup": 0.16,
+      "active": 0.08,
+      "recovery": 0.24,
+      "combo": 2,
+      "effect": "melee/spin-slash"
+    }
+  ],
+  "formSwitch": {
+    "duration": 0.15,
+    "earlyWindow": 0.6,
+    "focusBreakDelay": 0.5,
+    "sideStep": 20
+  },
+  "enemies": [
+    { "type": "charger", "health": 4, "moveSpeed": 40, "telegraph": 0.5 },
+    { "type": "shielder", "health": 6, "moveSpeed": 28, "telegraph": 0.6 },
+    { "type": "ranged", "health": 3, "moveSpeed": 36, "telegraph": 0.7 }
+  ],
+  "palette": {
+    "floor": "#2b3a3f",
+    "wall": "#14202a",
+    "player": "#e8c170",
+    "enemy": "#b4574a",
+    "telegraph": "#ffffff",
+    "ui": "#f2e9d8"
+  },
+  "labels": {
+    "forms": { "spear": "Spear", "ring": "Ring" },
+    "enemies": { "charger": "Charger", "shielder": "Shielder", "ranged": "Thrower" }
+  }
+}
