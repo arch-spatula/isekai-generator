@@ -1,3 +1,4 @@
+import { designDraft } from './fixtures/design-assembly'
 import { Database } from 'bun:sqlite'
 import { beforeGdd } from './fixtures/sqlite-pipeline-runtime'
 import { pipelineGdd as fullPipelineGdd } from './fixtures/sqlite-pipeline'
@@ -57,7 +58,7 @@ test('isValidGdd enforces structure on otherwise valid declarations and evidence
 test('public finish rejects an invalid GDD outline and preserves registration state', () => {
   const { root, run } = beforeGdd()
   const attempt = prepare(root, run, 'gdd').data
-  writeFileSync(attempt.output, fullPipelineGdd().replace(gddTitle, '# 임의 제목'))
+  writeFileSync(attempt.output, designDraft('gdd', fullPipelineGdd()).replace(gddTitle, '# 임의 제목'))
   submit(root, attempt)
   expect(finish(root, attempt).outcome).toBe('validation-failed')
   const result = call(root, ['finalize', '--run', run, '--request', request()])

@@ -1,9 +1,10 @@
 # 고정 제작 조건과 채택값의 문서 자동 조립
 
-> 상태: 제안 — 구현 전
+> 상태: 구현 완료 — 합성 입력 검증 및 독립 테스트 리뷰 완료
 > 작성일: 2026-11-15
-> 관련: [이슈 #12](https://github.com/arch-spatula/isekai-generator/issues/12), PR #4
-> 작업 기준: `docs/ccgs-workflow-evaluation`
+> 관련: [이슈 #22](https://github.com/arch-spatula/isekai-generator/issues/22) — [이슈 #12](https://github.com/arch-spatula/isekai-generator/issues/12)에서 분리
+> 작업 브랜치: `feat/deterministic-design-assembly`
+> 분기 기준: `docs/ccgs-workflow-evaluation` (PR #4)
 
 ## 1. 문제와 목표
 
@@ -11,7 +12,7 @@
 이미 채택된 전투·세계 값과 검증용 선언의 재출력에도 모델을 사용한다. 고정 문구와 값의
 전달·문서 조립은 스크립트로 처리하고 모델은 새로운 설계와 의미 판단에 집중하도록 한다.
 
-현재 공통 계약은 전투 브리프·세계 브리프·GDD에 `game-presentation` 블록을 복사하도록
+변경 전 공통 계약은 전투 브리프·세계 브리프·GDD에 `game-presentation` 블록을 복사하도록
 요구하고, GDD 템플릿은 선정된 전투 지문을 다시 복사하도록 요구한다. 개요에도 공통
 조건의 재서술을 요구한다. 이 책임을 도구로 옮긴다. 비용 절감량은 아직 측정하지 않았다.
 
@@ -87,6 +88,10 @@
 
 ## 5. 후속 범위
 
+편집 제출의 해시·체계·회차·범위 복사 제거는 같은 이슈 #22의
+[편집 제출 메타데이터 도구 소유권](tool-owned-edit-metadata.md)에서 후속 구현으로 다룬다.
+첫 조립 구현의 완료와 해당 후속 작업의 완료를 구분한다.
+
 모티프·근거 ID를 구조화된 필드로 받아 `설계 모티프:`와 `해석 근거:` 행을 도구로
 조립하는 작업은 후속 단계다. 현재 자유 Markdown을 구조화된 설계 데이터 전체로
 바꾸거나 새 문서·에이전트별로 쪼개는 일은 첫 구현에 포함하지 않는다.
@@ -130,7 +135,7 @@
 
 ## 7. 실행 명령과 완료 기준
 
-PR #4 브랜치의 이 문서를 기준으로 다음 Codex 스킬을 명시적으로 호출한다.
+`feat/deterministic-design-assembly` 브랜치의 이 문서를 기준으로 다음 Codex 스킬을 명시적으로 호출한다.
 문서 작성만으로 구현이나 하위 에이전트를 자동 실행하지 않는다.
 
 ```text
@@ -147,5 +152,48 @@ git diff --check
 ```
 
 고정값 재작성 없이 최종 문서를 조립하고, 원본·본문·해시·채택·복구 연결과 기존
-검증 계약을 보존하며 독립 리뷰까지 통과하면 첫 구현 완료다. 현재는 계획 문서만
-작성한 상태이며 위 구현 검증이나 모델 생성은 수행하지 않았다.
+검증 계약을 보존하며 독립 리뷰까지 통과하면 첫 구현 완료다. 구현은 모델 호출 없이 합성 입력으로 검증하며, 구조 검증을 의미 검토나 실제 비용 절감의 증거로 사용하지 않는다.
+
+
+## 8. 구현된 초안·저장 계약
+
+`assembleDesignDocument`는 `selection`, `world-selection`, `gdd` 초안을 받아 최종 Markdown을
+반환한다. 전투·세계 초안은 `game-presentation`을 생략한다. GDD 초안은 1절의 독립된
+`<!-- design-assembly:production -->` 행 하나와 여섯 축의 `manifestation`만 가진
+`world-structure`를 작성하고 `combat-fingerprint`, `game-presentation`, 세계 축 `value`는
+생략한다. 공통 계약의 `design-production:start/end` 경계가 제작 문단의 유일한 원본이다.
+
+예약 output은 초안으로 보존한다. 같은 attempt 폴더의 `assembled-candidate.md`가 최종
+검증·게시 대상이다. SQLite의 추가 테이블 `design_assemblies`는 attempt별 형식, 고정 입력
+해시, 초안 경로·해시와 후보 경로·해시를 연결한다. `attempt.input.assembly`는
+`design-assembly-v1` 형식과 공통 계약의 경로·내용·해시를 고정한다. 허용 문서는 기존
+같은 run의 채택 문서 ID·경로·해시와 계속 일치해야 한다. 원래 제출 payload는 초안 해시를
+유지하고 `documents`와 검증 기록은 조립 후보를 가리킨다. 명시적 registry-stale 재검토 중
+차단된 이전 단계와 이미 대체된 과거 게시본은 당시의 같은 run 게시 원본을 ID·해시로
+검증한다. 새 제출과 현재 성공한 채택 단계는 현재 채택 ID도 일치해야 한다.
+
+조립 오류 코드는 `assembly-managed-field`, `assembly-production-marker`,
+`assembly-world-structure`, `assembly-source-invalid`, `assembly-io`다. 구형 초안 형식은
+`assembly-format-mismatch`, validator 변경은 `validator-revision-mismatch`, 원본·후보
+변조는 `integrity-error`, 채택 원본 교체는 `input-revision-mismatch`로 차단한다. 이런 실패는
+attempt를 모델 검증 실패로 완료하지 않으므로 새 생성 시도를 자동으로 소비하지 않는다.
+재전달·재개·게시 복구에서도 고정 입력과 초안·후보 해시를 확인한다. 구형 DB에는 테이블만
+추가하며 과거 제출을 새 초안 형식으로 변환하지 않는다.
+
+
+## 9. 최종 검증 기록과 한계
+
+동결한 구현·테스트를 대상으로 `bun run test`를 실행해 32개 파일의 테스트 290개가
+통과했다(실패 0개, assertion 13,388개). `bun run check:docs`와
+`bun run check:docs --review`는 오류 0개였으며, 기존 검토 후보 10개는 역사적 버전 기록,
+가상 예제, 당시 정책 및 문제 설명으로 의미를 검토했다. `git diff --check`도 통과했다.
+독립 테스트 리뷰와 실행 후 파일 해시 확인을 완료했다.
+
+독립 리뷰에서 지적된 검증 공백은 고정 제작 문단의 정확한 삽입, 기본 예제와 다른 전투·세계
+축의 전달, 관리 영역 밖 본문의 보존, 실제 공통 계약 파일 변경의 차단을 직접 확인하는
+합성 사례로 보완했다. 초안·원본·후보 무결성과 재개·게시 복구는 모델 호출 없이 검증했다.
+
+자유 3D 조준을 요구하는 합성 자료는 별도 의미 검토용으로 남겼으며 이번 검증에서는
+그 수동 검토를 실행하지 않았다. 실제 개인 차트나 모델 생성은 사용하지 않았고 비용
+절감량을 측정하지 않았다. 구조 검사와 독립 테스트 리뷰의 통과는 생성 결과의 의미 품질,
+조작성·가독성·제작 가능성에 대한 의미 검토를 대신하지 않는다.

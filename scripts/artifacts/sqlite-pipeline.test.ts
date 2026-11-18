@@ -1,3 +1,4 @@
+import { designDraft, expectDesignEquivalent } from '../fixtures/design-assembly'
 import { buildEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
 import { expect, test } from 'bun:test'
 import { Database } from 'bun:sqlite'
@@ -25,7 +26,7 @@ test('synthetic full DAG publishes Markdown then atomically registers two finger
   expect(JSON.parse(resumed.stderr).error.code).toBe('run-terminal')
   expect(snapshot()).toBe(completedState)
   expect(read(root, 'summary', run).data.run.status).toBe('succeeded')
-  expect(readFileSync(join(directory, 'game/personalized-action-rpg-concept.md'), 'utf8')).toBe(pipelineGdd())
+  expectDesignEquivalent(readFileSync(join(directory, 'game/personalized-action-rpg-concept.md'), 'utf8'), pipelineGdd())
   const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
   try { expect(db.query('SELECT kind FROM fingerprints ORDER BY kind').all()).toEqual([{ kind: 'combat' }, { kind: 'world' }]) } finally { db.close() }
   expect(tree(join(root, 'artifacts')).filter(path => /\.jsonl?$|TODO\.md$|\.lock/.test(path))).toEqual([])
@@ -91,7 +92,7 @@ test('another successful run makes the prepared selection snapshot stale without
     expect(db.query('SELECT count(*) AS count FROM fingerprints WHERE run_id=?').get(first.run)).toEqual({ count: 2 })
   } finally { db.close() }
   expect(read(second.root, 'summary', second.run).data.run.status).not.toBe('succeeded')
-  expect(readFileSync(join(second.directory, 'game/personalized-action-rpg-concept.md'), 'utf8')).toBe(pipelineGdd())
+  expectDesignEquivalent(readFileSync(join(second.directory, 'game/personalized-action-rpg-concept.md'), 'utf8'), pipelineGdd())
 }, 15000)
 
 test('unrelated document changes permit resume, dirty validator code changes block it', () => {
@@ -221,14 +222,16 @@ test(`explicit stale review preserves ${legacy ? 'legacy' : 'responsibility'} re
   const publishWithLatestInput = (stage: string, text: string, upstream: string, upstreamText: string) => {
     const attempt = prepare(root, run, stage).data
     const input = ok(call(root, ['input', '--attempt', attempt.attemptId, '--claim', attempt.claim], { read: true })).data
-    expect(input.documents.find((document: any) => document.stage === upstream)).toMatchObject({ text: upstreamText, sha256: sha256(upstreamText) })
+    const upstreamDocument = input.documents.find((document: any) => document.stage === upstream)
+    expectDesignEquivalent(upstreamDocument.text, upstreamText)
+    expect(upstreamDocument.sha256).toBe(sha256(upstreamDocument.text))
     const database = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
     try {
       const adopted = database.query('SELECT accepted_document FROM stages WHERE run_id=? AND stage=?').get(run, upstream) as any
       const prepared = database.query('SELECT input FROM attempts WHERE id=?').get(attempt.attemptId) as any
       expect(JSON.parse(prepared.input).documents.find((document: any) => document.stage === upstream).id).toBe(adopted.accepted_document)
     } finally { database.close() }
-    writeFileSync(attempt.output, text); submit(root, attempt); expect(finish(root, attempt).outcome).toMatch(/passed|published|succeeded/)
+    writeFileSync(attempt.output, designDraft(stage, text)); submit(root, attempt); expect(finish(root, attempt).outcome).toMatch(/passed|published|succeeded/)
     return attempt
   }
   const world = publishWithLatestInput('world-selection', revisedWorldBrief(firstVersion), 'selection', revisedCombatBrief(firstVersion))

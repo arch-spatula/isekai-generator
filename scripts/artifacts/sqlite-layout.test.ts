@@ -1,3 +1,4 @@
+import { expectDesignEquivalent } from '../fixtures/design-assembly'
 import { expect, test } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs'
@@ -42,11 +43,13 @@ for (const legacy of [false, true]) {
     try {
       for (const [stage, relative, body] of publications) {
         const expected = join(directory, legacy ? 'docs/GDD/' + relative.split('/').at(-1) : relative)
-        expect(readFileSync(expected, 'utf8')).toBe(body)
+        const published = readFileSync(expected, 'utf8')
+        if (['selection', 'world-selection', 'gdd'].includes(stage)) expectDesignEquivalent(published, body)
+        else expect(published).toBe(body)
         const document = db.query('SELECT d.* FROM stages s JOIN documents d ON d.id=s.accepted_document WHERE s.run_id=? AND s.stage=?').get(run, stage) as any
         expect(resolve(root, document.final_path)).toBe(expected)
-        expect(document.sha256).toBe(sha256(body))
-        expect(readFileSync(resolve(root, document.path), 'utf8')).toBe(body)
+        expect(document.sha256).toBe(sha256(published))
+        expect(readFileSync(resolve(root, document.path), 'utf8')).toBe(published)
         expect(summary.data.stages.find((row: any) => row.stage === stage).path).toBe(document.final_path)
       }
     } finally { db.close() }
