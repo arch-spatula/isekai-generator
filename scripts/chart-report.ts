@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  * Source: https://github.com/rath/orrery
  */
+import { writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
 import type { BirthInput, SajuResult, ZiweiChart, LiuNianInfo, NatalChart } from '@orrery/core/types'
@@ -440,12 +441,15 @@ const USAGE = `Usage:
     --hour <hour> --minute <minute> --gender <M|F> \\
     --latitude <latitude> --longitude <longitude> \\
     --timezone <IANA timezone> [--flow-year <year>] \\
-    [--jasi-method <unified|split>] [--house-system <code>]`
+    [--jasi-method <unified|split>] [--house-system <code>] \\
+    [--out <file>]`
 
 interface CliReportRequest {
   input: BirthInput
   ziweiYear: number
   houseSystem: string
+  /** 지정하면 stdout 대신 계산이 끝난 뒤 이 파일에 쓴다. */
+  out?: string
 }
 
 function requiredNumber(value: string | undefined, name: string): number {
@@ -471,6 +475,7 @@ export function parseCliArguments(args: string[]): CliReportRequest {
       'flow-year': { type: 'string' },
       'jasi-method': { type: 'string', default: 'unified' },
       'house-system': { type: 'string', default: 'P' },
+      out: { type: 'string' },
     },
     strict: true,
   })
@@ -506,16 +511,19 @@ export function parseCliArguments(args: string[]): CliReportRequest {
       ? currentYear
       : requiredNumber(values['flow-year'], 'flow-year'),
     houseSystem: values['house-system'],
+    out: values.out,
   }
 }
 
 if (import.meta.main) {
   try {
     const request = parseCliArguments(process.argv.slice(2))
-    console.log(await allChartsToText(request.input, {
+    const report = await allChartsToText(request.input, {
       ziweiYear: request.ziweiYear,
       houseSystem: request.houseSystem,
-    }))
+    })
+    if (request.out == null) console.log(report)
+    else writeFileSync(request.out, `${report}\n`)
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     console.error(`\n${USAGE}`)
