@@ -18,3 +18,4 @@
 - [방어문구 편집 검증 예외와 이벤트 상태 병합 오류](2026-11-11-defensive-edit-validation-exception.md) — 코드 결함 수정·합성 회귀 완료, secondary 정책 검토 미완료
 - [에이전트의 작업 범위 확대·사용량 소진과 기본값 처리 실패](2026-11-12-agent-scope-and-default-handling.md) — 비용 통제 미해결, 기본값 적용 지침 수정, 재개·컨텍스트 대응 미정
 - [RPG 능력의 표현 방향과 흡수·방출 콘셉트 유실](2026-11-13-rpg-ability-direction-loss.md) — 미해결, 설계 방향 전달과 능력 정체성 유지 범위 검토
+- [능력 규칙의 구체성과 캐릭터 이미지 전달력의 불일치](2026-11-09-ability-concept-visual-abstraction.md) — 미해결, 2026-11-09 관찰 기록
