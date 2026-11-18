@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import type { BirthInput } from '@orrery/core/types'
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -70,25 +70,46 @@ function runCli(args: string[]) {
   return Bun.spawnSync(['bun', join(import.meta.dir, 'chart-report.ts'), ...args])
 }
 
-test('--out writes exactly the report stdout would print and prints nothing', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'chart-report-'))
-  const out = join(dir, 'chart-report.md')
+const SYSTEM_FILES = ['saju-chart.md', 'ziwei-chart.md', 'natal-chart.md']
 
-  const written = runCli([...cliArguments, `--out=${out}`])
-  const printed = runCli(cliArguments)
+test('--out-dir splits stdout into one file per system and prints nothing', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'chart-report-'))
+
+  const written = runCli([...cliArguments, `--out-dir=${dir}`])
+  const printed = runCli(cliArguments).stdout.toString()
 
   expect(written.exitCode).toBe(0)
   expect(written.stdout.toString()).toBe('')
-  expect(readFileSync(out, 'utf8')).toBe(printed.stdout.toString())
+  expect(readdirSync(dir).sort()).toEqual([...SYSTEM_FILES].sort())
+  const [saju, ziwei, natal] = SYSTEM_FILES.map((name) => readFileSync(join(dir, name), 'utf8'))
+  for (const file of [saju, ziwei, natal]) expect(file.endsWith('\n')).toBe(true)
+  // 세 파일을 보고서의 구분자(빈 줄)로 이어 붙이면 stdout과 바이트 단위로 같아야 한다.
+  expect([saju, ziwei, natal].map((file) => file.slice(0, -1)).join('\n\n') + '\n').toBe(printed)
 })
 
-test('--out creates no file when the calculation fails', () => {
+test('--out-dir files each contain only their own system', () => {
   const dir = mkdtempSync(join(tmpdir(), 'chart-report-'))
-  const out = join(dir, 'chart-report.md')
+  runCli([...cliArguments, `--out-dir=${dir}`])
+  const read = (name: string) => readFileSync(join(dir, name), 'utf8')
+  const headers = { saju: '四柱八字', ziwei: '紫微斗數 命盤', natal: 'Natal Chart' }
 
-  const result = runCli([...cliArguments.filter((arg) => !arg.startsWith('--gender')), `--out=${out}`])
+  expect(read('saju-chart.md').startsWith(headers.saju)).toBe(true)
+  expect(read('saju-chart.md')).not.toContain(headers.ziwei)
+  expect(read('saju-chart.md')).not.toContain(headers.natal)
+  expect(read('ziwei-chart.md').startsWith(headers.ziwei)).toBe(true)
+  expect(read('ziwei-chart.md')).not.toContain(headers.saju)
+  expect(read('ziwei-chart.md')).not.toContain(headers.natal)
+  expect(read('natal-chart.md').startsWith(headers.natal)).toBe(true)
+  expect(read('natal-chart.md')).not.toContain(headers.saju)
+  expect(read('natal-chart.md')).not.toContain(headers.ziwei)
+})
+
+test('--out-dir creates no file when the calculation fails', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'chart-report-'))
+
+  const result = runCli([...cliArguments.filter((arg) => !arg.startsWith('--gender')), `--out-dir=${dir}`])
 
   expect(result.exitCode).toBe(1)
   expect(result.stderr.toString()).toContain('Missing required option: --gender')
-  expect(existsSync(out)).toBe(false)
+  expect(readdirSync(dir)).toEqual([])
 })

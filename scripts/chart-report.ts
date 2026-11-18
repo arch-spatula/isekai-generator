@@ -5,6 +5,7 @@
  * Source: https://github.com/rath/orrery
  */
 import { writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { parseArgs } from 'node:util'
 
 import type { BirthInput, SajuResult, ZiweiChart, LiuNianInfo, NatalChart } from '@orrery/core/types'
@@ -27,20 +28,36 @@ interface ZiweiTextOptions {
   locale?: Locale
 }
 
-/** 화면과 같은 선택 조건으로 세 계산 결과를 모은다. */
-export async function allChartsToText(input: BirthInput, options: TextExportOptions = {}): Promise<string> {
+interface ChartTexts {
+  saju: string
+  /** 출생 시각 미상이면 자미두수를 계산하지 않는다. */
+  ziwei: string | null
+  natal: string
+}
+
+/** 화면과 같은 선택 조건으로 세 체계를 각각 계산한다. */
+export async function chartsToTexts(input: BirthInput, options: TextExportOptions = {}): Promise<ChartTexts> {
   const locale = options.locale ?? 'ko'
-  const parts = [sajuToText(calculateSaju(input), locale)]
+  let ziwei: string | null = null
   if (!input.unknownTime) {
     const chart = createChart(
       input.year, input.month, input.day, input.hour, input.minute,
       input.gender === 'M', input.timezone, input.longitude,
     )
     const year = options.ziweiYear ?? new Date().getFullYear()
-    parts.push(ziweiToText(chart, calculateLiunian(chart, year), { timezone: getBirthTimezone(input), locale }))
+    ziwei = ziweiToText(chart, calculateLiunian(chart, year), { timezone: getBirthTimezone(input), locale })
   }
-  parts.push(natalToText(await calculateNatal(input, options.houseSystem)))
-  return parts.join('\n\n')
+  return {
+    saju: sajuToText(calculateSaju(input), locale),
+    ziwei,
+    natal: natalToText(await calculateNatal(input, options.houseSystem)),
+  }
+}
+
+/** 세 계산 결과를 하나의 보고서로 이어 붙인다. */
+export async function allChartsToText(input: BirthInput, options: TextExportOptions = {}): Promise<string> {
+  const { saju, ziwei, natal } = await chartsToTexts(input, options)
+  return [saju, ziwei, natal].filter((part) => part != null).join('\n\n')
 }
 
 const KO_TEXT: Record<string, string> = {
@@ -442,14 +459,14 @@ const USAGE = `Usage:
     --latitude <latitude> --longitude <longitude> \\
     --timezone <IANA timezone> [--flow-year <year>] \\
     [--jasi-method <unified|split>] [--house-system <code>] \\
-    [--out <file>]`
+    [--out-dir <directory>]`
 
 interface CliReportRequest {
   input: BirthInput
   ziweiYear: number
   houseSystem: string
-  /** 지정하면 stdout 대신 계산이 끝난 뒤 이 파일에 쓴다. */
-  out?: string
+  /** 지정하면 stdout 대신 계산이 끝난 뒤 이 디렉터리에 체계별 파일로 쓴다. */
+  outDir?: string
 }
 
 function requiredNumber(value: string | undefined, name: string): number {
@@ -475,7 +492,7 @@ export function parseCliArguments(args: string[]): CliReportRequest {
       'flow-year': { type: 'string' },
       'jasi-method': { type: 'string', default: 'unified' },
       'house-system': { type: 'string', default: 'P' },
-      out: { type: 'string' },
+      'out-dir': { type: 'string' },
     },
     strict: true,
   })
@@ -511,19 +528,22 @@ export function parseCliArguments(args: string[]): CliReportRequest {
       ? currentYear
       : requiredNumber(values['flow-year'], 'flow-year'),
     houseSystem: values['house-system'],
-    out: values.out,
+    outDir: values['out-dir'],
   }
 }
 
 if (import.meta.main) {
   try {
     const request = parseCliArguments(process.argv.slice(2))
-    const report = await allChartsToText(request.input, {
-      ziweiYear: request.ziweiYear,
-      houseSystem: request.houseSystem,
-    })
-    if (request.out == null) console.log(report)
-    else writeFileSync(request.out, `${report}\n`)
+    const options = { ziweiYear: request.ziweiYear, houseSystem: request.houseSystem }
+    if (request.outDir == null) {
+      console.log(await allChartsToText(request.input, options))
+    } else {
+      const { saju, ziwei, natal } = await chartsToTexts(request.input, options)
+      writeFileSync(join(request.outDir, 'saju-chart.md'), `${saju}\n`)
+      if (ziwei != null) writeFileSync(join(request.outDir, 'ziwei-chart.md'), `${ziwei}\n`)
+      writeFileSync(join(request.outDir, 'natal-chart.md'), `${natal}\n`)
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))
     console.error(`\n${USAGE}`)
