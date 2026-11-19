@@ -49,6 +49,21 @@ test('night chart with Aries rising', async () => {
     '  Jupiter in Sagittarius: 도미사일',
     '  Saturn in Pisces: 없음',
   ])
+  // Houses 표의 커스프 사인 · 전통 룰러의 Planets 표 위치 · 하우스 안 10행성
+  expect(section(lines, '하우스별 룰러와 행성')).toEqual([
+    '  1H Aries: 룰러 Mars in Libra 6H · 행성 없음',
+    '  2H Gemini: 룰러 Mercury in Leo 5H · 행성 없음',
+    '  3H Gemini: 룰러 Mercury in Leo 5H · 행성 없음',
+    '  4H Cancer: 룰러 Moon in Scorpio 7H · 행성 Venus',
+    '  5H Leo: 룰러 Sun in Leo 5H · 행성 Sun, Mercury',
+    '  6H Virgo: 룰러 Mercury in Leo 5H · 행성 Mars',
+    '  7H Libra: 룰러 Venus in Leo 4H · 행성 Moon, Pluto',
+    '  8H Sagittarius: 룰러 Jupiter in Sagittarius 8H · 행성 Jupiter',
+    '  9H Sagittarius: 룰러 Jupiter in Sagittarius 8H · 행성 없음',
+    '  10H Capricorn: 룰러 Saturn in Pisces 12H · 행성 Uranus, Neptune',
+    '  11H Aquarius: 룰러 Saturn in Pisces 12H · 행성 없음',
+    '  12H Pisces: 룰러 Jupiter in Sagittarius 8H · 행성 Saturn',
+  ])
   // 야간: 광체 Moon, 섹트 안 길성 Venus·흉성 Mars, 섹트 밖 길성 Jupiter·흉성 Saturn
   expect(line('섹트 소속')).toEndWith(': 섹트 광체 Moon · 섹트 안 길성 Venus · 섹트 안 흉성 Mars · 섹트 밖 길성 Jupiter · 섹트 밖 흉성 Saturn')
 })

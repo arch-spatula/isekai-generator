@@ -6,6 +6,8 @@ import type { SajuResult } from '@orrery/core/types'
 import { BRANCH_ELEMENT, ELEMENT_HANJA, STEM_INFO } from '@orrery/core/constants'
 import { getJeonggi } from '@orrery/core/pillars'
 
+import { LIFE_STAGES, overlaps, stageLabel } from './life-stages.ts'
+
 type SipsinGroup = '비겁' | '식상' | '재성' | '관성' | '인성'
 
 const SIPSIN_GROUP: Record<string, SipsinGroup> = {
@@ -94,6 +96,40 @@ export function sajuFactsToText(result: SajuResult): string {
         : []))
     lines.push(`  ${PILLAR_LABELS[stemIndex]}干 ${stem}(${ELEMENT_HANJA[element]}): ${roots.length > 0 ? roots.join(', ') : '없음'}`)
   })
+
+  const periods = result.daewoon.map((item, index) => ({
+    label: `${item.index}運 ${item.ganzi}`,
+    from: item.age,
+    to: (result.daewoon[index + 1]?.age ?? item.age + 10) - 1,
+  }))
+  if (periods.length > 0 && periods[0].from > 0) periods.unshift({ label: '대운 이전', from: 0, to: periods[0].from - 1 })
+  lines.push(`생애 단계별 大運 (단계 나이와 大運 표시 나이는 출생 연도 차, 단계와 구간이 겹치는 大運):`)
+  for (const stage of LIFE_STAGES) {
+    const hits = periods.filter((period) => overlaps(stage, period.from, period.to))
+    lines.push(`  ${stageLabel(stage)}: ${hits.map((period) => `${period.label} ${period.from}–${period.to}`).join(', ')}`)
+  }
+
+  const male = result.input.gender === 'M'
+  // 일간의 천간 십신은 本元이라 어느 역할에도 해당하지 않는다.
+  const positions = result.pillars.flatMap((pillar, index) => [
+    { label: `${PILLAR_LABELS[index]}干`, sipsin: pillar.stemSipsin },
+    { label: `${PILLAR_LABELS[index]}支`, sipsin: pillar.branchSipsin },
+  ])
+  const sex = male ? '남: ' : '여: '
+  /** [역할, 성별에 따라 달라지면 접두사, 십신] */
+  const kin: [string, string, string[]][] = [
+    ['어머니', '', ['正印']],
+    ['아버지', '', ['偏財']],
+    ['형제', '', ['比肩', '劫財']],
+    ['배우자', sex, male ? ['正財'] : ['正官']],
+    ['자녀', sex, male ? ['正官', '偏官'] : ['食神', '傷官']],
+  ]
+  lines.push('육친 (십신 → 가족 역할, 일간 외 천간과 지지 정기 기준 · 배우자 자리는 日支):')
+  for (const [role, prefix, sipsins] of kin) {
+    const found = positions.filter(({ sipsin }) => sipsins.includes(sipsin)).map(({ label, sipsin }) => `${label} ${sipsin}`)
+    lines.push(`  ${role} (${prefix}${sipsins.join('·')}): ${found.length > 0 ? found.join(', ') : '없음'}`)
+  }
+  lines.push(`  배우자 자리: 日支 ${day.pillar.branch} ${day.branchSipsin}`)
 
   return lines.join('\n')
 }

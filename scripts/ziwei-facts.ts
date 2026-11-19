@@ -4,6 +4,9 @@
  */
 import type { ZiweiChart, ZiweiPalace, ZiweiStar } from '@orrery/core/types'
 import { MAIN_STAR_NAMES, PALACE_NAMES } from '@orrery/core/constants'
+import { getDaxianList } from '@orrery/core/ziwei'
+
+import { LIFE_STAGES, overlaps, stageLabel } from './life-stages.ts'
 
 const ZHI = '子丑寅卯辰巳午未申酉戌亥'
 /** chart-report.ts의 吉 분류와 같은 목록. 나머지 보조성은 煞로 본다. */
@@ -97,6 +100,15 @@ export function ziweiFactsToText(chart: ZiweiChart): string {
   const jiStar = jiPalace.stars.find((star) => star.siHua === '化忌')!
   const jiTarget = palaceAt(chart, shiftZhi(jiPalace.zhi, 6))
   lines.push(`化忌 충 (생년 化忌 궁의 대궁, +6지지): ${jiTarget.name} ${jiTarget.ganZhi} ← ${jiPalace.name} ${jiStar.name} 化忌`)
+
+  // 大限은 세는나이라 1을 빼 출생 연도 차인 생애 단계 나이와 대조한다.
+  const daxian = getDaxianList(chart).map((item) => ({ label: `${item.palaceName} ${item.ganZhi}`, from: item.ageStart, to: item.ageEnd }))
+  if (daxian[0].from > 1) daxian.unshift({ label: '大限 이전', from: 1, to: daxian[0].from - 1 })
+  lines.push('생애 단계별 大限 (단계 나이는 출생 연도 차, 大限 세는나이 − 1로 대조, 단계와 구간이 겹치는 大限):')
+  for (const stage of LIFE_STAGES) {
+    const hits = daxian.filter((period) => overlaps(stage, period.from - 1, period.to - 1))
+    lines.push(`  ${stageLabel(stage)}: ${hits.map((period) => `${period.label} ${period.from}–${period.to}歲`).join(', ')}`)
+  }
 
   return lines.join('\n')
 }

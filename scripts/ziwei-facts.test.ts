@@ -53,6 +53,14 @@ test('명궁 with main stars: 酉 命宮, 三合 巳·丑, 對宮 卯', () => {
   expect(lines.find((line) => line.startsWith('殺破狼'))).toEndWith(': 예 — 삼방사정 안: 七殺 財帛, 破軍 命宮, 貪狼 官祿')
   // 天機·天梁 疾厄(辰), 天同·太陰 田宅(子)는 삼방사정 밖
   expect(lines.find((line) => line.startsWith('機月同梁'))).toEndWith(': 아니오 — 삼방사정 안: 없음')
+  // 大限 세는나이 2–11歲부터 10년씩 → 출생 연도 차로는 1–10, 11–20, …. 세는나이 1歲(연도 차 0)는 大限 이전
+  expect(section(lines, '생애 단계별 大限')).toEqual([
+    '  유년 0–12: 大限 이전 1–1歲, 命宮 乙酉 2–11歲, 父母 丙戌 12–21歲',
+    '  소년 13–19: 父母 丙戌 12–21歲',
+    '  청년 20–34: 父母 丙戌 12–21歲, 福德 丁亥 22–31歲, 田宅 戊子 32–41歲',
+    '  장년 35–54: 田宅 戊子 32–41歲, 官祿 己丑 42–51歲, 交友 戊寅 52–61歲',
+    '  노년 55–: 交友 戊寅 52–61歲, 遷移 己卯 62–71歲, 疾厄 庚辰 72–81歲, 財帛 辛巳 82–91歲, 子女 壬午 92–101歲, 夫妻 癸未 102–111歲, 兄弟 甲申 112–121歲',
+  ])
 })
 
 test('empty 명궁 borrows the main stars of the opposite palace', () => {
@@ -88,6 +96,19 @@ test('機月同梁 holds when all four stars sit in the 명궁 삼방사정: 子
 
   // 天同·太陰 命宮(子), 天機·天梁 官祿(辰)
   expect(lines.find((line) => line.startsWith('機月同梁'))).toEndWith(': 예 — 삼방사정 안: 天機 官祿, 太陰 命宮, 天同 命宮, 天梁 官祿')
+})
+
+test('life stages compare 大限 in 세는나이 minus one: 火六局 starting at 6歲', () => {
+  const lines = ziweiFactsToText(createChart(2001, 4, 5, 16, 0, false, 'Asia/Seoul', 126.978)).split('\n')
+
+  // 福德 26–35歲 = 연도 차 25–34라 장년(35–)에 걸리지 않고, 官祿 46–55歲 = 45–54라 노년(55–)에 걸리지 않는다.
+  expect(section(lines, '생애 단계별 大限')).toEqual([
+    '  유년 0–12: 大限 이전 1–5歲, 命宮 丙申 6–15歲',
+    '  소년 13–19: 命宮 丙申 6–15歲, 父母 丁酉 16–25歲',
+    '  청년 20–34: 父母 丁酉 16–25歲, 福德 戊戌 26–35歲',
+    '  장년 35–54: 田宅 己亥 36–45歲, 官祿 庚子 46–55歲',
+    '  노년 55–: 交友 辛丑 56–65歲, 遷移 庚寅 66–75歲, 疾厄 辛卯 76–85歲, 財帛 壬辰 86–95歲, 子女 癸巳 96–105歲, 夫妻 甲午 106–115歲, 兄弟 乙未 116–125歲',
+  ])
 })
 
 test('does not state a palace character, 격국 or 사화 interpretation', () => {

@@ -99,6 +99,13 @@ export function natalFactsToText(chart: NatalChart): string {
 
   lines.push(`역행 (10행성): ${names(planets.filter((planet) => planet.isRetrograde))}`)
 
+  lines.push('하우스별 룰러와 행성 (커스프 사인의 전통 룰러와 그 위치 · 하우스 안 10행성):')
+  for (const house of chart.houses) {
+    const ruler = byId(TRADITIONAL_RULER[house.sign])
+    const inside = planets.filter((planet) => planet.house === house.number)
+    lines.push(`  ${house.number}H ${house.sign}: 룰러 ${ruler.id} in ${ruler.sign} ${ruler.house}H · 행성 ${names(inside)}`)
+  }
+
   const aspectCounts = PLANETS
     .map((id) => ({ id, count: chart.aspects.filter((aspect) => aspect.planet1 === id || aspect.planet2 === id).length }))
     .sort((a, b) => b.count - a.count)
