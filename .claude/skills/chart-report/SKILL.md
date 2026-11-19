@@ -46,6 +46,6 @@ bun scripts/chart-report.ts --year=<Y> --month=<M> --day=<D> --hour=<h> --minute
 
 - 성공하면 stdout 전체를 수정·요약 없이 코드 블록으로 보여준다. 앞에 확정한 입력(날짜, 시각, 성별, 도시 표시명)을 한 줄로 밝힌다.
 - 실패하면 stderr 메시지를 그대로 전하고, 입력 문제라면 해당 값만 다시 묻는다.
-- 파일 저장을 요청받은 경우에만 `--out-dir=<디렉터리>`를 붙인다. 스크립트가 계산이 끝난 뒤 그 디렉터리에 `saju-chart.md`, `ziwei-chart.md`, `natal-chart.md`를 쓰고, 실패하면 파일을 만들지 않는다. 이때 결과를 직접 옮겨 쓰지 말고 세 파일 경로만 알린다.
+- 파일 저장을 요청받은 경우에만 `--out-dir=<디렉터리>`를 붙인다. 스크립트가 계산이 끝난 뒤 그 디렉터리에 `saju-chart.md`, `ziwei-chart.md`, `natal-chart.md`와 체계별 판단 근거 사실 `saju-facts.md`, `ziwei-facts.md`, `natal-facts.md`를 쓰고, 실패하면 파일을 만들지 않는다. 이때 결과를 직접 옮겨 쓰지 말고 여섯 파일 경로만 알린다.
   - 디렉터리를 사용자가 주지 않았으면 입력 정리·도시 변환이 끝난 뒤 `bun scripts/allocate-artifact-path.ts`를 실행하고, 출력 JSON의 `chartDir`를 그대로 `--out-dir`에 쓴다. `artifacts/`를 직접 탐색하거나 버전 번호를 추측하지 않는다.
   - 계산이 실패해도 할당된 버전 폴더는 지우지 않고 그 버전과 오류를 알린다.

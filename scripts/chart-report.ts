@@ -15,6 +15,10 @@ import { createChart, calculateLiunian, getDaxianList } from '@orrery/core/ziwei
 import { DEFAULT_TIMEZONE, getBirthTimezone } from '@orrery/core/timezone'
 import { calculateNatal, ZODIAC_SYMBOLS, PLANET_SYMBOLS, ASPECT_SYMBOLS, ROMAN, formatDegree, HOUSE_SYSTEMS } from '@orrery/core/natal'
 
+import { natalFactsToText } from './natal-facts.ts'
+import { sajuFactsToText } from './saju-facts.ts'
+import { ziweiFactsToText } from './ziwei-facts.ts'
+
 type Locale = 'ko' | 'en'
 
 interface TextExportOptions {
@@ -540,9 +544,19 @@ if (import.meta.main) {
       console.log(await allChartsToText(request.input, options))
     } else {
       const { saju, ziwei, natal } = await chartsToTexts(request.input, options)
+      const { input } = request
+      const sajuFacts = sajuFactsToText(calculateSaju(input))
+      const ziweiFacts = ziweiFactsToText(createChart(
+        input.year, input.month, input.day, input.hour, input.minute,
+        input.gender === 'M', input.timezone, input.longitude,
+      ))
+      const natalFacts = natalFactsToText(await calculateNatal(input, request.houseSystem))
       writeFileSync(join(request.outDir, 'saju-chart.md'), `${saju}\n`)
       if (ziwei != null) writeFileSync(join(request.outDir, 'ziwei-chart.md'), `${ziwei}\n`)
       writeFileSync(join(request.outDir, 'natal-chart.md'), `${natal}\n`)
+      writeFileSync(join(request.outDir, 'saju-facts.md'), `${sajuFacts}\n`)
+      writeFileSync(join(request.outDir, 'ziwei-facts.md'), `${ziweiFacts}\n`)
+      writeFileSync(join(request.outDir, 'natal-facts.md'), `${natalFacts}\n`)
     }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error))

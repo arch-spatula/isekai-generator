@@ -72,7 +72,7 @@ function runCli(args: string[]) {
 
 const SYSTEM_FILES = ['saju-chart.md', 'ziwei-chart.md', 'natal-chart.md']
 
-test('--out-dir splits stdout into one file per system and prints nothing', () => {
+test('--out-dir splits stdout into one file per system, adds per-system facts and prints nothing', () => {
   const dir = mkdtempSync(join(tmpdir(), 'chart-report-'))
 
   const written = runCli([...cliArguments, `--out-dir=${dir}`])
@@ -80,7 +80,7 @@ test('--out-dir splits stdout into one file per system and prints nothing', () =
 
   expect(written.exitCode).toBe(0)
   expect(written.stdout.toString()).toBe('')
-  expect(readdirSync(dir).sort()).toEqual([...SYSTEM_FILES].sort())
+  expect(readdirSync(dir).sort()).toEqual([...SYSTEM_FILES, 'saju-facts.md', 'ziwei-facts.md', 'natal-facts.md'].sort())
   const [saju, ziwei, natal] = SYSTEM_FILES.map((name) => readFileSync(join(dir, name), 'utf8'))
   for (const file of [saju, ziwei, natal]) expect(file.endsWith('\n')).toBe(true)
   // 세 파일을 보고서의 구분자(빈 줄)로 이어 붙이면 stdout과 바이트 단위로 같아야 한다.
