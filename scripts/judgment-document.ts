@@ -168,6 +168,17 @@ export function checkJudgmentDocument(judgment: string, spec: JudgmentSpec): str
   return errors
 }
 
+/** 검증을 통과한 판단 문서에서 섹션별 결론을 읽는다. */
+export function readConclusions(judgment: string): Map<string, string> {
+  const conclusions = new Map<string, string>()
+  let section: string | null = null
+  for (const line of judgment.split('\n')) {
+    if (line.startsWith('## ')) section = line.slice(3).trim()
+    else if (section != null && line.startsWith('결론:') && !conclusions.has(section)) conclusions.set(section, line.slice(3).trim())
+  }
+  return conclusions
+}
+
 /** 차트 디렉터리의 세 파일을 읽어 검사하고 결과로 종료한다. */
 export function runJudgmentCli(script: string, files: { judgment: string; chart: string; facts: string },
   check: (texts: { judgment: string; chart: string; facts: string }) => string[]): never {
