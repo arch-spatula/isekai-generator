@@ -5,12 +5,12 @@
 import { chartTitles, checkJudgmentDocument, factItems, runJudgmentCli } from './judgment-document.ts'
 
 const ELEMENTS = ['木', '火', '土', '金', '水']
-const POSITIONS = ['時', '日', '月', '年'].flatMap((pillar) => ['干', '支', '柱'].map((part) => pillar + part))
+export const POSITIONS = ['時', '日', '月', '年'].flatMap((pillar) => ['干', '支', '柱'].map((part) => pillar + part))
 
 export interface SajuJudgmentInput { judgment: string; chart: string; facts: string }
 
 /** 차트 표의 천간·지지 행에서 時日月年 간지를 읽는다. */
-function chartPillars(chart: string): string {
+export function chartPillars(chart: string): string {
   const row = (label: string) => chart.split('\n').find((line) => line.startsWith(label))!.split(/\s+/).slice(1)
   const stems = row('천간')
   const branches = row('지지')
