@@ -26,6 +26,7 @@
 - 전투 지문과 후보 거리: `bun test ./.agents/skills/select-gameplay-concept/scripts`
 - 세계 지문의 구조 비교: `bun test ./.agents/skills/select-world-concept/scripts`
 - GDD 계약: `bun test ./.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd.test.ts`
+- 사주 1차 판단 문서 구조·근거 인용: `bun test scripts/check-saju-judgment.test.ts` (`saju-judgment/`의 차트·사실은 합성 출생 입력의 chart-report 출력이고, 판단 문서는 직접 쓴 가상 예시)
 
 테스트 통과는 해당 구조 계약의 검증이며 실제 개인화 품질이나 과거 관찰 집계를 재현했다는
 주장이 아니다. 새 모델 실험이 필요하면 합성 입력으로 별도 실행하고 결과는 로컬 run에 둔다.
