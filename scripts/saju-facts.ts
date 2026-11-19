@@ -19,6 +19,8 @@ const SEASON: Record<string, string> = {
 }
 /** orrery pillars 순서(시, 일, 월, 년)의 위치 이름 */
 const PILLAR_LABELS = ['時', '日', '月', '年']
+/** orrery 지장간 문자열의 자리(공백은 중기 없음) */
+const HIDDEN_POSITIONS = ['여기', '중기', '정기']
 
 /** 일간을 돕는 십신(비겁·인성)인지 */
 function supportsDayMaster(sipsin: string): boolean {
@@ -82,6 +84,16 @@ export function sajuFactsToText(result: SajuResult): string {
     }
   })
   if (!anyVisible) lines.push('  없음')
+
+  lines.push('통근 (천간과 같은 오행의 지장간이 있는 지지, 지장간 자리 여기·중기·정기):')
+  result.pillars.forEach(({ pillar: { stem } }, stemIndex) => {
+    const element = STEM_INFO[stem].element
+    const roots = result.pillars.flatMap(({ pillar, jigang }, branchIndex) => [...jigang].flatMap((hidden, position) =>
+      hidden !== ' ' && STEM_INFO[hidden].element === element
+        ? [`${PILLAR_LABELS[branchIndex]}支 ${pillar.branch} ${HIDDEN_POSITIONS[position]} ${hidden}`]
+        : []))
+    lines.push(`  ${PILLAR_LABELS[stemIndex]}干 ${stem}(${ELEMENT_HANJA[element]}): ${roots.length > 0 ? roots.join(', ') : '없음'}`)
+  })
 
   return lines.join('\n')
 }

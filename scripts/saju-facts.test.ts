@@ -5,6 +5,13 @@ import { sajuFactsToText } from './saju-facts.ts'
 
 // 기대값은 원국 간지만 보고 손으로 계산했다. 간지 자체는 orrery 계산을 신뢰한다.
 
+/** 제목 줄 아래 들여쓴 항목들 */
+function section(lines: string[], title: string): string[] {
+  const start = lines.findIndex((line) => line.startsWith(title)) + 1
+  const end = lines.findIndex((line, index) => index >= start && !line.startsWith('  '))
+  return lines.slice(start, end === -1 ? undefined : end)
+}
+
 test('summer chart without 득령: 己亥 丙寅 癸未 乙亥 (時日月年)', () => {
   const lines = sajuFactsToText(calculateSaju({
     year: 1995, month: 8, day: 3, hour: 23, minute: 10, gender: 'F',
@@ -21,7 +28,14 @@ test('summer chart without 득령: 己亥 丙寅 癸未 乙亥 (時日月年)', 
   expect(lines.find((line) => line.startsWith('득지'))).toEndWith('예 — 日支 寅 정기 甲 = 偏印')
   expect(lines.find((line) => line.startsWith('득세 근거'))).toEndWith('1/5 — 年干 正印')
   // 亥(戊甲壬)·寅(戊丙甲)은 일간 외 천간(己·癸·乙)과 겹치지 않고, 未(丁乙己)만 乙·己가 투출한다.
-  expect(lines.slice(lines.findIndex((line) => line.startsWith('투출')) + 1)).toEqual(['  月支 未: 乙→年干, 己→時干'])
+  expect(section(lines, '투출')).toEqual(['  月支 未: 乙→年干, 己→時干'])
+  // 지장간 위치: 亥 여기戊 중기甲 정기壬 · 寅 여기戊 중기丙 정기甲 · 未 여기丁 중기乙 정기己
+  expect(section(lines, '통근')).toEqual([
+    '  時干 己(土): 時支 亥 여기 戊, 日支 寅 여기 戊, 月支 未 정기 己, 年支 亥 여기 戊',
+    '  日干 丙(火): 日支 寅 중기 丙, 月支 未 여기 丁',
+    '  月干 癸(水): 時支 亥 정기 壬, 年支 亥 정기 壬',
+    '  年干 乙(木): 時支 亥 중기 甲, 日支 寅 정기 甲, 月支 未 중기 乙, 年支 亥 중기 甲',
+  ])
 })
 
 test('spring chart with 득령: 癸巳 丙寅 己卯 庚辰 (時日月年)', () => {
@@ -38,10 +52,42 @@ test('spring chart with 득령: 癸巳 丙寅 己卯 庚辰 (時日月年)', () 
   expect(lines.find((line) => line.startsWith('득령'))).toEndWith('예 — 月支 卯 정기 乙 = 正印')
   expect(lines.find((line) => line.startsWith('득세 근거'))).toEndWith('1/5 — 時支 比肩')
   // 일간 丙은 투출 대상에서 빠지므로 寅의 丙은 세지 않는다.
-  expect(lines.slice(lines.findIndex((line) => line.startsWith('투출')) + 1)).toEqual([
+  expect(section(lines, '투출')).toEqual([
     '  時支 巳: 庚→年干',
     '  年支 辰: 癸→時干',
   ])
+  // 巳 여기戊 중기庚 정기丙 · 寅 여기戊 중기丙 정기甲 · 卯 여기甲 정기乙(중기 없음) · 辰 여기乙 중기癸 정기戊
+  expect(section(lines, '통근')).toEqual([
+    '  時干 癸(水): 年支 辰 중기 癸',
+    '  日干 丙(火): 時支 巳 정기 丙, 日支 寅 중기 丙',
+    '  月干 己(土): 時支 巳 여기 戊, 日支 寅 여기 戊, 年支 辰 정기 戊',
+    '  年干 庚(金): 時支 巳 중기 庚',
+  ])
+})
+
+test('통근 lists every same-element hidden stem and marks a rootless stem: 丙午 壬寅 甲午 辛巳 (時日月年)', () => {
+  const lines = sajuFactsToText(calculateSaju({
+    year: 2001, month: 6, day: 8, hour: 12, minute: 0, gender: 'M',
+    latitude: 37.5665, longitude: 126.978, timezone: 'Asia/Seoul',
+  })).split('\n')
+
+  // 午 여기丙 중기己 정기丁 · 寅 여기戊 중기丙 정기甲 · 巳 여기戊 중기庚 정기丙 — 水 지장간(壬·癸)은 하나도 없다.
+  expect(section(lines, '통근')).toEqual([
+    '  時干 丙(火): 時支 午 여기 丙, 時支 午 정기 丁, 日支 寅 중기 丙, 月支 午 여기 丙, 月支 午 정기 丁, 年支 巳 정기 丙',
+    '  日干 壬(水): 없음',
+    '  月干 甲(木): 日支 寅 정기 甲',
+    '  年干 辛(金): 年支 巳 중기 庚',
+  ])
+})
+
+test('통근 in a branch without 중기 keeps the 정기 position: 己巳 甲子 己卯 庚辰 (時日月年)', () => {
+  const lines = sajuFactsToText(calculateSaju({
+    year: 2000, month: 3, day: 7, hour: 10, minute: 0, gender: 'M',
+    latitude: 37.5665, longitude: 126.978, timezone: 'Asia/Seoul',
+  })).split('\n')
+
+  // 卯는 여기甲 정기乙로 중기가 없다. 乙은 두 번째 글자지만 정기다.
+  expect(section(lines, '통근')).toContain('  日干 甲(木): 月支 卯 여기 甲, 月支 卯 정기 乙, 年支 辰 여기 乙')
 })
 
 test('does not state a strength, structure or 용신 conclusion', () => {
