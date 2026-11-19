@@ -19,6 +19,7 @@
 - [전문 해석 실패 기록 및 재시도 작업 계획](specialist-interpretation-recovery.md)
 - [통합 해석의 방어문구 편집 검토](integrated-interpretation-defensive-editing.md)
 - [사주 1차 판단 문서와 검증기](saju-first-pass-judgment.md)
+- [자미두수 1차 판단 문서와 검증기](ziwei-first-pass-judgment.md)
 - [개인화 전투 원형 선택](personalized-combat-archetype-selection.md)
 - [개인화 세계 구조 선택](world-concept-selection.md)
 - [개인화 게임의 공통 화면·아트 계약](game-presentation-contract.md)
