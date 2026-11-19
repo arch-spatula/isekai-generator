@@ -12,6 +12,12 @@ const TRADITIONAL_RULER: Record<ZodiacSign, PlanetId> = {
   Libra: 'Venus', Scorpio: 'Mars', Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter',
 }
 const MODERN_RULER: Partial<Record<ZodiacSign, PlanetId>> = { Scorpio: 'Pluto', Aquarius: 'Uranus', Pisces: 'Neptune' }
+const EXALTATION: Partial<Record<ZodiacSign, PlanetId>> = {
+  Aries: 'Sun', Taurus: 'Moon', Virgo: 'Mercury', Pisces: 'Venus', Capricorn: 'Mars', Cancer: 'Jupiter', Libra: 'Saturn',
+}
+const SIGNS = Object.keys(TRADITIONAL_RULER) as ZodiacSign[]
+/** 본질적 품위 대상: 전통 7행성 */
+const TRADITIONAL_PLANETS: PlanetId[] = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']
 
 const ELEMENT: Record<ZodiacSign, string> = {
   Aries: 'Fire', Leo: 'Fire', Sagittarius: 'Fire', Taurus: 'Earth', Virgo: 'Earth', Capricorn: 'Earth',
@@ -21,6 +27,20 @@ const MODALITY: Record<ZodiacSign, string> = {
   Aries: 'Cardinal', Cancer: 'Cardinal', Libra: 'Cardinal', Capricorn: 'Cardinal',
   Taurus: 'Fixed', Leo: 'Fixed', Scorpio: 'Fixed', Aquarius: 'Fixed',
   Gemini: 'Mutable', Virgo: 'Mutable', Sagittarius: 'Mutable', Pisces: 'Mutable',
+}
+
+function opposite(sign: ZodiacSign): ZodiacSign {
+  return SIGNS[(SIGNS.indexOf(sign) + 6) % 12]
+}
+
+/** 도미사일·엑잘테이션과 그 반대 사인의 데트리먼트·폴 */
+export function dignities(id: PlanetId, sign: ZodiacSign): string[] {
+  return [
+    TRADITIONAL_RULER[sign] === id ? '도미사일' : null,
+    EXALTATION[sign] === id ? '엑잘테이션' : null,
+    TRADITIONAL_RULER[opposite(sign)] === id ? '데트리먼트' : null,
+    EXALTATION[opposite(sign)] === id ? '폴' : null,
+  ].filter((name) => name != null)
 }
 
 function countBy(planets: PlanetPosition[], key: (planet: PlanetPosition) => string, order: string[]): string {
@@ -44,7 +64,18 @@ export function natalFactsToText(chart: NatalChart): string {
     rulers.map((id) => `${id} in ${byId(id).sign} ${byId(id).house}H`).join(' / ')}`)
 
   const sun = byId('Sun')
-  lines.push(`섹트 (태양이 7–12하우스면 주간): ${sun.house! >= 7 ? '주간' : '야간'} — Sun ${sun.house}H`)
+  const diurnal = sun.house! >= 7
+  lines.push(`섹트 (태양이 7–12하우스면 주간): ${diurnal ? '주간' : '야간'} — Sun ${sun.house}H`)
+  const [inBenefic, inMalefic, outBenefic, outMalefic] = diurnal ? ['Jupiter', 'Saturn', 'Venus', 'Mars'] : ['Venus', 'Mars', 'Jupiter', 'Saturn']
+  lines.push(`섹트 소속 (주간은 Sun·Jupiter·Saturn, 야간은 Moon·Venus·Mars가 섹트 안): 섹트 광체 ${diurnal ? 'Sun' : 'Moon'} · ${
+    `섹트 안 길성 ${inBenefic} · 섹트 안 흉성 ${inMalefic} · 섹트 밖 길성 ${outBenefic} · 섹트 밖 흉성 ${outMalefic}`}`)
+
+  lines.push('본질적 품위 (전통 7행성 · 도미사일·엑잘테이션, 반대 사인 데트리먼트·폴):')
+  for (const id of TRADITIONAL_PLANETS) {
+    const { sign } = byId(id)
+    const found = dignities(id, sign)
+    lines.push(`  ${id} in ${sign}: ${found.length > 0 ? found.join('·') : '없음'}`)
+  }
 
   lines.push(`원소 분포 (10행성, 가중치 없음): ${countBy(planets, (planet) => ELEMENT[planet.sign], ['Fire', 'Earth', 'Air', 'Water'])}`)
   lines.push(`양태 분포 (10행성, 가중치 없음): ${countBy(planets, (planet) => MODALITY[planet.sign], ['Cardinal', 'Fixed', 'Mutable'])}`)
