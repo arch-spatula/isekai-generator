@@ -1,6 +1,6 @@
 # 세 체계 일생 통합
 
-> 상태: 설계 — 재료표 스크립트, 검증기, `life-integration` 스킬 모두 미구현
+> 상태: 재료표 스크립트 구현 — 검증기와 `life-integration` 스킬은 미구현
 > 작성일: 2026-11-20
 
 ## 1. 목표
@@ -73,6 +73,9 @@ saju-life · ziwei-life · natal-life → assemble-life-material → life-integr
 
 원본 문서 안에서 항목 이름은 섹션을 넘어 겹치지 않아야 한다. 필수 항목 이름은 서로 다르므로, 추가 재능 이름이
 다른 항목 이름과 같을 때만 스크립트가 멈추고 알린다.
+
+테스트는 세 일생 해석 fixture를 입력으로 한다(`bun test scripts/assemble-life-material.test.ts`). 재료표는 이름 기준
+병합이라 fixture가 서로 다른 합성 출생 입력이어도 된다.
 
 ## 5. 통합 문서 `life.md`
 

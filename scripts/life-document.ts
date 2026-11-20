@@ -49,6 +49,23 @@ export function stageLines(facts: string, title: string): Map<string, string> {
   return result
 }
 
+export interface LifeItem { section: string; name: string; fields: [key: string, value: string][] }
+
+/** 검증을 통과한 일생 해석 문서의 `###` 항목을 순서대로 읽는다. */
+export function readLifeItems(text: string): LifeItem[] {
+  const items: LifeItem[] = []
+  let section = ''
+  for (const line of text.split('\n')) {
+    if (line.startsWith('## ')) section = line.slice(3).trim()
+    else if (line.startsWith('### ')) items.push({ section, name: line.slice(4).trim(), fields: [] })
+    else {
+      const match = line.match(/^([^:]+):\s?(.*)$/)
+      if (match != null && items.length > 0) items.at(-1)!.fields.push([match[1], match[2].trim()])
+    }
+  }
+  return items
+}
+
 export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
   const errors: string[] = []
   const report = (line: number | null, message: string) => errors.push(line == null ? message : `${line}: ${message}`)
