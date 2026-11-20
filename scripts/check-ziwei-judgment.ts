@@ -13,13 +13,15 @@ function headerValue(chart: string, key: string): string {
   return chart.split('\n').find((line) => line.startsWith(`${key}:`))!.slice(key.length + 1).trim()
 }
 
+/** 차트 머리의 命宮·身宮·五行局으로 만든 명반 신원 줄 값 */
+export function ziweiIdentity(chart: string): string {
+  return `命宮 ${headerValue(chart, '命宮')} · 身宮 ${headerValue(chart, '身宮')} · ${headerValue(chart, '五行局')}`
+}
+
 export function checkZiweiJudgment({ judgment, chart, facts }: ZiweiJudgmentInput): string[] {
   return checkJudgmentDocument(judgment, {
     title: '# 紫微斗數 1차 판단',
-    identity: {
-      key: '명반',
-      expected: `命宮 ${headerValue(chart, '命宮')} · 身宮 ${headerValue(chart, '身宮')} · ${headerValue(chart, '五行局')}`,
-    },
+    identity: { key: '명반', expected: ziweiIdentity(chart) },
     sections: [
       { name: '명궁 역량', allowed: ['강', '중', '약'] },
       { name: '격국', allowed: null },

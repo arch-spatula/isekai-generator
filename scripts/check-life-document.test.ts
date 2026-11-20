@@ -125,3 +125,66 @@ test('CLI reads the directory and exits by result', () => {
   expect(unknown.exitCode).toBe(1)
   expect(unknown.stderr.toString()).toContain('usage')
 })
+
+// 자미두수: 합성 입력(2000-03-03 10:00 서울 남)의 현재 사실 파일, 합성 1차 판단, 그 판단 파생 사실, 손으로 쓴 일생 해석.
+// 공통 구조 규칙은 위 사주 테스트가 다루고, 여기서는 자미두수 설정(명반, 大限 대응, 금지 절, 파생 사실 이름)만 확인한다.
+const ziweiDir = join(import.meta.dir, 'fixtures/ziwei-life')
+const readZiwei = (file: string) => readFileSync(join(ziweiDir, file), 'utf8')
+const ziweiTexts = {
+  chart: readZiwei('ziwei-chart.md'),
+  facts: readZiwei('ziwei-facts.md'),
+  judgment: readZiwei('ziwei-judgment.md'),
+  derived: readZiwei('ziwei-derived-facts.md'),
+}
+const ziweiValid = readZiwei('ziwei-life.md')
+const checkZiwei = (life: string) => checkLifeDocument('ziwei', { ...ziweiTexts, life })
+const mutateZiwei = (from: string, to: string) => {
+  expect(ziweiValid.split(from)).toHaveLength(2)
+  return ziweiValid.replace(from, to)
+}
+const ziweiLine = (text: string) => ziweiValid.split('\n').indexOf(text) + 1
+
+test('ziwei: the hand-written fixture passes, citing 大限 and palace positions', () => {
+  expect(checkZiwei(ziweiValid)).toEqual([])
+  const result = Bun.spawnSync(['bun', join(import.meta.dir, 'check-life-document.ts'), 'ziwei', ziweiDir])
+  expect([result.exitCode, result.stdout.toString()]).toEqual([0, ''])
+})
+
+test('ziwei: checks the title and 명반 against the chart header', () => {
+  expect(checkZiwei(mutateZiwei('# 紫微斗數 일생 해석', '# 四柱 일생 해석'))).toContain("1: 첫 줄은 '# 紫微斗數 일생 해석'이어야 한다")
+  expect(checkZiwei(mutateZiwei('身宮 夫妻 (未)', '身宮 遷移 (卯)')))
+    .toContain('3: 명반 불일치 — 문서 命宮 乙酉 · 身宮 遷移 (卯) · 水二局, ziwei-chart.md 命宮 乙酉 · 身宮 夫妻 (未) · 水二局')
+})
+
+test('ziwei: 운 must equal the stage line of 생애 단계별 大限', () => {
+  const luck = '운: 父母 丙戌 12–21歲'
+  // 세는나이를 그대로 써서 福德 22–31歲까지 소년(13–19)에 넣은 경우
+  // 청년 운도 같은 문자열로 시작하므로 줄 전체로 바꾼다.
+  expect(checkZiwei(mutateZiwei(`${luck}\n`, '운: 父母 丙戌 12–21歲, 福德 丁亥 22–31歲\n')))
+    .toContain(`${ziweiLine(luck)}: 생애 연표 > 소년: 운 불일치 — 문서 父母 丙戌 12–21歲, 福德 丁亥 22–31歲, ziwei-facts.md 父母 丙戌 12–21歲`)
+})
+
+test('ziwei: 流年 and 流月 stay forbidden while 大限 is allowed', () => {
+  const evidence = '근거: [facts:생애 단계별 大限] [chart:遷移] [chart:大限]'
+  for (const section of ['流年', '流月']) {
+    expect(checkZiwei(mutateZiwei(evidence, `근거: [facts:생애 단계별 大限] [chart:遷移] [chart:${section}]`)))
+      .toEqual([`${ziweiLine(evidence)}: 생애 연표 > 노년: 일생 해석에 쓰지 않는 절 [chart:${section}]`])
+  }
+})
+
+test('ziwei: derived facts are cited by their item name including the palace', () => {
+  const evidence = '근거: [derived:과제 궁 父母]'
+  // 소년 근거도 같은 문자열로 시작하므로 줄 전체로 바꾼다.
+  expect(checkZiwei(mutateZiwei(`${evidence}\n`, '근거: [derived:과제 궁]\n')))
+    .toContain(`${ziweiLine(evidence)}: 상처와 회복 > 상실: ziwei-derived-facts.md에 없는 항목 [derived:과제 궁]`)
+  // 격국은 청년과 회복에서만 인용된다.
+  const uncited = ziweiValid.replace(' [judgment:격국]', '').replace(' [judgment:격국]', '')
+  expect(checkZiwei(uncited)).toContain('1차 판단 섹션을 인용하지 않았다: 격국')
+})
+
+test('ziwei: a facts file without the life-stage table is reported, not silently skipped', () => {
+  // 생애 단계 사실이 생기기 전에 만든 폴더의 사실 파일
+  const oldFacts = ziweiTexts.facts.slice(0, ziweiTexts.facts.indexOf('생애 단계별 大限'))
+  const errors = checkLifeDocument('ziwei', { ...ziweiTexts, facts: oldFacts, life: ziweiValid })
+  expect(errors).toContain(`${ziweiLine('운: 父母 丙戌 12–21歲')}: 생애 연표 > 소년: ziwei-facts.md에 이 단계의 운 대응 줄이 없다`)
+})

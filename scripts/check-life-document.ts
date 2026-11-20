@@ -4,7 +4,10 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { PALACE_NAMES } from '@orrery/core/constants'
+
 import { chartPillars, POSITIONS } from './check-saju-judgment.ts'
+import { ziweiIdentity } from './check-ziwei-judgment.ts'
 import { chartTitles, factItems, readConclusions } from './judgment-document.ts'
 import { checkLifeDocument as checkStructure, type LifeSection, stageLines } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
@@ -38,6 +41,19 @@ const SYSTEMS = {
       chart: { file: 'saju-chart.md', names: new Set([...chartTitles(texts.chart), ...POSITIONS]) },
       judgment: { file: 'saju-judgment.md', sections: new Set(readConclusions(texts.judgment).keys()) },
       derived: { file: 'saju-derived-facts.md', items: factItems(texts.derived!) },
+    },
+  }),
+  ziwei: (texts: LifeTexts) => checkStructure(texts.life, {
+    title: '# 紫微斗數 일생 해석',
+    identity: { key: '명반', expected: ziweiIdentity(texts.chart) },
+    sections: [TIMELINE, ...commonSections(true)],
+    luck: { file: 'ziwei-facts.md', expected: stageLines(texts.facts, '생애 단계별 大限') },
+    citations: {
+      facts: { file: 'ziwei-facts.md', items: factItems(texts.facts) },
+      // 大限은 일생 해석의 시기 근거라 쓸 수 있고, 조회 연도에 따라 바뀌는 流年·流月만 막는다.
+      chart: { file: 'ziwei-chart.md', names: new Set([...chartTitles(texts.chart), ...PALACE_NAMES]), forbidden: ['流年', '流月'] },
+      judgment: { file: 'ziwei-judgment.md', sections: new Set(readConclusions(texts.judgment).keys()) },
+      derived: { file: 'ziwei-derived-facts.md', items: factItems(texts.derived!) },
     },
   }),
 }

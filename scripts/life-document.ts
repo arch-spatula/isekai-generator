@@ -134,7 +134,9 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
 
       const luck = field('운')
       const expectedLuck = spec.luck?.expected.get(name)
-      if (luck != null && luck.value !== '' && expectedLuck != null && luck.value !== expectedLuck) {
+      if (luck != null && spec.luck != null && expectedLuck == null) {
+        report(luck.line, `${where}: ${spec.luck.file}에 이 단계의 운 대응 줄이 없다`)
+      } else if (luck != null && luck.value !== '' && expectedLuck != null && luck.value !== expectedLuck) {
         report(luck.line, `${where}: 운 불일치 — 문서 ${luck.value}, ${spec.luck!.file} ${expectedLuck}`)
       }
 

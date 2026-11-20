@@ -30,6 +30,7 @@
 - 자미두수 1차 판단 문서 설정: `bun test scripts/check-ziwei-judgment.test.ts` (`ziwei-judgment/`도 같은 방식의 합성 자료)
 - 네이탈 1차 판단 문서 설정: `bun test scripts/check-natal-judgment.test.ts` (`natal-judgment/`도 같은 방식의 합성 자료)
 - 사주 일생 해석 문서 구조·인용: `bun test scripts/check-life-document.test.ts` (`saju-life/`는 같은 합성 입력의 현재 사실 파일, 합성 1차 판단과 그 판단 파생 사실, 직접 쓴 가상 일생 해석)
+- 자미두수 일생 해석 설정: 같은 테스트 (`ziwei-life/`도 같은 방식의 합성 자료)
 
 테스트 통과는 해당 구조 계약의 검증이며 실제 개인화 품질이나 과거 관찰 집계를 재현했다는
 주장이 아니다. 새 모델 실험이 필요하면 합성 입력으로 별도 실행하고 결과는 로컬 run에 둔다.
