@@ -4,7 +4,7 @@
  */
 import { chartTitles, checkJudgmentDocument, factItems, runJudgmentCli } from './judgment-document.ts'
 
-const PLANETS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+export const PLANETS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
 /** '<기호> <이름> <사인 기호> <사인> …' 줄(Angles·Planets)에서 이름 다음의 사인 */
 const POSITION_LINE = /^(?:\S+ )?(ASC|MC|[A-Z][a-z]+(?: [A-Z][a-z]+)?)\s+\S+ ([A-Z][a-z]+)\b/
 /** '☉ Sun        □ ☽ Moon       orb 0.1°' */
@@ -24,14 +24,16 @@ function hardAspects(chart: string): string[] {
   })
 }
 
-export function checkNatalJudgment({ judgment, chart, facts }: NatalJudgmentInput): string[] {
+/** 'ASC <사인> · Sun <사인> · Moon <사인> · <하우스 시스템>' */
+export function natalIdentity(chart: string): string {
   const houseSystem = chart.match(/^Houses \((.+)\)$/m)![1]
+  return `ASC ${signOf(chart, 'ASC')} · Sun ${signOf(chart, 'Sun')} · Moon ${signOf(chart, 'Moon')} · ${houseSystem}`
+}
+
+export function checkNatalJudgment({ judgment, chart, facts }: NatalJudgmentInput): string[] {
   return checkJudgmentDocument(judgment, {
     title: '# Natal 1차 판단',
-    identity: {
-      key: '차트',
-      expected: `ASC ${signOf(chart, 'ASC')} · Sun ${signOf(chart, 'Sun')} · Moon ${signOf(chart, 'Moon')} · ${houseSystem}`,
-    },
+    identity: { key: '차트', expected: natalIdentity(chart) },
     sections: [
       { name: '차트 룰러 상태', allowed: ['강', '중', '약'] },
       { name: '주요 행성', allowed: PLANETS },

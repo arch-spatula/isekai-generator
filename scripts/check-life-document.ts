@@ -7,6 +7,7 @@ import { join } from 'node:path'
 import { PALACE_NAMES } from '@orrery/core/constants'
 
 import { chartPillars, POSITIONS } from './check-saju-judgment.ts'
+import { natalIdentity, PLANETS } from './check-natal-judgment.ts'
 import { ziweiIdentity } from './check-ziwei-judgment.ts'
 import { chartTitles, factItems, readConclusions } from './judgment-document.ts'
 import { checkLifeDocument as checkStructure, type LifeSection, stageLines } from './life-document.ts'
@@ -56,6 +57,17 @@ const SYSTEMS = {
       derived: { file: 'ziwei-derived-facts.md', items: factItems(texts.derived!) },
     },
   }),
+  // 시기 계산이 없어 생애 연표·판단 파생 사실이 없고, 관계의 변화·꽃피는 시기는 단계 대신 조건으로 쓴다.
+  natal: (texts: LifeTexts) => checkStructure(texts.life, {
+    title: '# Natal 일생 해석',
+    identity: { key: '차트', expected: natalIdentity(texts.chart) },
+    sections: commonSections(false),
+    citations: {
+      facts: { file: 'natal-facts.md', items: factItems(texts.facts) },
+      chart: { file: 'natal-chart.md', names: new Set([...chartTitles(texts.chart), ...PLANETS, 'ASC', 'MC']) },
+      judgment: { file: 'natal-judgment.md', sections: new Set(readConclusions(texts.judgment).keys()) },
+    },
+  }),
 }
 
 export type LifeSystem = keyof typeof SYSTEMS
@@ -83,7 +95,7 @@ if (import.meta.main) {
     chart: read(`${system}-chart.md`),
     facts: read(`${system}-facts.md`),
     judgment: read(`${system}-judgment.md`),
-    derived: read(`${system}-derived-facts.md`),
+    derived: system === 'natal' ? undefined : read(`${system}-derived-facts.md`),
   })
   for (const error of errors) console.log(error)
   process.exit(errors.length > 0 ? 1 : 0)

@@ -1,6 +1,6 @@
 # 일생 서사용 2차 해석
 
-> 상태: 사주·자미두수 구현 — 사실 층, 검증기 설정, `saju-life`·`ziwei-life` 스킬. 네이탈 설정과 스킬은 미구현
+> 상태: 사주·자미두수 구현 — 사실 층, 검증기 설정, `saju-life`·`ziwei-life` 스킬. 네이탈은 검증기 설정만 구현, `natal-life` 스킬은 미구현
 > 작성일: 2026-11-19
 
 ## 1. 목표
@@ -135,7 +135,7 @@
 | 모든 인용이 실재하고 금지 절이 아님 | 꾸며낸 근거, 조회 연도 의존 |
 
 내용의 질, 1차 판단과의 의미상 모순, 글 길이는 검사하지 않는다. 테스트는 커밋된 합성 fixture(`scripts/fixtures/saju-life/`,
-`scripts/fixtures/ziwei-life/`)와 그 변형으로 한다(`bun test scripts/check-life-document.test.ts`).
+`scripts/fixtures/ziwei-life/`, `scripts/fixtures/natal-life/`)와 그 변형으로 한다(`bun test scripts/check-life-document.test.ts`).
 
 ## 6. 작성 스킬과 실행 흐름
 

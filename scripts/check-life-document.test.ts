@@ -188,3 +188,49 @@ test('ziwei: a facts file without the life-stage table is reported, not silently
   const errors = checkLifeDocument('ziwei', { ...ziweiTexts, facts: oldFacts, life: ziweiValid })
   expect(errors).toContain(`${ziweiLine('운: 父母 丙戌 12–21歲')}: 생애 연표 > 소년: ziwei-facts.md에 이 단계의 운 대응 줄이 없다`)
 })
+
+// 네이탈: 합성 입력(2000-09-05 12:00 서울 남, Placidus)의 현재 사실 파일, 네이탈 1차 판단 fixture와 같은 판단 문서,
+// 손으로 쓴 일생 해석. 네이탈 설정(생애 연표·판단 파생 사실 없음, 단계 이름 불요, 차트 인용 이름)만 확인한다.
+const natalDir = join(import.meta.dir, 'fixtures/natal-life')
+const readNatal = (file: string) => readFileSync(join(natalDir, file), 'utf8')
+const natalTexts = { chart: readNatal('natal-chart.md'), facts: readNatal('natal-facts.md'), judgment: readNatal('natal-judgment.md') }
+const natalValid = readNatal('natal-life.md')
+const checkNatal = (life: string) => checkLifeDocument('natal', { ...natalTexts, life })
+const mutateNatal = (from: string, to: string) => {
+  expect(natalValid.split(from)).toHaveLength(2)
+  return natalValid.replace(from, to)
+}
+const natalLine = (text: string) => natalValid.split('\n').indexOf(text) + 1
+
+test('natal: the fixture passes without a timeline, stage names or a derived facts file', () => {
+  expect(checkNatal(natalValid)).toEqual([])
+  // fixture 디렉터리에는 natal-derived-facts.md가 없다.
+  const result = Bun.spawnSync(['bun', join(import.meta.dir, 'check-life-document.ts'), 'natal', natalDir])
+  expect([result.exitCode, result.stdout.toString()]).toEqual([0, ''])
+})
+
+test('natal: checks the title and 차트 identity', () => {
+  expect(checkNatal(mutateNatal('# Natal 일생 해석', '# Natal 1차 판단'))).toContain("1: 첫 줄은 '# Natal 일생 해석'이어야 한다")
+  expect(checkNatal(mutateNatal('Moon Sagittarius', 'Moon Virgo')))
+    .toContain('3: 차트 불일치 — 문서 ASC Scorpio · Sun Virgo · Moon Virgo · Placidus, natal-chart.md ASC Scorpio · Sun Virgo · Moon Sagittarius · Placidus')
+})
+
+test('natal: a timeline section is not part of the document', () => {
+  const timeline = '## 생애 연표\n### 유년\n운: 없음\n\n## 인물 사전'
+  expect(checkNatal(mutateNatal('## 인물 사전', timeline)))
+    .toContain('섹션은 인물 사전, 재능과 생업, 상처와 회복 순서여야 한다 (실제: 생애 연표, 인물 사전, 재능과 생업, 상처와 회복)')
+})
+
+test('natal: chart citations accept planets and angles only, and derived citations are rejected', () => {
+  const evidence = '근거: [facts:섹트 소속] [chart:Venus]'
+  const replace = (to: string) => checkNatal(mutateNatal(evidence, to))
+  expect(replace('근거: [facts:섹트 소속] [chart:ASC] [chart:Houses]')).toEqual([])
+  expect(replace('근거: [facts:섹트 소속] [chart:Chiron]')).toEqual([`${natalLine(evidence)}: 상처와 회복 > 회복: natal-chart.md에 없는 절·위치 [chart:Chiron]`])
+  expect(replace('근거: [facts:섹트 소속] [derived:강점 궁 疾厄]'))
+    .toEqual([`${natalLine(evidence)}: 상처와 회복 > 회복: 판단 파생 사실에 없는 항목 [derived:강점 궁 疾厄]`])
+})
+
+test('natal: every first-pass judgment section must be cited', () => {
+  // 우세 원소는 보조 재능에서만 인용된다.
+  expect(checkNatal(mutateNatal('[judgment:우세 원소] ', ''))).toEqual(['1차 판단 섹션을 인용하지 않았다: 우세 원소'])
+})
