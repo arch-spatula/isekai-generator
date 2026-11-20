@@ -21,11 +21,13 @@ export interface LifeSection {
 
 export interface LifeSpec {
   title: string
-  identity: { key: string; expected: string }
+  /** 없으면 제목과 첫 섹션 사이에 아무 줄도 두지 않는다 */
+  identity?: { key: string; expected: string; file: string }
   sections: LifeSection[]
   /** 생애 연표 `운` 필드의 기대값 (단계 이름 → 사실 파일 줄 내용) */
   luck?: { file: string; expected: Map<string, string> }
-  citations: {
+  /** 체계별 일생 해석의 인용 규칙. 없으면 구조만 검사하고 인용은 호출한 쪽이 검사한다 */
+  citations?: {
     facts: { file: string; items: Set<string> }
     chart: { file: string; names: Set<string>; forbidden?: string[] }
     judgment: { file: string; sections: Set<string> }
@@ -73,16 +75,19 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
 
   if (lines[0] !== spec.title) report(1, `첫 줄은 '${spec.title}'이어야 한다`)
 
-  const { key: identityKey } = spec.identity
   const firstSection = lines.findIndex((line) => line.startsWith('## '))
   const preamble = lines.slice(1, firstSection === -1 ? undefined : firstSection)
-  const identityIndex = preamble.findIndex((line) => line.startsWith(`${identityKey}:`))
-  if (identityIndex === -1) {
-    report(null, `${identityKey} 줄이 없다`)
-  } else {
-    const written = preamble[identityIndex].slice(identityKey.length + 1).trim().split(/\s+/).join(' ')
-    const expected = spec.identity.expected.split(/\s+/).join(' ')
-    if (written !== expected) report(identityIndex + 2, `${identityKey} 불일치 — 문서 ${written}, ${spec.citations.chart.file} ${expected}`)
+  let identityIndex = -1
+  if (spec.identity != null) {
+    const { key: identityKey, file } = spec.identity
+    identityIndex = preamble.findIndex((line) => line.startsWith(`${identityKey}:`))
+    if (identityIndex === -1) {
+      report(null, `${identityKey} 줄이 없다`)
+    } else {
+      const written = preamble[identityIndex].slice(identityKey.length + 1).trim().split(/\s+/).join(' ')
+      const expected = spec.identity.expected.split(/\s+/).join(' ')
+      if (written !== expected) report(identityIndex + 2, `${identityKey} 불일치 — 문서 ${written}, ${file} ${expected}`)
+    }
   }
   preamble.forEach((line, index) => {
     if (line.trim() !== '' && index !== identityIndex) report(index + 2, '섹션 밖의 줄이다')
@@ -125,7 +130,7 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
 
   const cast = spec.sections.find(({ name }) => name === '인물 사전')?.items ?? []
   const cited = { judgment: new Set<string>(), derived: false }
-  const { facts, chart, judgment, derived } = spec.citations
+  const { citations } = spec
 
   for (const sectionSpec of spec.sections) {
     const items = sections.get(sectionSpec.name)
@@ -171,6 +176,8 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
         }
       }
 
+      if (citations == null) continue
+      const { facts, chart, judgment, derived } = citations
       const evidence = field('근거')
       if (evidence != null && evidence.value !== '' && !HAS_CITATION.test(evidence.value)) report(evidence.line, `${where}: 근거에 인용이 없다`)
 
@@ -194,9 +201,11 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
     }
   }
 
-  const uncited = [...judgment.sections].filter((name) => !cited.judgment.has(name))
-  if (uncited.length > 0) report(null, `1차 판단 섹션을 인용하지 않았다: ${uncited.join(', ')}`)
-  if (derived != null && !cited.derived) report(null, '판단 파생 사실을 인용하지 않았다')
+  if (citations != null) {
+    const uncited = [...citations.judgment.sections].filter((name) => !cited.judgment.has(name))
+    if (uncited.length > 0) report(null, `1차 판단 섹션을 인용하지 않았다: ${uncited.join(', ')}`)
+    if (citations.derived != null && !cited.derived) report(null, '판단 파생 사실을 인용하지 않았다')
+  }
 
   return errors
 }

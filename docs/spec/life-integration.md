@@ -1,6 +1,6 @@
 # 세 체계 일생 통합
 
-> 상태: 재료표 스크립트 구현 — 검증기와 `life-integration` 스킬은 미구현
+> 상태: 재료표 스크립트와 검증기 구현 — `life-integration` 스킬은 미구현
 > 작성일: 2026-11-20
 
 ## 1. 목표
@@ -135,7 +135,8 @@ saju-life · ziwei-life · natal-life → assemble-life-material → life-integr
 | 갈림길 항목의 `본선`·`다른 길`에 인용이 있고, `다른 길`에 `본선`이 인용하지 않은 체계가 하나 이상 있음 | 근거 없는 갈림길, 같은 체계 안의 말 바꾸기 |
 
 내용의 질, 합침과 갈림길 판단의 타당성, 네이탈 배치가 맞는지는 검사하지 않는다. 같은 이름 인용은 위치를 묶지 않으므로
-충돌하는 재료는 갈림길에서 인용해도 된다. 테스트는 커밋된 합성 fixture와 그 변형으로 한다.
+충돌하는 재료는 갈림길에서 인용해도 된다. 테스트는 세 일생 해석 fixture를 재료로 손으로 쓴 합성 통합 문서
+(`scripts/fixtures/life-integration/life.md`)와 그 변형으로 한다(`bun test scripts/check-life-integration.test.ts`).
 
 ## 8. 보류한 결정과 재검토 조건
 

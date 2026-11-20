@@ -15,12 +15,12 @@ import { LIFE_STAGES } from './life-stages.ts'
 
 export interface LifeTexts { life: string; chart: string; facts: string; judgment: string; derived?: string }
 
-const TIMELINE: LifeSection = {
+export const TIMELINE: LifeSection = {
   name: '생애 연표',
   items: LIFE_STAGES.map((stage) => stage.name),
   fields: ['운', '주제', '전환점', '인연', '시련', '얻는 것', '잃는 것', '성격 변화', '근거'],
 }
-const CAST = ['부모', '형제·또래', '연인·배우자', '자녀·제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
+export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀·제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
 
 /** 생애 연표가 있는 체계는 관계의 변화·꽃피는 시기에 생애 단계를 쓴다. */
 function commonSections(timeline: boolean): LifeSection[] {
@@ -34,7 +34,7 @@ function commonSections(timeline: boolean): LifeSection[] {
 const SYSTEMS = {
   saju: (texts: LifeTexts) => checkStructure(texts.life, {
     title: '# 四柱 일생 해석',
-    identity: { key: '원국', expected: chartPillars(texts.chart) },
+    identity: { key: '원국', expected: chartPillars(texts.chart), file: 'saju-chart.md' },
     sections: [TIMELINE, ...commonSections(true)],
     luck: { file: 'saju-facts.md', expected: stageLines(texts.facts, '생애 단계별 大運') },
     citations: {
@@ -46,7 +46,7 @@ const SYSTEMS = {
   }),
   ziwei: (texts: LifeTexts) => checkStructure(texts.life, {
     title: '# 紫微斗數 일생 해석',
-    identity: { key: '명반', expected: ziweiIdentity(texts.chart) },
+    identity: { key: '명반', expected: ziweiIdentity(texts.chart), file: 'ziwei-chart.md' },
     sections: [TIMELINE, ...commonSections(true)],
     luck: { file: 'ziwei-facts.md', expected: stageLines(texts.facts, '생애 단계별 大限') },
     citations: {
@@ -60,7 +60,7 @@ const SYSTEMS = {
   // 시기 계산이 없어 생애 연표·판단 파생 사실이 없고, 관계의 변화·꽃피는 시기는 단계 대신 조건으로 쓴다.
   natal: (texts: LifeTexts) => checkStructure(texts.life, {
     title: '# Natal 일생 해석',
-    identity: { key: '차트', expected: natalIdentity(texts.chart) },
+    identity: { key: '차트', expected: natalIdentity(texts.chart), file: 'natal-chart.md' },
     sections: commonSections(false),
     citations: {
       facts: { file: 'natal-facts.md', items: factItems(texts.facts) },
