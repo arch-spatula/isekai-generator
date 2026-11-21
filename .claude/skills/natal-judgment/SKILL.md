@@ -1,0 +1,74 @@
+---
+name: natal-judgment
+description: chart-report로 저장한 차트 디렉터리의 natal-chart.md·natal-facts.md를 읽고, 네이탈 상세 해석 전에 합의할 기초 판단(차트 룰러 상태·주요 행성·우세 원소·핵심 긴장)을 natal-judgment.md로 쓴 뒤 검증기로 확인한다. 네이탈 차트 1차 판단 문서를 만들어 달라는 요청에 사용한다.
+allowed-tools: Read, Write, Bash(test -e:*), Bash(bun scripts/check-natal-judgment.ts:*)
+---
+
+# 네이탈 1차 판단
+
+계약: `docs/spec/natal-first-pass-judgment.md`. 판단은 에이전트가 하고, 형식과 근거 인용은 검증기가 확인한다.
+
+## 1. 대상 디렉터리
+
+- 사용자가 준 차트 디렉터리, 또는 같은 대화에서 chart-report가 저장한 `chartDir`를 쓴다. 둘 다 없으면 묻는다.
+  `artifacts/`를 탐색하거나 최신 버전을 추측하지 않는다.
+- `test -e <디렉터리>/natal-judgment.md`가 성공하면(이미 있으면) 덮어쓰지 않고 멈춘 뒤 알린다.
+
+## 2. 읽기
+
+같은 디렉터리의 `natal-chart.md`와 `natal-facts.md`만 읽는다. 사주·자미두수 파일과 다른 버전의 판단 문서는 읽지 않는다.
+
+## 3. 판단과 작성
+
+`<디렉터리>/natal-judgment.md`에 아래 형식 그대로 쓴다. 섹션 4개, 순서 고정, 섹션 안에는 `키: 값` 필드 줄만 쓴다.
+
+```markdown
+# Natal 1차 판단
+
+차트: ASC <사인> · Sun <사인> · Moon <사인> · <하우스 시스템>
+
+## 차트 룰러 상태
+결론: <강 | 중 | 약>
+근거: <인용 1개 이상>
+대안: <결론과 다른 허용값> — <설명, 인용 1개 이상>
+뒤집힘: <무엇이 달라지면 결론이 대안으로 바뀌는지>
+
+## 주요 행성
+결론: <Sun | Moon | Mercury | Venus | Mars | Jupiter | Saturn | Uranus | Neptune | Pluto>
+…
+
+## 우세 원소
+결론: <Fire | Earth | Air | Water>
+…
+
+## 핵심 긴장
+결론: <천체> <□ | ☍> <천체>
+…
+```
+
+- `차트`는 `natal-chart.md`의 `Angles`·`Planets`에서 ASC·Sun·Moon 사인을, `Houses (<시스템>)` 제목에서 하우스
+  시스템을 옮긴다 (예: `ASC Scorpio · Sun Virgo · Moon Sagittarius · Placidus`).
+- 핵심 긴장은 `Major Aspects`에 있는 □·☍ 줄을 차트에 적힌 순서·방향 그대로 쓴다 (`☉ Sun □ ☽ Moon` → `Sun □ Moon`).
+  ☌·△·⚹는 쓰지 않는다. `대안`도 같은 규칙을 따른다.
+- 인용은 `[facts:<항목 이름>]`(괄호 안 정의는 빼고, 예: `[facts:본질적 품위]`)과
+  `[chart:<절 제목, 10행성 이름, ASC 또는 MC>]`(예: `[chart:Major Aspects]`, `[chart:Venus]`)만 쓴다. 파일에 없는 이름을 만들지 않는다.
+- 품위·섹트·분포·애스펙트 같은 사실은 두 파일에 있는 것만 근거로 쓴다. 파일에 없는 사실(원소 가중치, orb 기반 앵글 근접 등)을
+  직접 계산해 사실처럼 넣지 않는다. 가중을 판단에 쓰면 그 선택을 `뒤집힘`에 밝힌다.
+- ASC가 Scorpio·Aquarius·Pisces라 차트 룰러가 전통 / 현대 둘이면 어느 룰러를 기준으로 상태를 판단했는지 `근거`에 쓰고,
+  다른 룰러를 따르면 결론이 달라질 때 `대안`에 적는다.
+- 결론은 하나만 쓴다. 다른 가능성은 `대안`과 `뒤집힘`에 근거와 함께 적는다. 확신도 표시는 쓰지 않는다.
+
+## 4. 검증
+
+```bash
+bun scripts/check-natal-judgment.ts <디렉터리>
+```
+
+- 출력이 없고 exit 0이면 끝이다.
+- 위반 줄이 나오면 그 줄만 고쳐 다시 실행한다. 3번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
+- 검증을 통과시키려고 판단 결론을 바꾸지 않는다. 인용 이름이나 형식을 고친다. 핵심 긴장 표기 오류는 검증기가
+  출력하는 허용값 목록에서 같은 애스펙트의 표기를 찾아 고친다.
+
+## 5. 보고
+
+파일 경로와 섹션별 결론을 한 줄씩 알린다. 문서 본문을 다시 옮겨 쓰지 않는다.

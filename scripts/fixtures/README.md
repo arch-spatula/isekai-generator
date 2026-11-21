@@ -26,6 +26,14 @@
 - 전투 지문과 후보 거리: `bun test ./.agents/skills/select-gameplay-concept/scripts`
 - 세계 지문의 구조 비교: `bun test ./.agents/skills/select-world-concept/scripts`
 - GDD 계약: `bun test ./.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd.test.ts`
+- 사주 1차 판단 문서 구조·근거 인용: `bun test scripts/check-saju-judgment.test.ts` (`saju-judgment/`의 차트·사실은 합성 출생 입력의 chart-report 출력이고, 판단 문서는 직접 쓴 가상 예시)
+- 자미두수 1차 판단 문서 설정: `bun test scripts/check-ziwei-judgment.test.ts` (`ziwei-judgment/`도 같은 방식의 합성 자료)
+- 네이탈 1차 판단 문서 설정: `bun test scripts/check-natal-judgment.test.ts` (`natal-judgment/`도 같은 방식의 합성 자료)
+- 사주 일생 해석 문서 구조·인용: `bun test scripts/check-life-document.test.ts` (`saju-life/`는 같은 합성 입력의 현재 사실 파일, 합성 1차 판단과 그 판단 파생 사실, 직접 쓴 가상 일생 해석)
+- 자미두수 일생 해석 설정: 같은 테스트 (`ziwei-life/`도 같은 방식의 합성 자료)
+- 네이탈 일생 해석 설정: 같은 테스트 (`natal-life/`도 같은 방식의 합성 자료이고 판단 파생 사실은 없음)
+- 세 체계 일생 통합 재료표: `bun test scripts/assemble-life-material.test.ts` (위 세 일생 해석 fixture를 그대로 입력으로 쓰며, 서로 다른 합성 출생 입력이다)
+- 세 체계 일생 통합 문서 구조·인용: `bun test scripts/check-life-integration.test.ts` (`life-integration/life.md`는 위 세 일생 해석 fixture를 재료로 직접 쓴 가상 통합 문서)
 
 테스트 통과는 해당 구조 계약의 검증이며 실제 개인화 품질이나 과거 관찰 집계를 재현했다는
 주장이 아니다. 새 모델 실험이 필요하면 합성 입력으로 별도 실행하고 결과는 로컬 run에 둔다.
