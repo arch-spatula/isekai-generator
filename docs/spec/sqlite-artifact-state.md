@@ -2,12 +2,13 @@
 
 > 상태: 구현 완료 — 합성 통합 회귀·독립 리뷰 승인, 실제 라이트 생성 검증 진행
 > 작성일: 2026-11-12
-> 결정: [SQLite와 목적별 CLI ADR](../ADR/2026-11-12-sqlite-agent-state-evaluation.md)
+> 결정: [SQLite와 목적별 CLI ADR](../ADR/2026-11-12-sqlite-agent-state-evaluation.md), [버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)
+> DB 위치 갱신(2026-11-21): 공용 `artifacts/state.sqlite`에서 각 버전 폴더 루트로 변경. 이 문서가 목표 계약이며 코드는 아직 루트 DB를 쓴다
 > 적용: 전환 후 새로 예약하는 차트·개인화 GDD 실행
 
 ## 1. 목표와 확정 범위
 
-생성 실행의 상태와 이력을 단일 SQLite DB에서 관리한다. 에이전트는 정해진 인자를 받는
+생성 실행의 상태와 이력을 실행마다 그 버전 폴더의 SQLite DB에서 관리한다. 에이전트는 정해진 인자를 받는
 명령을 호출하고, 상태 조회·다음 작업 계산·시도 예약·검증 결과 저장·채택·지문 등록은
 스크립트가 처리한다. 새 컨텍스트는 DB를 조회하여 같은 미완료 실행을 이어 간다.
 
@@ -17,7 +18,7 @@ JSON+CLI 비교 구현, 과거 실행 import, 구형 파일 fallback, 장기간 
 
 성공 조건은 다음과 같다.
 
-1. 신규 생성 시작 명령이 필요한 DB를 만들고 실행을 예약한다. 별도 서버가 필요 없다.
+1. 신규 생성 시작 명령이 버전 폴더를 예약하고 그 폴더에 DB를 만든다. 별도 서버가 필요 없다.
 2. 신규 실행은 상태·로그·근거·편집 제출을 JSON/JSONL 파일로 저장하지 않는다.
 3. 정상 완료와 재시도에서 상태·결과·진단·이벤트가 같은 DB 트랜잭션으로 반영된다.
 4. 대화 이력, TODO, 시도 디렉터리 순회 없이 DB 조회로 진행 상황과 재개 행동을 얻는다.
@@ -27,20 +28,20 @@ JSON+CLI 비교 구현, 과거 실행 import, 구형 파일 fallback, 장기간 
 
 ## 2. DB 위치·생명주기·기존 데이터 경계
 
-### 2.1 저장소당 하나의 DB
+### 2.1 버전 폴더마다 하나의 DB
 
-경로는 현재 작업 저장소 루트 기준 `artifacts/state.sqlite`로 고정한다. 모든 신규 run과
-전투·세계 지문을 같은 DB에 저장한다. run별 DB는 만들지 않는다. 서로 다른 Git worktree는
-각자의 `artifacts/`를 사용하며 다른 worktree의 DB를 자동 탐색·공유하지 않는다.
+DB는 실행이 할당받은 버전 폴더의 루트 `artifacts/<version>/state.sqlite`에 둔다. 하나의 버전 폴더에는
+하나의 run과 하나의 DB가 있다. 아티팩트 루트 `artifacts/`에는 DB를 두지 않는다. DB의 목적은 같은
+버전의 작업을 이어서 할 때 참조하는 것이다. 서로 다른 Git worktree는 각자의 `artifacts/`를 사용한다.
 
 아래는 신규 run의 저장 계약이며 실제 실행 자료가 아니다.
 
 ```text
 artifacts/
-├── state.sqlite
-├── state.sqlite-wal           # SQLite가 필요할 때 관리
-├── state.sqlite-shm           # SQLite가 필요할 때 관리
 └── <version>/
+    ├── state.sqlite
+    ├── state.sqlite-wal      # SQLite가 필요할 때 관리
+    ├── state.sqlite-shm      # SQLite가 필요할 때 관리
     ├── charts/chart-report.md
     ├── interpretation/*.md   # 전문·통합 해석
     ├── design-rationale/*.md # 전투·세계 선정 브리프
@@ -48,21 +49,24 @@ artifacts/
     └── garbage/              # 시도별 Markdown·게시 대기 파일
 ```
 
+- 버전 폴더가 서로 격리되어 있으므로 run 사이에는 쓰기 경합이 없다. run 간 동시성을 위한 잠금,
+  공용 카운터, 다른 run의 기록 재확인을 두지 않는다. 한 run 안의 병렬 작업(세 체계 전문 해석 등)은
+  같은 DB를 쓰며 3절의 연결 규칙을 따른다.
+- `allocate`가 버전 폴더를 배타적으로 만든 뒤 그 폴더에 DB를 열고 스키마 v1을 초기화한다.
+  폴더 생성에 성공한 프로세스만 초기화하므로 첫 초기화 경합이 없다.
 - 신규 `allocate`는 `runs.config` snapshot에 `artifactLayout: "responsibility-v1"`을
-  기록한다. 식별자가 없는 기존 run은 미게시 단계도 `docs/GDD/`를 유지한다. DB 스키마와
-  CLI 옵션은 바꾸지 않는다. 저장된 `documents.final_path`는 게시·복구의 원본 경로이며
-  새 규칙으로 재계산하거나 기존 파일을 이동하지 않는다. 파일별 경로는
-  [책임별 폴더 계약](artifact-directory-layout.md)을 따른다.
-- 첫 `allocate`가 DB를 열고 스키마 v1을 초기화한다. 빈 DB의 초기화와 첫 실행 예약은
-  동시 호출에도 한 번만 성립해야 한다. 이미 있는 정상 DB는 재사용한다.
-- 조회·재개·finish는 DB가 없으면 실패한다. 빈 DB를 만들어 과거 실행을 신규 실행처럼
-  보이게 하지 않는다. 생성 진입점 이외의 명령에는 자동 생성 권한이 없다.
-- DB에는 저장소 식별과 상대 경로 기준을 기록한다. 잘못된 루트에서 다른 DB를 사용하거나
-  DB만 복사해 산출물과 연결이 끊긴 경우를 감지하고 중단한다.
+  기록한다. 저장된 `documents.final_path`는 게시·복구의 원본 경로이며 새 규칙으로 재계산하거나
+  기존 파일을 이동하지 않는다. 파일별 경로는 [책임별 폴더 계약](artifact-directory-layout.md)을 따른다.
+- 조회·재개·finish는 대상 버전 폴더의 DB만 연다. DB가 없으면 실패한다. 빈 DB를 만들어 과거
+  실행을 신규 실행처럼 보이게 하지 않는다. 생성 진입점 이외의 명령에는 자동 생성 권한이 없다.
+- DB에는 자신이 속한 버전과 상대 경로 기준을 기록한다. 폴더 이름과 기록이 다르거나 DB만 복사해
+  산출물과 연결이 끊긴 경우를 감지하고 중단한다.
 - `schema_version`이 구현과 다르면 명시적 `schema-version-mismatch`로 중단한다.
   이 과제에는 이전 DB 스키마 변환기를 만들지 않는다.
 - 프로세스가 끝나면 연결을 닫는다. 서버 시작·종료, ORM, 범용 워크플로 엔진을 추가하지 않는다.
 - `artifacts/`는 계속 Git 제외다. DB, WAL, SHM, 생성 문서를 커밋하지 않는다.
+- 이전 구현의 공용 `artifacts/state.sqlite`에 기록된 run은 이관하지 않으며, 새 구조 구현 뒤에는
+  읽거나 쓰지 않는다.
 
 ### 2.2 과거 실행을 취급하는 방법
 
@@ -70,16 +74,16 @@ artifacts/
 조회·재개는 `run-not-managed`를 반환한다. 구형 실행을 이어야 한다는 이유로 새 DB에
 가짜 체크포인트를 만들거나 종료 실행을 다시 열지 않는다.
 
-기존 디렉터리와 버전 충돌은 피한다. 예약 시 동일 series의 **디렉터리 이름만** 확인하고,
-DB 카운터보다 큰 번호가 있으면 그 다음 번호부터 예약한다. 과거 파일 내용은 읽지 않는다.
-DB의 버전 UNIQUE와 디렉터리의 배타적 생성을 함께 사용한다. 충돌 번호는 건너뛰며 재사용하지 않는다.
+기존 디렉터리와 버전 충돌은 피한다. 예약 시 동일 series의 **디렉터리 이름만** 확인해 다음 번호를
+고르고, 버전 폴더의 배타적 생성으로 번호를 확정한다. 생성이 실패하면(이미 존재) 다음 번호로 넘어간다.
+과거 파일 내용은 읽지 않는다. 충돌 번호는 건너뛰며 재사용하지 않는다.
 이는 마이그레이션이 아니라 출력 경로 충돌 방지다. 배정 후 외부 작업이 같은 경로를
 차지하면 `output-path-conflict`로 차단하며, 이미 확정한 run의 version을 바꾸거나 타인의
 폴더를 덮어쓰지 않는다.
 
 과거 로컬 JSON을 재귀 삭제하는 정리 도구는 만들지 않는다. 제거 대상은 저장소의 기존
 JSON 생성·읽기·쓰기 코드와 신규 실행의 JSON 산출 계약이다. 과거 폴더 정리는 필요할 때
-별도 사용자 지시로 수행한다. 새 DB의 지문 이력은 비어 있는 상태로 시작한다.
+별도 사용자 지시로 수행한다. 각 DB에는 자기 run의 지문만 저장한다.
 
 ### 2.3 JSON 제거 대상과 유지 대상
 
@@ -137,9 +141,8 @@ WAL/SHM은 SQLite가 관리하는 보조 파일이므로 임의 삭제하지 않
 
 | 테이블 | 필수 데이터 | 제약·조회 기준 |
 | --- | --- | --- |
-| store_meta | schema version, 저장소 식별, 생성 시각 | 단일 행; 미지원 버전 즉시 중단 |
-| series_counters | series, 마지막 예약 patch | series PK; 예약과 같은 트랜잭션 |
-| runs | run ID, version, kind, mode, purpose, source/baseline revision, dirty, 설정 snapshot, 상태, 실패 요약, 생성·시작·종료 시각 | version UNIQUE; terminal 시각과 상태 일치 |
+| store_meta | schema version, 저장소 식별, 소속 버전, 생성 시각 | 단일 행; 미지원 버전·소속 버전 불일치 즉시 중단 |
+| runs | run ID(DB당 하나), version, kind, mode, purpose, source/baseline revision, dirty, 설정 snapshot, 상태, 실패 요약, 생성·시작·종료 시각 | version UNIQUE; terminal 시각과 상태 일치 |
 | stages | run, 단계, 상태, 현재 attempt, 채택 attempt/document, blocked reason | `(run, stage)` UNIQUE; 채택 참조는 동일 run·단계 |
 | attempts | ID, run, 단계, 종류, 번호, scope, 상태, 원본 attempt/document/hash, 입력 snapshot, 제출 payload/hash, 결과, unresolved, 모델·사용량, 실행 식별, claim 세대 | `(run, stage, kind, number)` UNIQUE; 활성 시도 하나; 원본·완료 결과 불변 |
 | operations | request ID, 명령 종류, 정규화 인자 hash, 대상 ID, pending/completed 상태, 완료 응답 | request ID UNIQUE; 다른 인자 재사용 거부 |
@@ -147,7 +150,7 @@ WAL/SHM은 SQLite가 관리하는 보조 파일이므로 임의 삭제하지 않
 | documents | run/attempt, 역할, 상대 경로, SHA-256, 준비/게시 상태, 최종 경로 | 정식 경로 소유권 UNIQUE; hash 없이 게시 완료 금지 |
 | validations | 대상 document/hash, validator ID와 revision, 결과·진단, 실행 시각 | 실제 검증한 바이트와 결합; 파일 존재만으로 생성 금지 |
 | evidence | run, 체계, evidence ID, 정규화 text, chart hash | `(run, system, evidence ID)` UNIQUE; 동일 report의 근거만 조회 |
-| fingerprints | run, 종류(combat/world), 후보 ID, 축, 비교 revision | `(run, kind)` UNIQUE; 같은 run의 두 종류만 원자적 등록 |
+| fingerprints | run, 종류(combat/world), 후보 ID, 축, 비교 snapshot | `(run, kind)` UNIQUE; 같은 run의 두 종류만 원자적 등록 |
 
 복잡한 입력·편집 제안·진단은 스키마 검증한 JSON 값으로 DB TEXT에 보존할 수 있다.
 조회·제약에 쓰는 run/stage/번호/상태/해시/종류는 JSON 안에만 숨기지 않는다. 테이블을
@@ -276,14 +279,14 @@ bun scripts/artifact-state.ts finalize --run <id> --request <id>
 
 | 명령 | 책임과 반환 |
 | --- | --- |
-| allocate | DB 초기화, 기준선·목적 검증, 버전 예약, 디렉터리 준비; run ID/version 반환 |
+| allocate | 기준선·목적 검증, 버전 폴더 배타적 생성, 그 폴더의 DB 초기화; run ID/version 반환 |
 | prepare | 선행 조건·예산·활성 시도를 원자적으로 확인; attempt ID, claim, scope, 출력 경로, 필요한 입력 참조 반환 |
 | dispatch / bind-worker | 외부 실행 요청 직전 상태 기록 / 반환된 실행 식별 결합; 자체적으로 agent를 spawn하지 않음 |
 | submit | 문서 경로/hash 또는 편집 제안·의미 리뷰를 immutable 제출로 결합; 자동 성공 처리 금지 |
 | finish | 정해진 validator 실행, 제출 결과·진단 저장, 필요 시 게시 복구 절차 수행; 결과와 다음 행동 반환 |
 | reconcile | DB의 미완성 예약·검증·게시 기록을 확인하고 확인 가능한 결과만 정합화; agent 신규 호출 금지 |
 | resume | 사용자 재개 요청의 진입점; reconcile과 입력·실행 증거 확인 후 재개 허용 또는 차단 이유 반환 |
-| finalize | 최종 검증 snapshot·지문 revision 확인 후 두 지문+완료 상태를 같은 트랜잭션으로 확정 |
+| finalize | 최종 검증 snapshot 확인 후 두 지문+완료 상태를 자기 버전 DB의 같은 트랜잭션으로 확정 |
 
 worker 종료 확인이 필요한 경우 resume은 worker 관측값을 stdin으로 받는다. 로컬 프로세스는
 PID와 시작 식별을 함께 확인하고, agent 도구만 아는 실행은 오케스트레이터가 실제 상태
@@ -413,19 +416,22 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 
 ## 9. 전투·세계 지문과 최종 확정
 
-두 종류의 지문은 같은 DB에 있지만 조회 인터페이스와 축 규칙은 분리한다. 기본 조회는
-성공 확정된 run의 지문만 사용한다. 실패·미완료 run의 후보는 다른 run의 이력으로 노출하지 않는다.
+지문은 각 run의 DB에 저장한다. 다른 run의 지문은 **성공 확정된 다른 버전 폴더의 DB를 읽기 전용으로
+열어** 모은다. 다른 run의 DB에는 쓰지 않는다. 두 종류의 조회 인터페이스와 축 규칙은 분리한다.
+실패·미완료 run의 후보는 다른 run의 이력으로 노출하지 않는다.
 
-- 선택 시작 시 registry revision을 읽고 같은 snapshot 기준으로 비교한다. 근접 항목 계산,
-  동일 축 수, 비교 개수, challenger 필요 여부는 스크립트가 계산한다.
+- 선택 시작 시 다른 버전 폴더들의 성공 지문을 모아 비교 snapshot을 만들고 같은 snapshot 기준으로
+  비교한다. 근접 항목 계산, 동일 축 수, 비교 개수, challenger 필요 여부는 스크립트가 계산한다.
+- 동시에 진행 중인 run끼리는 서로의 지문을 보지 못할 수 있다. 버전 폴더 격리를 우선해 이 한계를
+  받아들인다.
 - 에이전트는 후보 설계와 의미적 차이·선택 이유를 작성한다. registryReview 같은 결정적
   필드는 도구가 비교 결과에서 생성·검증하며, 모델이 전체 레지스트리를 읽어 수치를 세지 않는다.
 - 모든 최단 거리 동률을 보존한다. 출력이 길면 cursor와 총수를 제공하되 계산·검증은
   전체 결과를 사용한다. 조용한 top-1 축약으로 challenger 판단을 바꾸지 않는다.
 - 최종 검증은 채택된 chart/해석/전투/세계/GDD의 hash와 validator revision을 snapshot한다.
-- finalize의 트랜잭션에서 snapshot과 최신 registry revision을 다시 확인한다. 다른 run이
-  먼저 등록했으면 아무것도 등록하지 않고 `registry-stale`로 차단한다.
-- revision 변경 뒤에는 최신 비교를 다시 계산한다. challenger·재선정이 필요하면 관련
+- finalize는 자기 run의 채택 snapshot만 다시 확인한다. 다른 run의 등록을 이유로 차단하는
+  `registry-stale` 검사는 두지 않는다.
+- 사용자가 재선정을 요청하거나 채택 snapshot이 무효가 되어 challenger·재선정이 필요하면 관련
   선택과 의존 문서의 재검토를 요구하고 기존 시도 예산을 초기화하지 않는다. 이때 기존
   성공 이력과 문서는 보존하되 현재 채택 snapshot을 stale로 표시해 후속 실행을 막는다.
   재검토 대상 단계는 남은 예산의 새 시도로만 갱신하며, 새 채택 뒤 의존 문서를 다시 검증한다.
@@ -453,7 +459,7 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 | defensive-edit.ts와 CLI | stdin 제출·DB 입력/채택·게시 복구 | edits/evidence JSON 없음; 의미 검토 보존 |
 | run-chart-report.ts, chart-evidence.ts | 보고서 게시와 DB 근거 저장 | 계산 stdout 원문 유지; 체계별 근거 ID 보존 |
 | 체계·통합·전투·세계·GDD validator CLI | DB adapter와 순수 validator 분리 | JSON 경로 인자 제거; 잘못된 run/체계 거부 |
-| 두 fingerprint registry 관리자 | 공용 DB 저장·종류별 조회·원자적 finalize | 파일 init/load/register 및 lock 제거 |
+| 두 fingerprint registry 관리자 | 자기 run DB 저장·다른 버전 DB 읽기 전용 조회·원자적 finalize | 파일 init/load/register 및 lock 제거 |
 | 생성·해석·편집·선택·GDD 스킬과 references | 새 입력/제출/조회 명령·재개 행동 사용 | 과거 JSON 읽기·시도 번호 계산·TODO 전달 지시 없음 |
 | versioning/progress/recovery/defensive/world/combat spec | 적용 경계와 DB 계약으로 갱신 | active spec 간 충돌 없음 |
 | README, package scripts, smoke fixture, 전체 테스트 호출자 | 새로운 진입점 연결과 합성 DB 사용 | 폐기 CLI를 호출하는 smoke/회귀 없음 |
@@ -472,11 +478,11 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 | 순서 | 구현 산출물 | 해당 단계 통과 조건 |
 | --- | --- | --- |
 | 1. 계약 고정 | 상태 enum, 테이블 제약, CLI 응답·오류 타입, DAG·예산 정의 | 구현·테스트 담당이 같은 계약으로 정상/거부 사례 합의 |
-| 2. 저장소와 예약 | schema v1, 연결 설정, allocator, operations/events | 최초·동시 초기화, 중복 request, 번호 충돌, rollback 통과 |
+| 2. 저장소와 예약 | schema v1, 연결 설정, 폴더 배타적 생성 allocator, operations/events | 동시 예약 시 서로 다른 폴더·DB, 중복 request, 번호 충돌, rollback 통과 |
 | 3. 조회·claim·재개 골격 | summary/next/input, prepare/dispatch/bind, blocked/claim 검증 | 실행 불명 중복 차단, 입력 격리, stale claim 거부 |
 | 4. 차트·근거 | chart runner, DB evidence adapter, 차트 단독 finalize | JSON 없이 standalone 성공·중단 복구 통과 |
 | 5. 전문 해석·방어 편집 | 시도 결과·stdin 제출·진단·scope·게시 정합화 | 계약 오류 복구와 운영·무결성 경계 통과 |
-| 6. 통합·전투·세계·GDD | 단계별 adapter, 지문 조회, 최종 snapshot·등록 | DAG·최신 지문 재검토·두 등록 원자성 통과 |
+| 6. 통합·전투·세계·GDD | 단계별 adapter, 다른 버전 DB 지문 조회, 최종 snapshot·등록 | DAG·지문 snapshot 비교·두 등록 원자성 통과 |
 | 7. 전면 연결·기존 경로 제거 | 스킬/문서/fixture/CLI 정비, 파일 backend 삭제 | 새 생성 경로가 JSON/JSONL 없이 작동, 폐기 계약 사용 없음 |
 | 8. 재개·충돌 통합 검증 | 프로세스 중단 주입과 새 컨텍스트 재개 시나리오 | 아래 회귀표 전부 통과; 최종 독립 리뷰 승인 |
 
@@ -491,7 +497,7 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 
 | 분류 | 사례 | 기대 결과 |
 | --- | --- | --- |
-| 초기화 | DB 없는 첫 생성·동시 첫 생성 | schema 한 번, 서로 다른 run/version, 유실 없음 |
+| 초기화 | 동시 예약 | 서로 다른 버전 폴더와 DB, 폴더마다 schema 한 번, 아티팩트 루트에 DB 없음 |
 | 조회 | DB 없음·run 없음·schema 불일치 | 파일 생성 없이 명확한 거부 |
 | 과거 자료 | 구형 폴더·JSON 존재 | 내용 읽기/import 없음; 번호 충돌만 회피 |
 | 예약 | commit 후 디렉터리 생성 전 종료 | 동일 예약 복구; 번호 중복·재사용 없음 |
@@ -510,7 +516,7 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 | 선행 조건 | 미채택 체계가 있는데 integration 실행 | 시작 거부; 단순 done 우회 불가 |
 | 입력 격리 | 다른 체계/run/레지스트리 접근·summary | allowlist만 반환; 본문·출생 인자·claim 노출 없음 |
 | 근거 | report와 다른 evidence/hash·체계 지정 | 거부; 정상 ID·text는 기존 함수 결과와 일치 |
-| 지문 | 동률·challenger·다른 run의 동시 등록 | 전체 비교 보존; revision 변경 시 재검토 |
+| 지문 | 동률·challenger·다른 버전 DB 조회 | 전체 비교 보존; 다른 run DB에 쓰기 없음; 미완료 run 지문 제외 |
 | 등록 | 첫 지문 insert 후 두 번째 insert 실패 | 두 종류·단계·run 성공 모두 rollback |
 | 재개 | 별도 프로세스가 DB를 열어 이어하기 | 대화·TODO·JSON 없이 미완료 행동 반환·완료본 재사용 |
 | 코드 변경 | 재개 시 validator/input revision 달라짐 | 자동 승인 없이 차단 사유와 필요한 조치 반환 |
@@ -532,7 +538,7 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 
 최종 완료에는 다음 조건을 모두 요구한다.
 
-- 신규 생성의 상태 원본은 단일 DB이며 제거 대상 JSON/JSONL의 writer·reader가 없다.
+- 신규 생성의 상태 원본은 그 버전 폴더의 DB이며 제거 대상 JSON/JSONL의 writer·reader가 없다.
 - 모든 생성 진입점이 자동 DB 초기화와 같은 version allocator를 사용한다.
 - 상태·결과·이벤트의 트랜잭션과 파일 게시의 재개 프로토콜이 실제 중단 시험을 통과한다.
 - next/input이 기계적 상태 판단과 입력 조합을 대신하고 기존 입력 격리를 보존한다.
@@ -543,6 +549,8 @@ DB 파일만 복사하는 백업을 정상 절차로 제공하지 않는다. 운
 - 실제 모델 생성 품질·비용을 시험하지 않았다면 그 한계를 완료 보고에 명시한다.
 
 ## 14. 구현 결과와 검증 기록
+
+> 2026-11-21 기록: 아래는 공용 `artifacts/state.sqlite` 기준으로 구현한 당시의 결과다. 버전 폴더별 DB로의 변경은 아직 구현하지 않았다.
 
 단일 DB 저장 계층, 읽기·쓰기 CLI, 기존 차트·해석·편집·선택·GDD adapter와 스킬을 연결했다.
 상태·근거·편집 제출·지문의 JSON/JSONL backend와 TODO renderer를 제거했고 Git 기준선
