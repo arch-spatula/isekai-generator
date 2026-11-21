@@ -14,3 +14,5 @@ The caller supplies repository root, run ID, attempt ID, claim, mode, and the re
 `bun <root>/scripts/read-artifact-state.ts input --attempt <id> --claim <claim> --root <root>`
 
 Use the returned allowlist. Do not read other artifact directories, conversation history, another system, or prior runs. Evidence, diagnostics, previous results and registry snapshots are returned from SQLite; never create an intermediate JSON file. The DB assigns numbers and scopes. Write only your reserved Markdown. The orchestrator submits and finishes the attempt; do not publish final paths or allocate another attempt. Return a concise status and output path without reproducing content. A semantic conflict blocks completion even when structural validation passes.
+
+Generation only completes structural and evidence validation. It does not publish the integrated interpretation. The orchestrator must reserve `integration --kind edit` and invoke an isolated edit-defensive-phrases agent even when there are no automatic diagnostics. Structural errors use the existing generation repair path; responsibility diagnostics go to editing. Only accepted edited Markdown can reach selection.

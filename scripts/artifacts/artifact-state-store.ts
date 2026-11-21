@@ -5,7 +5,7 @@ import { dirname, join, relative, resolve, isAbsolute } from 'node:path'
 import { readSeriesConfig, repositoryState, KINDS, MODES, PURPOSES } from './artifact-run'
 import { buildEvidenceManifest, type ChartEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
 import { diagnoseSystemInterpretation } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
-import { isValidInterpretation } from '../../.agents/skills/interpret-chart-report/scripts/validate-interpretation'
+import { isValidInterpretation, diagnoseIntegrationResponsibility } from '../../.agents/skills/interpret-chart-report/scripts/validate-interpretation'
 import { validateConceptBrief, parseFinalFingerprint, parseSelectedCandidateId } from '../../.agents/skills/select-gameplay-concept/scripts/validate-concept-brief'
 import { validateWorldBrief } from '../../.agents/skills/select-world-concept/scripts/validate-world-brief'
 import { parseWorldBrief, selectedWorld } from '../../.agents/skills/select-world-concept/scripts/world-contract'
@@ -133,7 +133,7 @@ export class ArtifactState {
     const run = this.run(id), folder = parse(run.config).artifactLayout === 'responsibility-v1' ? publicationFolders[stage] : 'docs/GDD'
     return join('artifacts', run.version, folder, ...(revisionAttemptId ? ['revisions', revisionAttemptId] : []), finalNames[stage])
   }
-  text(run: string, stage: string): string { const document = this.document(run, stage); requireState(this.one('SELECT status FROM stages WHERE run_id=? AND stage=?',run,stage)?.status==='succeeded' && document?.status === 'published', 'prerequisite-incomplete'); return this.checked(document.path, document.sha256) }
+  text(run: string, stage: string): string { const document = this.document(run, stage); requireState(this.one('SELECT status FROM stages WHERE run_id=? AND stage=?',run,stage)?.status==='succeeded' && document?.status === 'published', 'prerequisite-incomplete'); if(stage==='integration')this.verifyIntegrationAcceptance(run); return this.checked(document.path, document.sha256) }
   checked(path: string, expected: string): string { const full = this.path(path); const bytes = readFileSync(full); requireState(hash(bytes) === expected, 'integrity-error'); return bytes.toString('utf8') }
   path(path: string): string { const full = resolve(this.root, path); requireState(!isAbsolute(relative(this.root, full)) && !relative(this.root, full).startsWith('..'), 'invalid-path'); let ancestor=full; while(!existsSync(ancestor)&&ancestor!==dirname(ancestor))ancestor=dirname(ancestor); requireState(!relative(this.root,realpathSync(ancestor)).startsWith('..'), 'invalid-path'); return full }
   evidence(run: string): ChartEvidenceManifest { const document=this.document(run,'chart-report');requireState(document?.status==='published','prerequisite-incomplete');const expected=buildEvidenceManifest(this.checked(document.path,document.sha256));this.checked(document.final_path,document.sha256);const result: ChartEvidenceManifest = { version: 1, systems: { saju: [], ziwei: [], natal: [] } }; for (const row of this.all('SELECT * FROM evidence WHERE run_id=? ORDER BY rowid', run)) {requireState(row.chart_hash===document.sha256&&Object.hasOwn(result.systems,row.system),'integrity-error'); result.systems[row.system as keyof typeof result.systems].push({ id: row.evidence_id, text: row.text })}requireState(json(result)===json(expected),'integrity-error'); return result }
@@ -141,27 +141,27 @@ export class ArtifactState {
     const contractRevision=validatorRevision()
     const preflightRun=this.run(id), preflightEvidence=systems.includes(stage)?this.evidence(preflightRun.id):null
     const sourceDiagnostics=new Map<string,any[]>()
-    if(kind==='edit')for(const previous of this.all('SELECT payload FROM attempts WHERE run_id=? AND stage=? AND payload IS NOT NULL',preflightRun.id,stage)){const payload=parse(previous.payload);if(payload.path&&payload.sha256)sourceDiagnostics.set(`${payload.path}:${payload.sha256}`,diagnoseSystemInterpretation(stage as 'saju',this.checked(payload.path,payload.sha256),preflightEvidence!))}
+    if(kind==='edit')for(const previous of this.all('SELECT payload FROM attempts WHERE run_id=? AND stage=? AND payload IS NOT NULL',preflightRun.id,stage)){const payload=parse(previous.payload);if(payload.path&&payload.sha256)sourceDiagnostics.set(`${payload.path}:${payload.sha256}`,stage === 'integration' ? diagnoseIntegrationResponsibility(this.checked(payload.path,payload.sha256)) : diagnoseSystemInterpretation(stage as 'saju',this.checked(payload.path,payload.sha256),preflightEvidence!))}
     const result = this.operation(request, 'prepare', { id, stage, kind }, () => {
       const run = this.run(id); requireState(run.status === 'running', 'run-not-running')
       const row = this.one('SELECT * FROM stages WHERE run_id=? AND stage=?', run.id, stage); requireState(row && row.status !== 'succeeded' && !['final-validation','fingerprint-registration'].includes(stage), 'stage-not-available')
-      for (const dependency of DAG[stage]) requireState(this.one('SELECT status FROM stages WHERE run_id=? AND stage=?',run.id,dependency)?.status==='succeeded' && this.document(run.id, dependency)?.status === 'published', 'prerequisite-incomplete')
+      for (const dependency of DAG[stage]) { requireState(this.one('SELECT status FROM stages WHERE run_id=? AND stage=?',run.id,dependency)?.status==='succeeded' && this.document(run.id, dependency)?.status === 'published', 'prerequisite-incomplete'); if(dependency==='integration')this.text(run.id,dependency) }
       requireState(!this.one("SELECT id FROM attempts WHERE run_id=? AND stage=? AND status IN ('prepared','dispatching','running','submitted')", run.id, stage), 'attempt-active')
       const prior = this.all('SELECT * FROM attempts WHERE run_id=? AND stage=? AND kind=? ORDER BY number', run.id, stage, kind)
       const specialist = systems.includes(stage), isEdit = kind === 'edit'
-      requireState((specialist && ['generate','edit'].includes(kind)) || (!specialist && kind === 'generate'), 'invalid-attempt-kind')
-      const number = prior.length + 1; requireState(number <= (specialist ? 3 : 2), 'attempt-budget-exhausted')
+      requireState((specialist && ['generate','edit'].includes(kind)) || (!specialist && (kind === 'generate' || (stage === 'integration' && isEdit))), 'invalid-attempt-kind')
+      const number = prior.length + 1; requireState(number <= (specialist || isEdit ? 3 : 2), 'attempt-budget-exhausted')
       const previous = prior.at(-1), previousResult = parse(previous?.result ?? null)
       if (previous && row.reason!=='registry-stale') requireState(['validation-failed','execution-failed','editing-failed','interrupted'].includes(previousResult?.status ?? previous.status), 'retry-not-allowed')
       const source = isEdit ? this.one("SELECT * FROM attempts WHERE run_id=? AND stage=? AND result LIKE '%editing-required%' ORDER BY number DESC LIMIT 1", run.id, stage) : null
       requireState(!isEdit || source, 'editing-source-missing')
-      const scope = isEdit ? previous?.status === 'interrupted' ? previous.scope : ['sentence','item','system'][prior.filter(a => parse(a.result)?.status === 'editing-failed').length] : null
+      const scope = isEdit ? previous?.status === 'interrupted' ? previous.scope : ['sentence','item','system'][prior.filter(a => parse(a.result)?.status === 'editing-failed' && (stage !== 'integration' || parse(a.result)?.failureKind === 'semantic')).length] : null
       const attemptId = randomUUID(), claim = randomUUID(), output = join('artifacts', run.version, 'garbage', attemptId, isEdit ? 'candidate.md' : 'interpretation.md')
       const mode = previousResult?.status === 'validation-failed' ? 'repair' : 'generate'
       const inputs: any = { registry: stage === 'selection' ? this.registry('combat') : stage === 'world-selection' ? this.registry('world') : null, mode, ...(previous ? { previous: { output: previous.output, result: previousResult } } : {}), documents: [], validatorRevision: contractRevision, registryRevision: this.revision() }
       const allowed = specialist ? ['chart-report'] : stage === 'integration' ? systems : stage === 'selection' ? ['integration'] : stage === 'world-selection' ? ['integration', 'selection'] : stage === 'gdd' ? ['chart-report','integration','selection','world-selection'] : DAG[stage]
       for (const dependency of allowed) { const doc = this.document(run.id, dependency); if (doc) inputs.documents.push({ stage: dependency, id: doc.id, path: doc.path, sha256: doc.sha256 }) }
-      if (source) { const original = parse(source.payload), payload = previous?.payload && parse(previous.payload).path ? parse(previous.payload) : previous?.input && parse(previous.input).source ? parse(previous.input).source : original; inputs.originalSource={attemptId:source.id,path:original.path,sha256:original.sha256}; inputs.source = { attemptId: source.id, path: payload.path, sha256: payload.sha256 }; inputs.diagnostics = sourceDiagnostics.get(`${payload.path}:${payload.sha256}`); requireState(inputs.diagnostics,'input-revision-mismatch'); if (previous) inputs.previous = { payload: parse(previous.payload), result: previousResult } }
+      if (source) { const original = parse(source.payload), payload = previous?.payload && parse(previous.payload).path ? parse(previous.payload) : previous?.input && parse(previous.input).source ? parse(previous.input).source : original; inputs.originalSource={attemptId:source.id,path:original.path,sha256:original.sha256}; inputs.source = { attemptId: source.id, path: payload.path, sha256: payload.sha256 }; inputs.diagnostics = sourceDiagnostics.get(`${payload.path}:${payload.sha256}`); requireState(inputs.diagnostics,'input-revision-mismatch'); if (previous) inputs.previous = { candidate: { text: this.checked(payload.path,payload.sha256), sha256:payload.sha256 }, payload: parse(previous.payload), result: previousResult } }
       this.db.query("INSERT INTO attempts(id,run_id,stage,kind,number,scope,status,claim,input,output,source_hash,registry_revision,created_at) VALUES(?,?,?,?,?,?,'prepared',?,?,?,?,?,?)").run(attemptId, run.id, stage, kind, number, scope, claim, json(inputs), output, inputs.source?.sha256 ?? null, this.revision(), now())
       this.db.query("UPDATE stages SET status='running',current_attempt=?,reason=NULL WHERE run_id=? AND stage=?").run(attemptId, run.id, stage)
       this.event(run.id, 'prepared', request, stage, attemptId)
@@ -176,7 +176,7 @@ export class ArtifactState {
       const markers: any = { saju: ['四柱八字','紫微斗數 命盤'], ziwei: ['紫微斗數 命盤','Natal Chart'], natal: ['Natal Chart',null] }
       for (const doc of documents) { const [start,end] = markers[a.stage]; const offset = doc.text.indexOf(start); doc.text = doc.text.slice(offset, end ? doc.text.indexOf(end, offset + start.length) : undefined) }
     }
-    return reply('input', { attemptId: id, stage: a.stage, kind: a.kind, number: a.number, scope: a.scope, mode:snapshot.mode, ...(snapshot.previous && !snapshot.source ? {previous:snapshot.previous} : {}), documents, ...(systems.includes(a.stage) ? { evidence: { version: 1, systems: { [a.stage]: this.evidence(a.run_id).systems[a.stage as 'saju'] } } } : {}), ...(snapshot.source ? { source: { ...snapshot.source, text: this.checked(snapshot.source.path, snapshot.source.sha256) }, diagnostics: snapshot.diagnostics, previous: snapshot.previous } : {}) })
+    return reply('input', { attemptId: id, stage: a.stage, kind: a.kind, number: a.number, scope: a.scope, mode:snapshot.mode, ...(snapshot.previous && !snapshot.source ? {previous:snapshot.previous} : {}), documents, ...(systems.includes(a.stage) ? { evidence: { version: 1, systems: { [a.stage]: this.evidence(a.run_id).systems[a.stage as 'saju'] } } } : {}), ...(snapshot.source ? { source: { ...snapshot.source, text: this.checked(snapshot.source.path, snapshot.source.sha256) }, diagnostics: snapshot.diagnostics, allowedTargets: defensiveAllowedTargets(this.checked(snapshot.source.path,snapshot.source.sha256), a.stage === 'integration'), previous: snapshot.previous } : {}) })
   }
   submit(id: string, claim: string, payload: any, request: string): Reply {
     const a = this.attempt(id); this.live(a, claim)
@@ -208,24 +208,24 @@ export class ArtifactState {
     const snapshot = parse(a.input)
     requireState(snapshot.validatorRevision === validatorRevision(), 'validator-revision-mismatch')
     for (const doc of snapshot.documents) this.checked(doc.path, doc.sha256)
-    let payload = parse(a.payload), markdown: string, errors: any[] = [], unresolved:string[]=[], status = 'passed'
+    let payload = parse(a.payload), markdown: string, errors: any[] = [], unresolved:string[]=[], status = 'passed', failureKind: string | undefined
     if(snapshot.originalSource)this.checked(snapshot.originalSource.path,snapshot.originalSource.sha256)
     if(payload.executionFailed){markdown='';errors=[{code:'agent-execution',message:'Worker produced no document or submission'}];status='execution-failed'}else if (a.scope) {
       const source = this.checked(snapshot.source.path, snapshot.source.sha256)
       try {
         const result = evaluateDefensivePayload(source, { system: a.stage, attempt: a.number, scope: a.scope, diagnostics: snapshot.diagnostics }, payload)
-        unresolved=result.unresolved; markdown = result.candidate; errors = diagnoseSystemInterpretation(a.stage as 'saju', markdown, this.evidence(a.run_id)); status = result.passed && !errors.length ? 'passed' : 'editing-failed'
-      } catch (error) { markdown = source; errors = [{ code: 'editing-contract', message: String(error) }]; status = 'editing-failed' }
+        unresolved=result.unresolved; markdown = result.candidate; errors = a.stage === 'integration' ? [...result.errors,...this.validate(a.stage,markdown,a.run_id),...result.unresolved.map(target=>({code:'semantic-unresolved',message:target}))] : diagnoseSystemInterpretation(a.stage as 'saju', markdown, this.evidence(a.run_id)); status = result.passed && !errors.length ? 'passed' : 'editing-failed'; if(status === 'editing-failed') failureKind='semantic'
+      } catch (error) { markdown = source; errors = [{ code: 'editing-contract', message: String(error) }]; status = 'editing-failed'; failureKind='format' }
       const output = this.path(a.output)
       if (existsSync(output)) requireState(hash(readFileSync(output)) === hash(markdown), 'integrity-error')
       else writeFileSync(output, markdown, { flag: 'wx' })
       payload = { ...payload, path: a.output, sha256: hash(markdown) }
     } else {
       markdown = this.checked(payload.path, payload.sha256)
-      errors = systems.includes(a.stage) ? diagnoseSystemInterpretation(a.stage as 'saju', markdown, this.evidence(a.run_id)) : this.validate(a.stage, markdown, a.run_id)
-      status = errors.some(error => error.code !== 'responsibility-avoidance') ? 'validation-failed' : systems.includes(a.stage) ? 'editing-required' : 'passed'
+      errors = systems.includes(a.stage) ? diagnoseSystemInterpretation(a.stage as 'saju', markdown, this.evidence(a.run_id)) : a.stage === 'integration' ? [...this.validate(a.stage, markdown, a.run_id),...diagnoseIntegrationResponsibility(markdown)] : this.validate(a.stage, markdown, a.run_id)
+      status = errors.some(error => error.code !== 'responsibility-avoidance') ? 'validation-failed' : (systems.includes(a.stage) || a.stage === 'integration') ? 'editing-required' : 'passed'
     }
-    const result = { status, errors, ...(a.scope ? {unresolved,sourceSha256:snapshot.source.sha256,calls:a.number,usage:payload.review?.usage??null} : {}) }
+    const result = { status, errors, ...(failureKind ? {failureKind} : {}), ...(a.scope ? {unresolved,sourceSha256:snapshot.source.sha256,calls:a.number,usage:payload.review?.usage??null} : {}) }
     const response = this.operation(request, 'finish', { id, claim }, () => {
       const current = this.attempt(id); this.live(current, claim); requireState(current.status === 'submitted', 'attempt-completed')
       if (status !== 'passed') {
@@ -243,11 +243,23 @@ export class ArtifactState {
     if (response.data.documentId) return this.publish(response.data.documentId, request)
     return response
   }
+  verifyIntegrationAcceptance(run: string): void {
+    const doc=this.document(run,'integration'); requireState(doc,'prerequisite-incomplete')
+    const attempt=this.attempt(doc.attempt_id), snapshot=parse(attempt.input), payload=parse(attempt.payload)
+    requireState(attempt.kind==='edit' && snapshot.source && snapshot.validatorRevision===validatorRevision(),'integration-review-required')
+    const {path:_path,sha256:_sha256,...submitted}=payload
+    requireState(hash(json(submitted))===attempt.payload_hash,'integrity-error')
+    if(snapshot.originalSource)this.checked(snapshot.originalSource.path,snapshot.originalSource.sha256)
+    const source=this.checked(snapshot.source.path,snapshot.source.sha256)
+    let result: ReturnType<typeof evaluateDefensivePayload>
+    try { result=evaluateDefensivePayload(source,{system:'integration',attempt:attempt.number,scope:attempt.scope,diagnostics:snapshot.diagnostics},payload) } catch { throw new StateError('integration-review-required') }
+    requireState(result.passed && hash(result.candidate)===doc.sha256,'integration-review-required')
+  }
   validate(stage: string, text: string, run: string): any[] {
     let errors: any[] = []
     if (stage === 'chart-report') { try { buildEvidenceManifest(text) } catch { errors = ['Missing chart systems'] } }
     else if (systems.includes(stage)) return diagnoseSystemInterpretation(stage as 'saju', text, this.evidence(run)).filter(error => error.code !== 'responsibility-avoidance')
-    else if (stage === 'integration') { const ids = Object.fromEntries(systems.map(system => [({saju:'S',ziwei:'Z',natal:'N'} as any)[system],new Set([...this.text(run,system).matchAll(/^### ([SZN]-\d{2})/gm)].map(match=>match[1]))])); errors = isValidInterpretation(text, ids as any) ? [] : ['Invalid integrated interpretation'] }
+    else if (stage === 'integration') { const ids = Object.fromEntries(systems.map(system => [({saju:'S',ziwei:'Z',natal:'N'} as any)[system],new Set([...this.text(run,system).matchAll(/^### ([SZN]-\d{2})/gm)].map(match=>match[1]))])); errors = isValidInterpretation(text, ids as any, true) ? [] : ['Invalid integrated interpretation'] }
     else if (stage === 'selection') errors = validateConceptBrief(text, this.text(run, 'integration'), this.registry('combat'))
     else if (stage === 'world-selection') errors = validateWorldBrief(text, this.text(run, 'integration'), this.text(run, 'selection'), this.registry('world'))
     else if (stage === 'gdd') errors = isValidGdd(text, this.text(run, 'chart-report'), this.text(run, 'integration'), this.text(run, 'selection'), this.text(run, 'world-selection')) ? [] : ['Invalid GDD']
@@ -286,13 +298,13 @@ export class ArtifactState {
       const action = stage.reason==='worker-unknown' ? 'verify-worker' : publication ? 'reconcile-publication' : !a || ['completed','interrupted'].includes(a.status) ? stage.stage === 'chart-report' ? 'request-input' : stage.stage === 'fingerprint-registration' || stage.stage === 'final-validation' ? 'finalize' : 'prepare-retry' : ({ prepared: 'dispatch', dispatching: 'verify-worker', running: 'wait', submitted: 'validate' } as any)[a.status]
       const result=a?.result?parse(a.result):null;const kind=result?.status==='editing-required'?'edit':a?.kind??'generate';const mode=result?.status==='validation-failed'?'repair':'generate'
       const used=this.one('SELECT count(*) AS n FROM attempts WHERE run_id=? AND stage=? AND kind=?',run.id,stage.stage,kind).n
-      actions.push({ kind, mode, ...(a?.scope?{scope:a.scope}:{}), action: action==='prepare-retry' && used >= (systems.includes(stage.stage)?3:2) ? 'terminal' : action, stage: stage.stage, ...(a ? { attemptId: a.id } : {}), ...(stage.reason ? { reason: stage.reason } : {}) })
+      actions.push({ kind, mode, ...(a?.scope?{scope:a.scope}:{}), action: action==='prepare-retry' && used >= (systems.includes(stage.stage)||kind==='edit'?3:2) ? 'terminal' : action, stage: stage.stage, ...(a ? { attemptId: a.id } : {}), ...(stage.reason ? { reason: stage.reason } : {}) })
     }
     return reply('next', { actions })
   }
   summary(id: string): Reply {
     const run = this.run(id)
-    return reply('summary', { run: { runId: run.id, version: run.version, kind: run.kind, status: run.status, reason: run.reason }, stages: this.all('SELECT s.stage,s.status,s.current_attempt AS attemptId,s.reason,d.final_path AS path,a.number,a.scope,a.kind FROM stages s LEFT JOIN documents d ON d.id=s.accepted_document LEFT JOIN attempts a ON a.id=s.current_attempt WHERE s.run_id=?', run.id).map(stage=>({...stage,attempts:this.all('SELECT kind,count(*) AS used FROM attempts WHERE run_id=? AND stage=? GROUP BY kind',run.id,stage.stage).map(a=>({...a,remaining:(systems.includes(stage.stage)?3:2)-a.used}))})) })
+    return reply('summary', { run: { runId: run.id, version: run.version, kind: run.kind, status: run.status, reason: run.reason }, stages: this.all('SELECT s.stage,s.status,s.current_attempt AS attemptId,s.reason,d.final_path AS path,a.number,a.scope,a.kind FROM stages s LEFT JOIN documents d ON d.id=s.accepted_document LEFT JOIN attempts a ON a.id=s.current_attempt WHERE s.run_id=?', run.id).map(stage=>({...stage,attempts:this.all('SELECT kind,count(*) AS used FROM attempts WHERE run_id=? AND stage=? GROUP BY kind',run.id,stage.stage).map(a=>({...a,remaining:(systems.includes(stage.stage)||a.kind==='edit'?3:2)-a.used}))})) })
   }
   resume(id: string, observation: any, request: string): Reply {
     const args = { id, observation }
@@ -372,6 +384,7 @@ export class ArtifactState {
     let combat: any, world: any
     if (run.kind === 'personalized-gdd') {
       for(const stage of ['selection','world-selection']){const accepted=this.one('SELECT accepted_attempt FROM stages WHERE run_id=? AND stage=?',run.id,stage);if(accepted?.accepted_attempt)requireState(this.attempt(accepted.accepted_attempt).registry_revision===this.revision(),'registry-stale')}
+      this.verifyIntegrationAcceptance(run.id)
       for (const stage of ['chart-report',...systems,'integration','selection','world-selection','gdd']) this.text(run.id, stage)
       for (const stage of ['chart-report',...systems,'integration','selection','world-selection','gdd']) requireState(this.validate(stage,this.text(run.id,stage),run.id).length===0,'final-validation-failed')
       const selection = this.text(run.id, 'selection'), selected = selectedWorld(parseWorldBrief(this.text(run.id, 'world-selection')))
@@ -394,7 +407,7 @@ export class ArtifactState {
   }
 }
 function validatorRevision(): string {
-  const paths = ['../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation.ts','../../.agents/skills/interpret-chart-report/scripts/validate-interpretation.ts','../../.agents/skills/select-gameplay-concept/scripts/validate-concept-brief.ts','../../.agents/skills/select-world-concept/scripts/validate-world-brief.ts','../../.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd.ts','../../.agents/skills/generate-chart-report/scripts/chart-evidence.ts','artifact-state-store.ts','../../scripts/game-presentation.ts','../../.agents/skills/select-world-concept/scripts/world-contract.ts','../../docs/prompts/game-presentation-contract.md','../../docs/prompts/interpretation-guidelines.md','../../docs/prompts/saju-interpretation.md','../../docs/prompts/ziwei-interpretation.md','../../docs/prompts/natal-interpretation.md','../../docs/prompts/personalized-action-rpg-concept.md']
+  const paths = ['../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation.ts','../../.agents/skills/interpret-chart-report/scripts/validate-interpretation.ts','../../.agents/skills/select-gameplay-concept/scripts/validate-concept-brief.ts','../../.agents/skills/select-world-concept/scripts/validate-world-brief.ts','../../.agents/skills/generate-gdd-from-interpretation/scripts/validate-gdd.ts','../../.agents/skills/generate-chart-report/scripts/chart-evidence.ts','artifact-state-store.ts','defensive-edit.ts','../../scripts/game-presentation.ts','../../.agents/skills/select-world-concept/scripts/world-contract.ts','../../docs/prompts/game-presentation-contract.md','../../docs/prompts/interpretation-guidelines.md','../../docs/prompts/saju-interpretation.md','../../docs/prompts/ziwei-interpretation.md','../../docs/prompts/natal-interpretation.md','../../docs/prompts/personalized-action-rpg-concept.md']
   return hash(paths.map(path => readFileSync(new URL(path, import.meta.url))).join('\0'))
 }
-import { evaluateDefensivePayload } from './defensive-edit'
+import { evaluateDefensivePayload, defensiveAllowedTargets } from './defensive-edit'

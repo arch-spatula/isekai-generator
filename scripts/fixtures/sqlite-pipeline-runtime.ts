@@ -7,7 +7,16 @@ export function publish(root: string, run: string, stage: string, markdown: stri
   const attempt = prepare(root, run, stage).data
   writeFileSync(resolve(root, attempt.output), markdown)
   submit(root, attempt, { path: attempt.output, sha256: sha256(markdown) })
-  expect(finish(root, attempt).outcome).toMatch(/passed|published|succeeded/)
+  const generated = finish(root, attempt)
+  if (stage === 'integration') {
+    expect(generated.outcome).toBe('editing-required')
+    const editor = prepare(root, run, stage, 'edit').data
+    const input = ok(call(root, ['input', '--attempt', editor.attemptId, '--claim', editor.claim], { read: true })).data
+    submit(root, editor, { sourceSha256: input.source.sha256, edits: [], review: { system: stage, attempt: editor.number, scope: editor.scope, primary: [], secondary: [], preservationConfirmed: true, unresolved: [] }, reviewMarkdown: '전문 근거와 고유 통찰을 보존하고 전체 통합 문서를 검토했다.' })
+    expect(finish(root, editor).outcome).toMatch(/passed|published|succeeded/)
+    return editor
+  }
+  expect(generated.outcome).toMatch(/passed|published|succeeded/)
   return attempt
 }
 export function acceptedSpecialists(root: string, run: string) {

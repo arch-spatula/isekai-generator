@@ -50,9 +50,9 @@ function section(markdown: string, heading: string, nextHeading: string): string
 }
 
 /** Return whether an interpretation follows the handoff contract. */
-export function isValidInterpretation(markdown: string, specialistIds?: SpecialistIds): boolean {
+export function isValidInterpretation(markdown: string, specialistIds?: SpecialistIds, structuralOnly = false): boolean {
   if (markdown.trim().length === 0) return false
-  if (RESPONSIBILITY_AVOIDANCE.test(markdown)) return false
+  if (!structuralOnly && RESPONSIBILITY_AVOIDANCE.test(markdown)) return false
   let priorIndex = -1
   for (const heading of REQUIRED_HEADINGS) {
     const index = markdown.indexOf(heading)
@@ -138,3 +138,8 @@ export function isValidInterpretation(markdown: string, specialistIds?: Speciali
 }
 
 if (import.meta.main) { console.error('Use artifact-state finish --attempt <id> --claim <claim> --request <id>; validation reads its immutable DB input'); process.exitCode=2 }
+
+/** Suspicion locations require an explicit contextual editing decision. */
+export function diagnoseIntegrationResponsibility(markdown: string): { code: string; line: number; message: string }[] {
+  return markdown.split('\n').flatMap((line, index) => RESPONSIBILITY_AVOIDANCE.test(line) ? [{ code: 'responsibility-avoidance', line: index + 1, message: line }] : [])
+}
