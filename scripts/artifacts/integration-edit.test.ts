@@ -33,7 +33,7 @@ function complete(fixture: ReturnType<typeof setup>, input: Record<string, any>,
   submit(fixture.root, input, payload)
   return finish(fixture.root, input)
 }
-const finalPath = (fixture: ReturnType<typeof setup>) => join(fixture.directory, 'docs/GDD/chart-interpretation.md')
+const finalPath = (fixture: ReturnType<typeof setup>) => join(fixture.directory, 'interpretation/chart-interpretation.md')
 function downstream(fixture: ReturnType<typeof setup>) {
   publish(fixture.root, fixture.run, 'selection', combatBrief())
   publish(fixture.root, fixture.run, 'world-selection', worldBrief())
