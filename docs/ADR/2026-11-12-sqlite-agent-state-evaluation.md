@@ -1,6 +1,6 @@
 # ADR: SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가
 
-* **Status:** Accepted — SQLite 전환 방향 확정, 구현 완료·합성 검증 및 독립 리뷰 승인. DB 위치는 [버전 폴더별 SQLite ADR](2026-11-21-per-version-sqlite-state.md)로 변경(2026-11-21)
+* **Status:** Superseded — [파일 기반 진행 상태 ADR](2026-11-21-drop-sqlite-file-derived-progress.md)로 대체(2026-11-21). 당시: Accepted — SQLite 전환 방향 확정, 구현 완료·합성 검증 및 독립 리뷰 승인. DB 위치는 [버전 폴더별 SQLite ADR](2026-11-21-per-version-sqlite-state.md)로 변경(2026-11-21)
 * **Date:** 2026-11-12
 * **Decision Owners:** Project Owner
 * **Scope:** 생성 실행의 운영 상태·이력·지문 레지스트리와 에이전트용 읽기·쓰기 명령

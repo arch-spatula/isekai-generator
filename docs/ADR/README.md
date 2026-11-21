@@ -23,6 +23,7 @@
 - [Godot과 PixelFX를 이용한 게임 제작 경로 평가](2026-11-11-godot-pixelfx-evaluation.md)
 - [Claude Code Game Studios의 게임 제작 워크플로 선택적 활용 검토](2026-11-10-claude-code-game-studios-evaluation.md)
 - [인물과 주변 환경의 해석을 구분해 세계관과 스토리 설정에 활용](2026-11-10-person-environment-world-story.md)
-- [SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가](2026-11-12-sqlite-agent-state-evaluation.md) — DB 위치는 2026-11-21 결정으로 변경
-- [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](2026-11-21-per-version-sqlite-state.md)
+- [SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가](2026-11-12-sqlite-agent-state-evaluation.md) — 2026-11-21 파일 기반 진행 상태 결정으로 대체
+- [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](2026-11-21-per-version-sqlite-state.md) — 같은 날 파일 기반 진행 상태 결정으로 대체
+- [실행 상태 저장소를 없애고 진행 상태를 버전 폴더의 파일에서 계산한다](2026-11-21-drop-sqlite-file-derived-progress.md)
 - [스토리 영감용 해석의 방어 문구를 생성 지시와 사후 편집에서 제거](2026-11-09-interpretation-defensive-wording-editing.md) — 2026-11-09 결정 기록

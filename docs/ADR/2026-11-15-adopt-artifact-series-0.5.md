@@ -24,7 +24,7 @@
 식별자가 없는 기존 run은 미게시 단계도 `docs/GDD/`를 유지한다. 게시와 복구는
 저장된 `documents.final_path`를 따르며 본문·해시·DAG·입력 격리·채택 및 재시도 정책,
 `garbage/` 위치를 유지한다. SQLite 위치는 이 결정 당시 공용 `artifacts/state.sqlite`였으나
-[버전 폴더별 SQLite ADR](2026-11-21-per-version-sqlite-state.md)로 각 버전 폴더 루트로 바뀌었다. CLI 옵션과 DB 스키마는 추가하지 않는다.
+이후 [파일 기반 진행 상태 ADR](2026-11-21-drop-sqlite-file-derived-progress.md)로 SQLite 상태 저장소 자체를 쓰지 않기로 했다. CLI 옵션과 DB 스키마는 추가하지 않는다.
 
 이 기준선은 문서의 게시 위치를 구분한다. 최종 GDD의 개인화 근거 본문 분리나 새
 에이전트·생성 단계의 도입까지 완료했다는 뜻은 아니다.
