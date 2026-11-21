@@ -32,6 +32,8 @@
 
 ## 3. SQLite·제출·채택 계약
 
+> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+
 [SQLite 명세](sqlite-artifact-state.md)의 기존 `prepare/input/dispatch/bind-worker/submit/finish`
 명령을 유지하고 `integration`에도 `generate`와 `edit`를 구분한다. 생성 성공만으로
 정식 통합 문서를 게시하거나 전투 선정을 허용하지 않는다.
