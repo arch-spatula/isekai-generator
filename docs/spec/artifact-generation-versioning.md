@@ -9,7 +9,8 @@
 
 > 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
 
-신규 실행의 예약·상태·카운터·이벤트는 단일 `artifacts/state.sqlite`를 사용한다.
+신규 실행의 상태·이벤트는 그 실행의 버전 폴더 루트 `artifacts/<version>/state.sqlite`에 기록한다
+([버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)). 버전 번호는 DB 카운터 없이 버전 폴더의 배타적 생성으로 확정한다.
 `.agents/artifact-series.json`은 Git 기준선 설정으로 유지한다. 구형 폴더는 이름만 확인하여
 번호 충돌을 피하고 내용 import는 하지 않는다. 아래 manifest 파일 생성·갱신 설명은 전환 전
 구현 기록이며 신규 실행 계약이 아니다.

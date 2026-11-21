@@ -21,8 +21,8 @@ GDD를 모두 run 내부의 `docs/GDD/`에 게시했다. 문서의 책임을 구
 
 ```text
 artifacts/
-├── state.sqlite
 └── <version>/
+    ├── state.sqlite
     ├── charts/
     │   └── chart-report.md
     ├── interpretation/
@@ -40,7 +40,7 @@ artifacts/
             └── …
 ```
 
-SQLite의 WAL·SHM 파일은 기존 운영 방식에 따른다. 단독 차트 실행은 `charts/`에만
+SQLite DB와 WAL·SHM 파일은 버전 폴더 루트에 둔다([버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)). 단독 차트 실행은 `charts/`에만
 게시하며, 쓰지 않는 폴더나 빈 안내 문서를 미리 만들지 않는다.
 
 | 단계 ID | 기존 `docs/GDD/` 내부 파일명 | 신규 게시 상대 경로 |
@@ -70,7 +70,8 @@ SQLite의 WAL·SHM 파일은 기존 운영 방식에 따른다. 단독 차트 �
   이 필드는 경로 버전이며 실행 중 선택하는 CLI 옵션으로 노출하지 않는다.
 - 검증기 revision 변경으로 기존 실행의 재개가 차단되는 현행 정책은 별개다.
   경로 호환을 검증기 revision 우회나 기존 승인의 자동 재사용으로 확장하지 않는다.
-- `artifacts/state.sqlite` 위치와 저장소의 `docs/GDD/` 원본 문서는 변경하지 않는다.
+- 저장소의 `docs/GDD/` 원본 문서는 변경하지 않는다. DB 위치는 이 계획 당시 `artifacts/state.sqlite`였고
+  이후 [버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)로 각 버전 폴더 루트로 바뀌었다.
   사용자 요청에 따른 [기준선 0.5 채택](../ADR/2026-11-15-adopt-artifact-series-0.5.md)은
   구현 검증·commit 후 별도 설정 commit으로 수행한다. 승격만으로 새 run을 만들지 않는다.
   DB 스키마 변경은 기존 config snapshot으로 해결할 수 없는 경우에만 별도 판단한다.

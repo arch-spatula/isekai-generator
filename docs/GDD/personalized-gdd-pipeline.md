@@ -64,11 +64,12 @@ flowchart LR
 
 ## 버전과 출력
 
-`.agents/artifact-series.json`의 활성 series 안에서 공용 예약기가 다음 patch를 할당한다.
+`.agents/artifact-series.json`의 활성 series 안에서 예약기가 다음 patch의 버전 폴더를 배타적으로 만든다.
 차트 단독 생성과 전체 GDD는 같은 번호 순서를 공유한다. 명시적 버전 지정은 받지 않으며
 실패·취소·비정상 종료된 실행의 번호도 재사용하지 않는다. 기존 아티팩트는 변경하지 않는다.
 
-첫 예약이 공용 `artifacts/state.sqlite`를 초기화하고 실행·버전·단계 상태를 DB에 기록한다.
+예약은 버전 폴더를 배타적으로 만든 뒤 그 폴더 루트에 `state.sqlite`를 초기화하고 실행·단계 상태를 기록한다.
+DB는 같은 버전의 작업을 이어서 할 때 참조하는 기록이다([버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)).
 종류·목적·mode·기준선/source revision과 dirty 여부를 보존한다. 원시 출생 인자와 생성
 본문은 운영 로그에 넣지 않는다. `release-candidate`는 clean working tree에서만 예약한다.
 과거 아티팩트는 import하지 않고 기존 디렉터리 이름만 확인해 번호 충돌을 피한다.
@@ -92,7 +93,7 @@ artifacts/<version>/
 신규 run은 책임별 폴더를 사용한다. 식별자 없는 기존 run은 미게시 단계도 기존
 `docs/GDD/`를 유지하며, 재선정본은 해당 폴더의 `revisions/<attempt-id>/`에 게시한다.
 본문·파일명은 유지하고 완료 안내와 게시 복구는 DB에 저장된 경로를 따른다.
-단독 차트는 `charts/`만 만들며, 후보의 `garbage/`와 공용 DB 위치는 바꾸지 않는다.
+단독 차트는 `charts/`와 버전 폴더 루트의 DB만 만들며, 후보는 `garbage/`에 둔다.
 
 ## 단계 1: 차트 보고서
 
@@ -251,9 +252,9 @@ summary/next를 조회해 재개한다. worker가 살아 있거나 종료를 확
 호출하지 않는다. 제출이 저장됐으면 재생성 없이 검증·게시부터 이어 간다. 사용자 취소와
 회복 불가능한 실패는 terminal이며 종료 run은 다시 열지 않는다.
 
-최종 검증 snapshot과 최신 지문 revision을 확인한 뒤 두 종류 지문과 run 성공을 한 DB
-트랜잭션으로 확정한다. 부분 등록은 rollback한다. 비교 이후 다른 run이 등록했으면
-registry-stale로 차단하고 최신 비교와 필요한 선택·의존 문서의 재검토를 요구한다.
+최종 검증 snapshot을 확인한 뒤 두 종류 지문과 run 성공을 자기 버전 폴더 DB의 한
+트랜잭션으로 확정한다. 부분 등록은 rollback한다. 다른 run의 지문은 선택 시작 시 성공 확정된
+다른 버전 폴더의 DB를 읽기 전용으로 모아 비교하며, 동시에 진행 중인 run끼리는 서로 보지 못할 수 있다.
 상세 CLI·재개·예산·입력 격리 계약은
 [SQLite 상태 관리와 작업 재개 명세](../spec/sqlite-artifact-state.md)를 따른다.
 
