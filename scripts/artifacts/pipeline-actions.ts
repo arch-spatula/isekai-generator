@@ -45,7 +45,8 @@ export type CreatedAttempt = { attempt: string; candidate: string; kind: string;
  */
 export function createAttempt(versionDir: string, id: StepId, options: { replaceUnfinished?: boolean } = {}): CreatedAttempt {
   const status = stepOf(versionDir, id)
-  if (status.state !== 'ready' && status.state !== 'edit') throw new ActionError('step-not-ready', `Step ${id} is ${status.state}`)
+  // 차트 단계의 `input`은 출생 입력을 가진 차트 실행기만 시도를 만들 수 있다는 뜻이다.
+  if (status.state !== 'ready' && status.state !== 'edit' && !(id === 'chart-report' && status.state === 'input')) throw new ActionError('step-not-ready', `Step ${id} is ${status.state}`)
   if (status.unfinished && !options.replaceUnfinished) throw new ActionError('unfinished-attempt', `Unfinished attempt exists: ${status.unfinished.join(', ')}`)
   const action = status.action as Record<string, any>
   if (action.resume && !options.replaceUnfinished) throw new ActionError('unfinished-attempt', `Resume ${action.resume} instead`)

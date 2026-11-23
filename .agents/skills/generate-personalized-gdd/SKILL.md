@@ -11,36 +11,36 @@ Before asking any input question, check explicit user values, existing agreement
 
 Use the chart skill's birth input rules: an omitted calendar means Gregorian (양력), and an unambiguous birthplace determines timezone (South Korean cities use `Asia/Seoul`). Never silently treat an explicitly lunar date as Gregorian.
 
-## Reserve and start
+## Allocate
 
-`bun <root>/scripts/artifact-state.ts allocate --kind personalized-gdd --mode <mode> --purpose <purpose> --request <id>`
+`bun <root>/scripts/artifact-allocate.ts personalized-gdd <mode> <purpose> <root>`
 
-`bun <root>/scripts/artifact-state.ts start --run <run-id> --request <id>`
-
-New allocations publish chart to `charts/`, specialist/integrated interpretations to `interpretation/`, combat/world briefs to `design-rationale/`, and GDD to `game/`, retaining filenames. Revisions use the role folder’s `revisions/<attempt-id>/`. Runs without the layout marker retain `docs/GDD/`, including unpublished stages. Use stored DB publication paths for completion/recovery; never move existing files or infer paths from current defaults. `garbage/` and the common DB remain unchanged.
-
-Use the returned version/directory. Requests identify logical calls: reuse the same request after response loss. Active series comes from Git configuration; never choose patch numbers or initialize registries manually.
+It creates the next version directory of the active Git series and writes the write-once `run.md` (kind, mode, purpose, revisions). There is no state database. Publication paths are fixed: chart `charts/`, specialist and integrated interpretations `interpretation/`, combat and world briefs `design-rationale/`, GDD `game/`, with the existing filenames. Attempts live in `garbage/<stage>/<kind>-<n>/`. Never choose version or attempt numbers yourself.
 
 ## Execute the DAG
 
-Call `read-artifact-state.ts next --run <id>` after each confirmed result. Chart calls the chart skill and its runner with only the user birth inputs. After chart publication, prepare `saju`, `ziwei`, `natal` concurrently. Each uses `--kind generate`; each successful structure result requires a separate `--kind edit` attempt. Following their published acceptance, generate `integration`; after structure/evidence validation, reserve `integration --kind edit` and invoke edit-defensive-phrases with `fork_turns="none"`, even without automatic diagnostics. Give it only its filtered DB input, mode and interpretation guidelines. Wait for edited acceptance before `selection`, `world-selection`, and `gdd` (`--kind generate`). Responsibility diagnostics alone never trigger integration regeneration. Integration editing allows three calls; format errors retain scope, semantic unresolved targets expand sentence → item → system, and interrupted retries retain scope. Match the stage skill: interpret-chart-system, edit-defensive-phrases, interpret-chart-report, select-gameplay-concept, select-world-concept, generate-gdd-from-interpretation.
+Progress is computed from files, never recorded separately. After each confirmed result run:
+
+`bun <root>/scripts/artifact-status.ts <version-dir>`
+
+Each stage reports `done`, `publish`, `repair`, `edit`, `ready`, `exhausted`, `wait` or `input` with its next action. Stages without dependencies on each other (`saju`, `ziwei`, `natal`) can be `ready` together; run them concurrently. Chart `input` means the chart skill must run with the user's birth inputs. Specialists and integration must pass a separate edit attempt before publication, even without automatic diagnostics. Match the stage skill: interpret-chart-system, edit-defensive-phrases, interpret-chart-report, select-gameplay-concept, select-world-concept, generate-gdd-from-interpretation.
 
 For each model invocation:
 
-1. `artifact-state.ts prepare --run <id> --stage <stage> --kind <generate|edit> --request <id>` returns attemptId, claim, scope, mode and output.
-2. Read `read-artifact-state.ts input --attempt <id> --claim <claim>` and pass only its filtered data, matching skill, mode, shared prompt/template/presentation inputs to an isolated agent. Specialist agents receive only the selected system prompt and common guidelines. Input paths are not permission to inspect sibling files.
-3. Record `artifact-state.ts dispatch --attempt <id> --claim <claim> --request <id>` immediately before spawning; then `bind-worker --attempt <id> --claim <claim> --agent <agent-id> --request <id>`. Never spawn twice when dispatch result is unknown.
-4. Agent writes reserved Markdown; edit agent instead returns `{sourceSha256,edits,review,reviewMarkdown}`. Pipe directly to `artifact-state.ts submit --attempt <id> --claim <claim> --request <id>`. Ordinary Markdown submit payload is `{}` or `{path,sha256}` for the reserved output. Never write temporary JSON.
-5. `artifact-state.ts finish --attempt <id> --claim <claim> --request <id>` performs validation and safe publication. Use outcome and nextAction, not exit code alone. Tool assigns repair mode, scopes and remaining budgets. A normal submission failure is not a new run.
+1. `bun <root>/scripts/artifact-attempt.ts <version-dir> <stage>` creates the next attempt for a `ready` or `edit` stage and returns attempt, candidate path, inputs, and for edits the source and scope. Selection attempts receive a fixed `registry.json` snapshot.
+2. Spawn one isolated agent with `fork_turns="none"`, the matching skill, mode, version directory and attempt path. It reads only `bun <root>/scripts/artifact-input.ts <version-dir> <attempt>`. Specialist agents receive only the selected system prompt and common guidelines. Input paths are not permission to inspect sibling files.
+3. Generation agents write only the returned candidate path. Edit agents return `{sourceSha256,edits,review,reviewMarkdown}`; pipe it directly to `bun <root>/scripts/artifact-edit.ts <version-dir> <attempt>`. If the edit agent ended without a proposal, run the same command with `--execution-failed`. Never write temporary JSON.
+4. Run status again. Structural validation of a candidate is computed by status: an invalid candidate becomes the next `repair`, a valid specialist or integration candidate becomes `edit`, and a passed edit or valid selection/GDD candidate becomes `publish`.
+5. For `publish` run `bun <root>/scripts/artifact-publish.ts <version-dir> <stage>`. It never overwrites an existing output.
+
+Attempt limits are enforced by the tools: specialists 3 generations and 3 edits, integration 2 generations and 3 edits, other stages 2. Integration edit format errors keep the scope; only semantic failures widen sentence → item → system. A normal validation failure is not a new run. `exhausted` stops that stage and requires the user's decision.
 
 Shared presentation is `docs/prompts/game-presentation-contract.md`; GDD template is `docs/prompts/personalized-action-rpg-concept.md`. Stage contracts and semantic presentation review remain mandatory. Unresolved camera/control/art/readability conflicts block dependent work.
 
-## Resume and finalize
+## Resume and completion
 
-For explicit continuation query runs --unfinished or the specified summary, then next. Do not guess among multiple unfinished runs. Use reconcile for stored submissions/publication; never regenerate accepted documents. If external execution is uncertain, query the actual worker, then resume with stdin `{workers:[{attemptId,status:"terminated|alive|unknown",observer,reference}]}`. A timeout is not proof of termination. Alive means wait; unknown remains blocked. Explicit resume returns `data.resumedAttempts` with a renewed claim and reserved output for each prepared/submitted attempt. Use those returned claims to read input, submit or finish the same attempt; never depend on previous conversation claims. Running/dispatching claims remain unavailable before worker verification. Confirmed terminated workers with existing ordinary Markdown resume as submitted in that same attempt; only absent output or absent edit payload permits an interrupted invocation and a budgeted retry. Terminal runs cannot reopen; no JSON import or fallback exists.
-
-After all documents are accepted, `artifact-state.ts finalize --run <id> --request <id>` revalidates the complete snapshot and atomically registers combat+world fingerprints and run success. Registry-stale requires latest comparison/review within remaining budgets; do not overwrite old documents or reset attempts. On infrastructure failure stop calls and retain the same run for recovery. Cancel/fail require a short safe reason; do not log birth arguments or raw stderr.
+For explicit continuation run status on the specified version directory; do not guess among several unfinished versions. Status lists `unfinished` attempts (generation without candidate, edit without result). Before creating another attempt, query the actual worker: alive means wait; unknown means stop. Only when it is confirmed terminated use `artifact-attempt.ts <version-dir> <stage> --replace-unfinished`; the unfinished attempt still counts toward the limit. Never regenerate accepted documents. The run is complete when every stage is `done`; there is no separate finalize or fingerprint registration, because published briefs are the next runs' registry.
 
 ## Models and completion
 
-When exposed use gpt-5.6-terra low for chart and light stages; gpt-5.6-sol high for deep interpretation/integration/selection/design. Otherwise use the closest available model and report substitution. Report mode, purpose, version, DB summary status and local final Markdown paths. Do not reproduce birth inputs or generated contents. Markdown paths identify local outputs, not permanent repository evidence.
+When exposed use gpt-5.6-terra low for chart and light stages; gpt-5.6-sol high for deep interpretation/integration/selection/design. Otherwise use the closest available model and report substitution. Report mode, purpose, version, status summary and local final Markdown paths. Do not reproduce birth inputs or generated contents. Markdown paths identify local outputs, not permanent repository evidence.

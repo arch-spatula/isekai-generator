@@ -2,38 +2,9 @@ import { expect, test } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { runChartReport } from '../../.agents/skills/generate-chart-report/scripts/run-chart-report'
 import { makeRepository, commitFixture } from './test-fixtures'
 import { beforeFinalize, publish } from '../fixtures/sqlite-pipeline-runtime'
 import { allocate, call, ok, parallelCall, read, request, start, syntheticReport } from './sqlite-test-fixtures'
-
-// §5.1/§7: a filesystem publication failure is resumable even for chart-only runs.
-test('standalone chart publication I/O failure remains blocked with a safe durable reason', async () => {
-  const root = makeRepository()
-  mkdirSync(join(root, 'scripts'))
-  writeFileSync(join(root, 'scripts/chart-report.ts'), `process.stdout.write(${JSON.stringify(syntheticReport)})`)
-  commitFixture(root)
-  const allocated = allocate(root, 'chart-report'), run = allocated.data.runId
-  const output = join(allocated.data.directory, 'charts/chart-report.md')
-  // EISDIR at the real publication boundary; no permission assumptions or storage mocks.
-  mkdirSync(output, { recursive: true })
-  let failure: unknown
-  try { await runChartReport(root, output, []) } catch (error) { failure = error }
-  expect(failure).toBeInstanceOf(Error)
-  expect(String(failure)).toMatch(/EISDIR|directory/i)
-  const summary = read(root, 'summary', run)
-  expect(summary.data.run.status).toBe('blocked')
-  const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
-  try {
-    const row = db.query('SELECT status,finished_at FROM runs WHERE id=?').get(run)
-    expect(row).toEqual({ status: 'blocked', finished_at: null })
-    expect(db.query("SELECT count(*) AS count FROM events WHERE run_id=? AND event IN ('failed','succeeded')").get(run)).toEqual({ count: 0 })
-    const events = JSON.stringify(db.query('SELECT reason,diagnostics FROM events WHERE run_id=?').all(run))
-    expect(events).not.toContain(output)
-    expect(events).not.toContain('EISDIR')
-    expect(JSON.stringify(summary)).not.toContain(output)
-  } finally { db.close() }
-})
 
 // §§9/12: two real processes contend over the same registry revision; a prepared reader retains its snapshot.
 test('concurrent finalizers register exactly one run while prepared registry reads remain unchanged', async () => {

@@ -128,6 +128,25 @@ export function currentRegistry(artifactsDir: string, kind: 'combat' | 'world', 
 
 type Context = { versionDir: string; finals: Partial<Record<StepId, string>> }
 
+/** 할당 때 한 번 쓴 run.md의 `키: 값` 필드. 없으면 빈 객체. */
+export function readRunConfig(versionDir: string): Record<string, string> {
+  const text = read(join(versionDir, 'run.md'))
+  return text == null ? {} : parseResult(text)
+}
+
+/** 이 run에 해당하는 단계. 차트 단독 실행은 차트 단계만 갖는다. */
+export function runSteps(versionDir: string): Step[] {
+  return readRunConfig(versionDir)['종류'] === 'chart-report' ? STEPS.filter(step => step.id === 'chart-report') : STEPS
+}
+
+/** 단계 입력으로 쓰는 게시 문서를 읽어 검증한다. 선행 문서가 없으면 그 사실을 오류로 돌려준다. */
+export function checkStep(versionDir: string, id: StepId, text: string, registry?: unknown): string[] {
+  const step = STEPS.find(s => s.id === id)!
+  const finals: Context['finals'] = {}
+  for (const input of new Set<StepId>([...step.needs, ...step.inputs])) finals[input] = read(join(versionDir, STEPS.find(s => s.id === input)!.output))
+  return check(step, text, { versionDir, finals }, registry)
+}
+
 /** 단계 산출물의 구조 검증. 오류가 없으면 빈 배열. */
 function check(step: Step, text: string, context: Context, registry?: unknown): string[] {
   const { finals } = context
@@ -161,7 +180,7 @@ function inputPaths(step: Step): string[] {
 function stepStatus(step: Step, context: Context, done: Set<StepId>, artifactsDir: string, version: string): StepStatus {
   const attempts = readAttempts(context.versionDir, step.id)
   const generations = attempts.filter(a => a.kind !== 'edit'), edits = attempts.filter(a => a.kind === 'edit')
-  const unfinished = [...generations.filter(a => a.candidate == null), ...edits.filter(a => a.result == null)].map(a => a.path)
+  const unfinished = [...generations.filter(a => a.candidate == null && a.result == null), ...edits.filter(a => a.result == null)].map(a => a.path)
   const base = { id: step.id, generationAttempts: generations.length, editAttempts: edits.length, ...(unfinished.length > 0 ? { unfinished } : {}) }
   const validCandidate = (a: Attempt) => a.candidate != null && check(step, a.candidate, context, a.registry).length === 0
   const passedEdit = edits.find(a => a.result?.['상태'] === 'passed' && validCandidate(a))
@@ -183,8 +202,10 @@ function stepStatus(step: Step, context: Context, done: Set<StepId>, artifactsDi
   }
 
   if (step.editLimit > 0) {
-    const source = [...generations].reverse().find(validCandidate)
-    if (source) {
+    const original = [...generations].reverse().find(validCandidate)
+    if (original) {
+      // 범위를 넓혀 가며 고치므로 직전 편집이 남긴 후보가 다음 편집의 source다.
+      const source = [...edits].reverse().find(a => a.candidate != null) ?? original
       const interrupted = edits.find(a => a.result == null)
       if (interrupted) return { ...base, state: 'edit', action: { action: 'edit', resume: interrupted.path, source: join(source.path, 'candidate.md') } }
       if (edits.length >= step.editLimit) return { ...base, state: 'exhausted', diagnostics: ['Defensive edit attempts exhausted'] }
@@ -193,15 +214,17 @@ function stepStatus(step: Step, context: Context, done: Set<StepId>, artifactsDi
     }
   }
 
-  if (step.id === 'chart-report' && generations.length === 0) return { ...base, state: 'input', action: { action: 'request-input', reason: 'Birth input is not stored; ask the user to run the chart report' } }
+  if (step.id === 'chart-report' && generations.length === 0) return { ...base, state: 'input', action: { action: 'generate', skill: step.skill, attempt: 'garbage/chart-report/generate-1', reason: 'Birth input is not stored; ask the user for it and run the chart report' } }
   if (generations.length >= step.generationLimit) return { ...base, state: 'exhausted', diagnostics: ['Generation attempts exhausted'] }
-  const kind = generations.some(a => a.candidate != null) ? 'repair' : 'generate'
+  const previous = [...generations].reverse().find(a => a.candidate != null)
+  const kind = previous ? 'repair' : 'generate'
   return {
     ...base, state: 'ready',
     action: {
       action: kind, skill: step.skill,
       attempt: join('garbage', step.id, `${kind}-${nextNumber(attempts, ['generate', 'repair'])}`),
       inputs: inputPaths(step),
+      ...(previous ? { previous: { candidate: join(previous.path, 'candidate.md'), diagnostics: check(step, previous.candidate!, context, previous.registry) } } : {}),
       ...(step.registry ? { registry: currentRegistry(artifactsDir, step.registry, version) } : {}),
     },
   }
@@ -212,7 +235,7 @@ export function pipelineStatus(versionDir: string): PipelineStatus {
   const version = basename(versionDir), artifactsDir = dirname(versionDir)
   const context: Context = { versionDir, finals: {} }
   const done = new Set<StepId>(), steps: StepStatus[] = []
-  for (const step of STEPS) {
+  for (const step of runSteps(versionDir)) {
     const status = stepStatus(step, context, done, artifactsDir, version)
     if (status.state === 'done') { done.add(step.id); context.finals[step.id] = read(join(versionDir, step.output)) }
     steps.push(status)

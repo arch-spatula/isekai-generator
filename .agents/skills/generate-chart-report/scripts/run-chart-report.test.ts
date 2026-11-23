@@ -1,12 +1,11 @@
-import { ArtifactState } from '../../../../scripts/artifacts/artifact-state-store'
-import { tree } from '../../../../scripts/artifacts/sqlite-test-fixtures'
 import { describe, expect, test } from 'bun:test'
 
 import { isCompleteChartReport, runChartReport } from './run-chart-report'
 import { buildEvidenceManifest } from './chart-evidence'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { allocateRun, failRun, readRunManifest, updateRun } from '../../../../scripts/artifacts/artifact-run'
+import { allocateRun } from '../../../../scripts/artifacts/pipeline-run'
+import { pipelineStatus } from '../../../../scripts/artifacts/pipeline-status'
 import { commitFixture, makeRepository } from '../../../../scripts/artifacts/test-fixtures'
 
 describe('isCompleteChartReport', () => {
@@ -31,7 +30,7 @@ describe('buildEvidenceManifest', () => {
   })
 })
 
-describe('reserved chart runs', () => {
+describe('chart runs in an allocated version folder', () => {
   const report = '四柱八字\n甲子\n紫微斗數 命盤\n命宮 子\nNatal Chart\nSun Aries\n'
 
   function fixture(fail = false): string {
@@ -42,47 +41,43 @@ describe('reserved chart runs', () => {
     return root
   }
 
-  test('standalone success writes unchanged report and evidence before succeeding', async () => {
-    const root = fixture(), directory = allocateRun(root, 'chart-report')
-    const output = join(directory, 'charts/chart-report.md')
-    await runChartReport(root, output, [])
-    expect(readFileSync(output, 'utf8')).toBe(report)
-    const state = new ArtifactState(root, false, true)
-    try { expect(state.evidence(state.run(directory.split('/').at(-1)!).id)).toEqual(buildEvidenceManifest(report)) } finally { state.close() }
-    expect(tree(join(root, 'artifacts')).filter(path => /\.jsonl?$|TODO\.md$/.test(path))).toEqual([])
-    expect(readRunManifest(directory)).toMatchObject({ status: 'succeeded', failure: null })
-    const summary = new ArtifactState(root, false, true)
-    try { expect(summary.summary(summary.run(directory.split('/').at(-1)!).id).data.stages).toContainEqual(expect.objectContaining({ stage: 'chart-report', status: 'succeeded' })) } finally { summary.close() }
-    await expect(runChartReport(root, output, [])).rejects.toThrow()
+  function files(dir: string): string[] {
+    return readdirSync(dir, { recursive: true }).map(String).sort()
+  }
+
+  test('standalone success publishes the unchanged report and the run is done without any state database', async () => {
+    const root = fixture(), { directory } = allocateRun(root, 'chart-report', 'light', 'experiment')
+    expect(await runChartReport(root, directory, [])).toBe(join(directory, 'charts/chart-report.md'))
+    expect(readFileSync(join(directory, 'charts/chart-report.md'), 'utf8')).toBe(report)
+    expect(pipelineStatus(directory).steps).toEqual([expect.objectContaining({ id: 'chart-report', state: 'done' })])
+    expect(files(join(root, 'artifacts')).filter(path => /\.(sqlite|jsonl?)$|TODO\.md$/.test(path))).toEqual([])
+    await expect(runChartReport(root, directory, [])).rejects.toThrow()
+    expect(readFileSync(join(directory, 'charts/chart-report.md'), 'utf8')).toBe(report)
   })
 
-  test('calculator failure consumes patch and stores only a short safe failure summary', async () => {
-    const root = fixture(true), directory = allocateRun(root, 'chart-report')
-    await expect(runChartReport(root, join(directory, 'charts/chart-report.md'), [])).rejects.toThrow('private calculator details')
-    expect(readRunManifest(directory)).toMatchObject({ status: 'failed', failure: { stage: 'chart-report', summary: 'Chart calculation or evidence validation failed.' } })
-    const state = new ArtifactState(root, false, true)
-    try {
-      const run = state.run(directory.split('/').at(-1)!)
-      expect(JSON.stringify(state.summary(run.id))).not.toContain('private calculator details')
-      expect(JSON.stringify(state.all('SELECT * FROM events WHERE run_id=?', run.id))).not.toContain('private calculator details')
-    } finally { state.close() }
-    expect(allocateRun(root, 'chart-report')).toEndWith('/v0.1.1')
+  test('calculator failure records only a short safe result and consumes the patch', async () => {
+    const root = fixture(true), { directory } = allocateRun(root, 'chart-report', 'light', 'experiment')
+    await expect(runChartReport(root, directory, [])).rejects.toThrow('private calculator details')
+    const result = readFileSync(join(directory, 'garbage/chart-report/generate-1/result.md'), 'utf8')
+    expect(result).toContain('상태: execution-failed')
+    expect(result).not.toContain('private calculator details')
+    expect(existsSync(join(directory, 'charts/chart-report.md'))).toBe(false)
+    expect(pipelineStatus(directory).steps[0]).toMatchObject({ state: 'ready', generationAttempts: 1 })
+    expect(allocateRun(root, 'chart-report', 'light', 'experiment').version).toBe('v0.1.1')
   })
 
-  test('GDD chart stage does not allocate a second run or finalize its parent', async () => {
-    const root = fixture(), directory = allocateRun(root, 'personalized-gdd', { mode: 'deep' })
-    updateRun(directory, 'running')
-    await runChartReport(root, join(directory, 'charts/chart-report.md'), [])
-    expect(readRunManifest(directory).status).toBe('running')
-    expect(() => failRun(directory, 'specialist', 'Specialist validation failed.', new Error('validation failed'))).toThrow('validation failed')
-    expect(readRunManifest(directory).failure?.stage).toBe('specialist')
-    expect(allocateRun(root, 'personalized-gdd')).toEndWith('/v0.1.1')
+  test('GDD chart stage makes the three specialist stages ready without allocating another run', async () => {
+    const root = fixture(), { directory } = allocateRun(root, 'personalized-gdd', 'deep', 'experiment')
+    await runChartReport(root, directory, [])
+    const states = Object.fromEntries(pipelineStatus(directory).steps.map(step => [step.id, step.state]))
+    expect(states).toMatchObject({ 'chart-report': 'done', saju: 'ready', ziwei: 'ready', natal: 'ready', integration: 'wait' })
+    expect(readdirSync(join(root, 'artifacts'))).toEqual(['v0.1.0'])
   })
 
-  test('refuses a free-form output path and an unstarted GDD run', async () => {
-    const root = fixture(), directory = allocateRun(root, 'personalized-gdd')
-    await expect(runChartReport(root, join(directory, 'charts/chart-report.md'), [])).rejects.toThrow('Parent GDD run must be running')
-    await expect(runChartReport(root, join(root, 'chart-report.md'), [])).rejects.toThrow()
-    expect(readRunManifest(directory).status).toBe('allocated')
+  test('refuses a folder that was not allocated with run.md', async () => {
+    const root = fixture(), directory = join(root, 'artifacts', 'v0.1.0')
+    mkdirSync(directory, { recursive: true })
+    await expect(runChartReport(root, directory, [])).rejects.toThrow('run.md')
+    expect(readdirSync(directory)).toEqual([])
   })
 })
