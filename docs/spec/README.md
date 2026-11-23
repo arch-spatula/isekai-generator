@@ -24,6 +24,7 @@
 - [일생 서사용 2차 해석](life-narrative-interpretation.md)
 - [세 체계 일생 통합](life-integration.md)
 - [일생의 모양과 관계 상태를 서사보다 먼저 정하기](life-shape-and-relationship-status.md)
+- [SQLite 상태 저장소 제거와 파일 기반 진행 상태](remove-sqlite-state.md)
 - [개인화 전투 원형 선택](personalized-combat-archetype-selection.md)
 - [개인화 세계 구조 선택](world-concept-selection.md)
 - [개인화 게임의 공통 화면·아트 계약](game-presentation-contract.md)
