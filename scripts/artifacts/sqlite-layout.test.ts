@@ -2,7 +2,6 @@ import { expect, test } from 'bun:test'
 import { Database } from 'bun:sqlite'
 import { existsSync, readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { runChartReport } from '../../.agents/skills/generate-chart-report/scripts/run-chart-report'
 import { beforeFinalize, publish } from '../fixtures/sqlite-pipeline-runtime'
 import { combatBrief, integratedInterpretation, pipelineGdd, worldBrief } from '../fixtures/sqlite-pipeline'
 import { makeRepository, commitFixture } from './test-fixtures'
@@ -53,30 +52,4 @@ for (const legacy of [false, true]) {
     expect(tree(directory).filter(path => !path.startsWith('garbage/')).sort()).toEqual(publications.map(([, path]) => legacy ? 'docs/GDD/' + path.split('/').at(-1) : path).sort())
     expect(ok(call(root, ['resume', '--run', run, '--request', request()])).outcome).toBeTruthy()
   }, 15000)
-}
-
-for (const legacy of [false, true]) {
-test(`standalone chart runner preserves ${legacy ? 'markerless legacy' : 'new'} layout and calculator bytes`, async () => {
-  const root = makeRepository()
-  mkdirSync(join(root, 'scripts'))
-  writeFileSync(join(root, 'scripts/chart-report.ts'), `process.stdout.write(${JSON.stringify(syntheticReport)})`)
-  commitFixture(root)
-  const allocated = allocate(root, 'chart-report'), directory = allocated.data.directory
-  if (legacy) {
-    const db = new Database(join(root, 'artifacts/state.sqlite'))
-    try {
-      const config = JSON.parse((db.query('SELECT config FROM runs WHERE id=?').get(allocated.data.runId) as any).config)
-      delete config.artifactLayout
-      db.query('UPDATE runs SET config=? WHERE id=?').run(JSON.stringify(config), allocated.data.runId)
-    } finally { db.close() }
-  }
-  const relative = legacy ? 'docs/GDD/chart-report.md' : 'charts/chart-report.md'
-  await runChartReport(root, join(directory, relative), [])
-  expect(readFileSync(join(directory, relative), 'utf8')).toBe(syntheticReport)
-  expect(readdirSync(directory).sort()).toEqual(legacy ? ['docs', 'garbage'] : ['charts', 'garbage'])
-  expect(tree(directory).filter(path => !path.startsWith('garbage/'))).toEqual([relative])
-  expect(existsSync(join(directory, legacy ? 'charts' : 'docs'))).toBe(false)
-  expect(read(root, 'summary', allocated.data.runId).data.run.status).toBe('succeeded')
-})
-
 }

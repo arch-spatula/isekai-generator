@@ -129,6 +129,25 @@ bun scripts/artifact-publish.ts <version-dir> <stage>
 - 이미 `done`인 단계를 다시 게시하면 아무것도 바꾸지 않고 성공한다.
 - 게시 도중 끊기면 정식 파일이 없거나 완전한 상태다. 상태 명령이 다시 `publish`를 안내하므로 별도 복구 절차가 없다.
 
+## 6.1 할당·입력·편집 판정
+
+```text
+bun scripts/artifact-allocate.ts <chart-report|personalized-gdd> [light|deep] [purpose] [repository-root]
+bun scripts/artifact-input.ts <version-dir> <attempt>
+bun scripts/artifact-edit.ts <version-dir> <edit-attempt> [--execution-failed] < proposal.json
+bun .agents/skills/generate-chart-report/scripts/run-chart-report.ts <repository-root> <version-dir> -- <chart flags>
+```
+
+- **할당:** 활성 series의 다음 버전 폴더를 배타적으로 만들고 `run.md`를 쓴다(8절). 차트 단독 실행은 상태 명령에 차트 단계만 나온다.
+- **입력:** 시도 하나가 읽어도 되는 것만 돌려준다. 전문 해석은 자기 체계의 차트 구간과 근거만 받는다. repair는 이전 후보와 진단을,
+  편집은 source(직전 편집 후보 또는 원래 생성 후보)·해시·진단·`allowedTargets`·직전 편집 결과를, 선택 단계는 레지스트리 스냅샷을 받는다.
+  모드는 `run.md`에서 읽는다. 읽기 전용이다.
+- **편집 판정:** stdin의 제안을 기존 순수 함수 `evaluateDefensivePayload`로 판정해 `candidate.md`와 `result.md`를 한 번 쓴다. 형식 오류는
+  source를 그대로 후보로 남기고 `실패 종류: format`, 의미 미해결은 `실패 종류: semantic`이다. 상태 명령이 기대하는 편집 시도가 아니면 거부한다.
+  이미 결과가 있으면 다시 판정하지 않는다.
+- **차트 실행기:** 차트 단계의 `input` 상태에서도 출생 입력을 가진 실행기만 첫 시도를 만들 수 있다. 계산이 실패하면 짧은 안전 문구만
+  `result.md`에 남기고 계산기 원문 오류는 파일에 쓰지 않는다.
+
 ## 7. 전투·세계 지문
 
 - 선택 단계는 같은 series의 다른 버전 폴더 중 GDD가 게시된 run의 `design-rationale/gameplay-concept-brief.md`와

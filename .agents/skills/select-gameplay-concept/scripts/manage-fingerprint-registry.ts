@@ -1,1 +1,1 @@
-if(import.meta.main){console.error('Use read-artifact-state fingerprints or artifact-state finalize');process.exitCode=2}
+if(import.meta.main){console.error("Compare fingerprints with bun scripts/artifact-fingerprints.ts <version-dir> <attempt> --candidate '<JSON axes>'");process.exitCode=2}

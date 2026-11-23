@@ -56,4 +56,4 @@ export function validateWorldBrief(markdown: string, interpretation: string, com
     return []
   } catch (error) { return [error instanceof Error ? error.message : String(error)] }
 }
-if (import.meta.main) { console.error('Use artifact-state finish --attempt <id> --claim <claim> --request <id>; validation reads its immutable DB input'); process.exitCode=2 }
+if (import.meta.main) { console.error('Validation runs in bun scripts/artifact-status.ts <version-dir>; publish with bun scripts/artifact-publish.ts <version-dir> <stage>'); process.exitCode=2 }
