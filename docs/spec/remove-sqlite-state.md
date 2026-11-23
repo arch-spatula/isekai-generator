@@ -86,7 +86,8 @@ bun scripts/artifact-status.ts <version-dir>
 ```text
 artifacts/<version>/garbage/<stage>/<kind>-<n>/
 ├── candidate.md     # 모델이 쓴 후보 (생성) 또는 편집을 적용한 후보 (편집)
-└── result.md        # 도구가 쓰는 결과: 상태, 진단, 편집 scope
+├── result.md        # 도구가 쓰는 결과: 상태, 진단, 편집 scope
+└── registry.json    # 선택 단계(전투·세계)만: 시도를 만들 때의 지문 레지스트리 스냅샷
 ```
 
 - `<kind>`는 `generate`·`repair`·`edit`, `<n>`은 1부터의 번호다. 시도 번호는 `mkdir`의 배타적 생성으로 확정한다.
@@ -99,6 +100,10 @@ artifacts/<version>/garbage/<stage>/<kind>-<n>/
 - 편집 scope는 앞선 편집 시도의 `result.md`에서 `editing-failed` 수를 세어 `sentence → item → system`으로 계산한다.
 - 방어 편집 제안 원문은 보관하지 않는다. 통합 편집의 `result.md`에는 자동 진단마다 처리 결과(수정 또는 보존)와 보존 사유를 남긴다
   ([인시던트 보완](../incidents/2026-11-21-artifact-root-sqlite-design.md) 참고).
+- 전투·세계 선택 시도는 폴더를 만들 때 그 시점의 지문 레지스트리를 `registry.json`으로 한 번 쓰고 고치지 않는다. 선택 검증기는
+  브리프의 비교 항목 수와 근접 항목이 레지스트리와 정확히 같은지 검사하므로, 다시 계산하면 다른 run이 끝날 때마다 이미 끝난
+  선택 단계가 실패로 뒤집힌다. 상태 명령은 후보와 정식 브리프를 그 시도의 스냅샷으로 검증한다. 스냅샷은 진행 상태가 아니라
+  `run.md`처럼 한 번 쓰는 입력이다.
 - 시도 폴더는 게임 개발 문서 탐색과 후속 단계 입력에서 제외한다(기존 `garbage/` 규칙).
 
 ## 6. 게시
@@ -113,10 +118,11 @@ bun scripts/artifact-publish.ts <version-dir> <stage>
 
 ## 7. 전투·세계 지문
 
-- 선택 단계는 같은 series의 다른 버전 폴더 중 `gdd` 단계가 `done`인 run의 `design-rationale/gameplay-concept-brief.md`와
+- 선택 단계는 같은 series의 다른 버전 폴더 중 GDD가 게시된 run의 `design-rationale/gameplay-concept-brief.md`와
   `world-concept-brief.md`에서 지문을 읽는다. 비교 결과(근접 항목, 동률, challenger 필요 여부)는 지금처럼 스크립트가 계산한다.
 - 다른 버전 폴더에는 쓰지 않는다. 동시에 진행 중인 run끼리는 서로 보지 못할 수 있다(ADR이 받아들인 한계).
 - 지문 등록 단계가 없다. 게시된 브리프 자체가 다음 run의 비교 자료다.
+- 이렇게 모은 레지스트리는 선택 시도 폴더의 `registry.json` 스냅샷으로 고정한다(5절).
 
 ## 8. 실행 설정 `run.md`
 
