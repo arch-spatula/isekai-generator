@@ -47,7 +47,7 @@ test('requires every stage and cast member in order, and the required talents fi
   const withoutYouth = valid.replace(/### 소년\n[\s\S]*?(?=### 청년)/, '')
   expect(check(withoutYouth)).toContain('생애 연표: 항목은 유년, 소년, 청년, 장년, 노년 순서여야 한다 (실제: 유년, 청년, 장년, 노년)')
   expect(check(mutate('### 스승·후원자', '### 스승'))).toContain(
-    '인물 사전: 항목은 부모, 형제·또래, 연인·배우자, 자녀·제자, 벗·동료, 스승·후원자, 경쟁자·적대자 순서여야 한다 (실제: 부모, 형제·또래, 연인·배우자, 자녀·제자, 벗·동료, 스승, 경쟁자·적대자)')
+    '인물 사전: 항목은 부모, 형제·또래, 연인·배우자, 자녀, 제자, 벗·동료, 스승·후원자, 경쟁자·적대자 순서여야 한다 (실제: 부모, 형제·또래, 연인·배우자, 자녀, 제자, 벗·동료, 스승, 경쟁자·적대자)')
   // 재능은 필수 두 항목 뒤에 자유 항목을 더할 수 있다.
   const extra = '### 생활 기술\n내용: 낡은 도구를 고쳐 쓴다\n꽃피는 시기: 노년에 손이 느려진 뒤에도 남는다\n막히는 조건: 도구가 없을 때\n근거: [facts:통근]\n\n## 상처와 회복'
   expect(check(mutate('## 상처와 회복', extra))).toEqual([])
@@ -96,8 +96,35 @@ test('every first-pass judgment section and the derived facts must be cited some
   // 조후는 청년 근거에서 한 번만 인용된다.
   expect(check(mutate('[judgment:일간 강약] [judgment:조후] [facts:득령]', '[judgment:일간 강약] [facts:득령]')))
     .toContain('1차 판단 섹션을 인용하지 않았다: 조후')
-  const withoutDerived = valid.replaceAll('[derived:大運별 용신·희신·기신] ', '').replaceAll(' [derived:大運별 용신·희신·기신]', '')
+  const withoutDerived = valid.replaceAll('[derived:大運별 용신·희신·기신] ', '').replaceAll(' [derived:大運별 용신·희신·기신]', '').replaceAll(' [derived:생애 단계별 운 기조]', '')
   expect(check(withoutDerived)).toContain('판단 파생 사실을 인용하지 않았다')
+})
+
+// docs/spec/life-shape-and-relationship-status.md §4.3·§5.2·§5.4: 관계 상태는 1차 판단을 따르고, 무게 필드는 상태·인연과 맞아야 한다.
+test('relation status follows the first-pass judgment and only relation slots carry it', () => {
+  expect(check(mutate('상태: 있음', '상태: 약함'))).toContain('인물 사전 > 연인·배우자: 상태 불일치 — 문서 약함, 기대 있음')
+  expect(check(mutate('상태: 약함', '상태: 많음'))).toContain("인물 사전 > 자녀: 상태 '많음' — 허용값 있음 · 약함 · 없음")
+  expect(check(mutate('상태: 약함\n', ''))).toContain('인물 사전 > 자녀: 상태 필드가 없다')
+  const parentWithStatus = mutate('### 부모\n', '### 부모\n상태: 있음\n')
+  expect(check(parentWithStatus)).toContain(`${lineOf('### 부모') + 1}: 인물 사전 > 부모: 알 수 없는 필드 '상태'`)
+})
+
+test('weight fields use allowed impact values and stay consistent with an absent relation', () => {
+  expect(check(mutate('영향: 큼\n근거: [facts:육친] [chart:日支]', '영향: 매우 큼\n근거: [facts:육친] [chart:日支]'))).toContain("인물 사전 > 연인·배우자: 영향 '매우 큼' — 허용값 큼 · 보통 · 작음")
+  const absentWithWork = mutate('상태: 없음\n함께 한 일: 없음\n곁에 있던 시기: 없음\n영향: 작음', '상태: 없음\n함께 한 일: 손기술을 가르쳤다\n곁에 있던 시기: 없음\n영향: 큼')
+  expect(check(absentWithWork)).toEqual(expect.arrayContaining(['인물 사전 > 제자: 상태가 없음이면 함께 한 일은 없음이다', '인물 사전 > 제자: 상태가 없음이면 영향은 작음이다']))
+  expect(check(mutate('인연: 경쟁자·적대자, 자녀', '인연: 경쟁자·적대자, 자녀, 제자'))).toContain("생애 연표 > 노년: 상태가 없음인 인물을 인연에 썼다 '제자'")
+})
+
+test('곁에 있던 시기 lists only stages whose 인연 names the person', () => {
+  expect(check(mutate('곁에 있던 시기: 청년\n', '곁에 있던 시기: 청년, 유년\n'))).toContain('인물 사전 > 연인·배우자: 곁에 있던 시기 유년의 생애 연표 인연에 이 인물이 없다')
+  expect(check(mutate('곁에 있던 시기: 청년\n', '곁에 있던 시기: 젊을 때\n'))).toContain("인물 사전 > 연인·배우자: 곁에 있던 시기 '젊을 때'는 생애 단계 이름이 아니다")
+})
+
+test('saju timeline evidence cites the stage luck tone, and 시련 may be 없음', () => {
+  const evidence = '근거: [judgment:일간 강약] [judgment:조후] [facts:득령] [derived:생애 단계별 운 기조]'
+  expect(check(mutate(evidence, evidence.replace(' [derived:생애 단계별 운 기조]', '')))).toContain('생애 연표 > 청년: 근거에 [derived:생애 단계별 운 기조]가 없다')
+  expect(check(mutate('시련: 받기만 하던 아이가 처음으로 자기 몫을 요구받고 머뭇거린다', '시련: 없음'))).toEqual([])
 })
 
 test('CLI reads the directory and exits by result', () => {

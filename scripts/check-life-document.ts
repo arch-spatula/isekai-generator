@@ -12,6 +12,7 @@ import { ziweiIdentity } from './check-ziwei-judgment.ts'
 import { chartTitles, factItems, readConclusions } from './judgment-document.ts'
 import { checkLifeDocument as checkStructure, type LifeSection, stageLines } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
+import { checkRelations, RELATION_ITEMS, WEIGHT_FIELDS } from './life-relations.ts'
 
 export interface LifeTexts { life: string; chart: string; facts: string; judgment: string; derived?: string }
 
@@ -20,12 +21,15 @@ export const TIMELINE: LifeSection = {
   items: LIFE_STAGES.map((stage) => stage.name),
   fields: ['운', '주제', '전환점', '인연', '시련', '얻는 것', '잃는 것', '성격 변화', '근거'],
 }
-export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀·제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
+export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
+/** 인물 사전 필드. 상태는 RELATION_ITEMS 칸에만 있다 (docs/spec/life-shape-and-relationship-status.md 5.2·5.4) */
+export const CAST_FIELDS = ['성향', '주인공과의 관계', '관계의 변화', ...WEIGHT_FIELDS, '근거']
+export const CAST_ITEM_FIELDS = Object.fromEntries(Object.keys(RELATION_ITEMS).map((name) => [name, ['상태']]))
 
 /** 생애 연표가 있는 체계는 관계의 변화·꽃피는 시기에 생애 단계를 쓴다. */
 function commonSections(timeline: boolean): LifeSection[] {
   return [
-    { name: '인물 사전', items: CAST, fields: ['성향', '주인공과의 관계', '관계의 변화', '근거'], stageFields: timeline ? ['관계의 변화'] : [] },
+    { name: '인물 사전', items: CAST, fields: CAST_FIELDS, itemFields: CAST_ITEM_FIELDS, stageFields: timeline ? ['관계의 변화'] : [] },
     { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '꽃피는 시기', '막히는 조건', '근거'], stageFields: timeline ? ['꽃피는 시기'] : [] },
     { name: '상처와 회복', items: ['반복되는 실패', '상실', '회복'], fields: ['내용', '발현 조건', '근거'] },
   ]
@@ -72,8 +76,32 @@ const SYSTEMS = {
 
 export type LifeSystem = keyof typeof SYSTEMS
 
+/** 1차 판단의 짝·자식·제자 결론을 인물 칸 → 상태로 */
+function expectedStatus(judgment: string): Map<string, string> {
+  const conclusions = readConclusions(judgment)
+  return new Map(Object.entries(RELATION_ITEMS).flatMap(([item, section]) => conclusions.has(section) ? [[item, conclusions.get(section)!]] : []))
+}
+
+/** 사주 생애 연표의 근거는 그 단계의 운 기조를 인용한다 (명세 4.3) */
+function luckToneCitations(life: string): string[] {
+  const errors: string[] = []
+  let section = '', stage = ''
+  for (const line of life.split('\n')) {
+    if (line.startsWith('## ')) section = line.slice(3).trim()
+    else if (line.startsWith('### ')) stage = line.slice(4).trim()
+    else if (section === '생애 연표' && line.startsWith('근거:') && !line.includes('[derived:생애 단계별 운 기조]')) {
+      errors.push(`생애 연표 > ${stage}: 근거에 [derived:생애 단계별 운 기조]가 없다`)
+    }
+  }
+  return errors
+}
+
 export function checkLifeDocument(system: LifeSystem, texts: LifeTexts): string[] {
-  return SYSTEMS[system](texts)
+  return [
+    ...SYSTEMS[system](texts),
+    ...checkRelations(texts.life, { expectedStatus: expectedStatus(texts.judgment), timeline: system !== 'natal' }),
+    ...(system === 'saju' ? luckToneCitations(texts.life) : []),
+  ]
 }
 
 if (import.meta.main) {

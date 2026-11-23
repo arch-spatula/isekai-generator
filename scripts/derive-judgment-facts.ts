@@ -17,6 +17,17 @@ const DAEWOON_LINE = /^\s*(\d+)運 \(\s*(\d+)세\)\s+\S+\s+(\S\S)\s/
 /** '  2- 11歲  命宮  乙酉  (空宮)' */
 const DAXIAN_LINE = /^\s*(\d+)-\s*(\d+)歲\s+(\S+)\s+(\S\S)/
 
+/** 천간·지지 역할로 정하는 大運 기조. 계약: docs/spec/life-shape-and-relationship-status.md 4.1 */
+export function luckTone(stemRole: string, branchRole: string): string {
+  const favorable = (role: string) => role === '용신' || role === '희신'
+  const roles = [stemRole, branchRole]
+  const good = roles.filter(favorable).length, bad = roles.filter((role) => role === '기신').length
+  if (good > 0 && bad > 0) return '혼조'
+  if (good > 0) return '순풍'
+  if (bad > 0) return '역풍'
+  return '평이'
+}
+
 /** 출생 연도 차 구간과 겹치는 생애 단계 이름 */
 function stages(from: number, to: number): string {
   return LIFE_STAGES.filter((stage) => overlaps(stage, from, to)).map((stage) => stage.name).join('·')
@@ -36,14 +47,23 @@ export function sajuDerivedFacts(chart: string, judgment: string): string {
     '─────',
     '大運별 용신·희신·기신 (大運 천간과 지지 자체 오행, 나이는 출생 연도 차, 괄호는 겹치는 생애 단계):',
   ]
+  const tones: { from: number; to: number; tone: string }[] = []
   daewoon.forEach(({ index, age, ganzi }, position) => {
     const to = (daewoon[position + 1]?.age ?? age + 10) - 1
     const [stem, branch] = [...ganzi]
     const stemElement = ELEMENT_HANJA[STEM_INFO[stem].element]
     const branchElement = ELEMENT_HANJA[BRANCH_ELEMENT[branch]]
+    const tone = luckTone(roleOf(stemElement), roleOf(branchElement))
+    tones.push({ from: age, to, tone })
     lines.push(`  ${index}運 ${ganzi} ${age}–${to} (${stages(age, to)}): ${
-      `${stem} ${stemElement} ${roleOf(stemElement)} · ${branch} ${branchElement} ${roleOf(branchElement)}`}`)
+      `${stem} ${stemElement} ${roleOf(stemElement)} · ${branch} ${branchElement} ${roleOf(branchElement)} · ${tone}`}`)
   })
+  lines.push('생애 단계별 운 기조 (단계 나이 구간 안에서 겹치는 大運의 기조, 첫 大運 이전 제외):')
+  for (const stage of LIFE_STAGES) {
+    const parts = tones.filter(({ from, to }) => overlaps(stage, from, to))
+      .map(({ from, to, tone }) => `${tone} ${Math.max(from, stage.from)}–${Math.min(to, stage.to ?? Infinity)}`)
+    lines.push(`  ${stage.name} ${stage.from}–${stage.to ?? ''}: ${parts.length > 0 ? parts.join(' → ') : '해당 大運 없음'}`)
+  }
   return lines.join('\n')
 }
 

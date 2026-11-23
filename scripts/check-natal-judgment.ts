@@ -2,7 +2,7 @@
  * 네이탈 1차 판단 문서(natal-judgment.md)의 구조와 근거 인용을 검사한다.
  * 판단 내용의 옳고 그름은 보지 않는다. 계약: docs/spec/natal-first-pass-judgment.md
  */
-import { chartTitles, checkJudgmentDocument, factItems, runJudgmentCli } from './judgment-document.ts'
+import { chartTitles, checkJudgmentDocument, factItems, RELATION_SECTIONS, runJudgmentCli } from './judgment-document.ts'
 
 export const PLANETS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
 /** '<기호> <이름> <사인 기호> <사인> …' 줄(Angles·Planets)에서 이름 다음의 사인 */
@@ -39,6 +39,7 @@ export function checkNatalJudgment({ judgment, chart, facts }: NatalJudgmentInpu
       { name: '주요 행성', allowed: PLANETS },
       { name: '우세 원소', allowed: ['Fire', 'Earth', 'Air', 'Water'] },
       { name: '핵심 긴장', allowed: hardAspects(chart) },
+      ...RELATION_SECTIONS,
     ],
     facts: { file: 'natal-facts.md', items: factItems(facts) },
     chart: { file: 'natal-chart.md', names: new Set([...chartTitles(chart), ...PLANETS, 'ASC', 'MC']) },

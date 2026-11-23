@@ -34,7 +34,7 @@ test('the hand-written fixture passes', () => {
 test('requires the ziwei title and sections in order', () => {
   expect(check(mutate('# 紫微斗數 1차 판단', '# 四柱 1차 판단'))).toContain("1: 첫 줄은 '# 紫微斗數 1차 판단'이어야 한다")
   const swapped = mutate('## 강점 궁', '## X').replace('## 과제 궁', '## 강점 궁').replace('## X', '## 과제 궁')
-  expect(check(swapped)).toContain('섹션은 명궁 역량, 격국, 강점 궁, 과제 궁 순서여야 한다 (실제: 명궁 역량, 격국, 과제 궁, 강점 궁)')
+  expect(check(swapped)).toContain('섹션은 명궁 역량, 격국, 강점 궁, 과제 궁, 짝, 자식, 제자 순서여야 한다 (실제: 명궁 역량, 격국, 과제 궁, 강점 궁, 짝, 자식, 제자)')
 })
 
 test('compares 명반 with the chart header (命宮 · 身宮 · 五行局)', () => {
@@ -45,7 +45,7 @@ test('compares 명반 with the chart header (命宮 · 身宮 · 五行局)', ()
 })
 
 test('limits 명궁 역량 and palace conclusions to their allowed values', () => {
-  expect(check(mutate('결론: 약', '결론: 보통'))).toContain(`${lineOf('결론: 약')}: 명궁 역량: 결론 '보통' — 허용값 강 · 중 · 약`)
+  expect(check(mutate('결론: 약\n', '결론: 보통\n'))).toContain(`${lineOf('결론: 약')}: 명궁 역량: 결론 '보통' — 허용값 강 · 중 · 약`)
   // 12궁 이름 중 하나여야 하고 '父母宮'처럼 접미사를 붙여도 안 된다.
   expect(check(mutate('결론: 官祿', '결론: 官祿宮'))).toContain(
     `${lineOf('결론: 官祿')}: 강점 궁: 결론 '官祿宮' — 허용값 命宮 · 兄弟 · 夫妻 · 子女 · 財帛 · 疾厄 · 遷移 · 交友 · 官祿 · 田宅 · 福德 · 父母`)

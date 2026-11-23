@@ -8,6 +8,7 @@ import { join } from 'node:path'
 
 import { checkLifeDocument, type LifeSystem } from './check-life-document.ts'
 import { type LifeItem, readLifeItems } from './life-document.ts'
+import { IMPACT, median, RELATION_ITEMS, RELATION_STATUS } from './life-relations.ts'
 
 export const LIFE_SYSTEMS = ['saju', 'ziwei', 'natal'] as const
 export type LifeTextsBySystem = Record<(typeof LIFE_SYSTEMS)[number], string>
@@ -21,6 +22,21 @@ const BY_SYSTEM = ['재능과 생업', '상처와 회복']
 /** 근거는 다른 파일을 가리키는 인용이라 옮기지 않는다. */
 const fieldsOf = (item: LifeItem) => item.fields.filter(([key]) => key !== '근거')
 
+/** 인물 칸마다 세 체계의 값과 그 중앙값 (상태는 RELATION_ITEMS 칸만). 계약: docs/spec/life-shape-and-relationship-status.md 5.3·5.4 */
+export function relationVotes(lives: LifeTextsBySystem, key: '상태' | '영향'): Map<string, { values: Record<LifeSystem, string>; main: string }> {
+  const order = key === '상태' ? RELATION_STATUS : IMPACT
+  const result = new Map<string, { values: Record<LifeSystem, string>; main: string }>()
+  const persons = readLifeItems(lives.saju).filter(({ section }) => section === '인물 사전').map(({ name }) => name)
+  for (const person of persons) {
+    if (key === '상태' && !(person in RELATION_ITEMS)) continue
+    const values = Object.fromEntries(LIFE_SYSTEMS.map((system) => [system,
+      readLifeItems(lives[system]).find((item) => item.section === '인물 사전' && item.name === person)?.fields.find(([field]) => field === key)?.[1] ?? ''])) as Record<LifeSystem, string>
+    if (Object.values(values).some((value) => !order.includes(value))) continue
+    result.set(person, { values, main: median(Object.values(values), order) })
+  }
+  return result
+}
+
 /** 섹션을 넘어 두 번 이상 나오는 항목 이름 */
 export function duplicateItemNames(life: string): string[] {
   const names = readLifeItems(life).map(({ name }) => name)
@@ -32,6 +48,7 @@ export function lifeMaterial(lives: LifeTextsBySystem): string {
   const inSection = (system: LifeSystem, section: string) => items[system].filter((item) => item.section === section)
   const lines = ['일생 통합 재료 (세 체계 일생 해석을 항목 이름으로 모은 것 · 해석 아님)', '─────']
 
+  const votes = { 상태: relationVotes(lives, '상태'), 영향: relationVotes(lives, '영향') }
   for (const [section, systems] of Object.entries(SIDE_BY_SIDE)) {
     lines.push(`## ${section}`)
     for (const first of inSection(systems[0], section)) {
@@ -41,6 +58,11 @@ export function lifeMaterial(lives: LifeTextsBySystem): string {
           const value = inSection(system, section).find(({ name }) => name === first.name)!.fields.find(([field]) => field === key)![1]
           lines.push(`${key} [${system}]: ${value}`)
         }
+      }
+      if (section !== '인물 사전') continue
+      for (const key of ['상태', '영향'] as const) {
+        const vote = votes[key].get(first.name)
+        if (vote != null) lines.push(`${key} 본선: ${vote.main}`)
       }
     }
   }

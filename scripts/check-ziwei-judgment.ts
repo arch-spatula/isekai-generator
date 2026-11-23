@@ -4,7 +4,7 @@
  */
 import { PALACE_NAMES } from '@orrery/core/constants'
 
-import { chartTitles, checkJudgmentDocument, factItems, runJudgmentCli } from './judgment-document.ts'
+import { chartTitles, checkJudgmentDocument, factItems, RELATION_SECTIONS, runJudgmentCli } from './judgment-document.ts'
 
 export interface ZiweiJudgmentInput { judgment: string; chart: string; facts: string }
 
@@ -27,6 +27,7 @@ export function checkZiweiJudgment({ judgment, chart, facts }: ZiweiJudgmentInpu
       { name: '격국', allowed: null },
       { name: '강점 궁', allowed: PALACE_NAMES },
       { name: '과제 궁', allowed: PALACE_NAMES },
+      ...RELATION_SECTIONS,
     ],
     facts: { file: 'ziwei-facts.md', items: factItems(facts) },
     // 流年·流月은 --flow-year에 따라 바뀌고 大限은 시기 해석이라 본명반 1차 판단의 근거로 쓰지 않는다.

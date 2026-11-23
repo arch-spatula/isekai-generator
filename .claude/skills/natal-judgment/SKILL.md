@@ -20,7 +20,7 @@ allowed-tools: Read, Write, Bash(test -e:*), Bash(bun scripts/check-natal-judgme
 
 ## 3. 판단과 작성
 
-`<디렉터리>/natal-judgment.md`에 아래 형식 그대로 쓴다. 섹션 4개, 순서 고정, 섹션 안에는 `키: 값` 필드 줄만 쓴다.
+`<디렉터리>/natal-judgment.md`에 아래 형식 그대로 쓴다. 섹션 7개, 순서 고정, 섹션 안에는 `키: 값` 필드 줄만 쓴다.
 
 ```markdown
 # Natal 1차 판단
@@ -44,6 +44,20 @@ allowed-tools: Read, Write, Bash(test -e:*), Bash(bun scripts/check-natal-judgme
 ## 핵심 긴장
 결론: <천체> <□ | ☍> <천체>
 …
+
+## 짝
+결론: <있음 | 약함 | 없음>
+근거: …
+대안: …
+뒤집힘: …
+
+## 자식
+결론: <있음 | 약함 | 없음>
+…
+
+## 제자
+결론: <있음 | 약함 | 없음>
+…
 ```
 
 - `차트`는 `natal-chart.md`의 `Angles`·`Planets`에서 ASC·Sun·Moon 사인을, `Houses (<시스템>)` 제목에서 하우스
@@ -56,6 +70,9 @@ allowed-tools: Read, Write, Bash(test -e:*), Bash(bun scripts/check-natal-judgme
   직접 계산해 사실처럼 넣지 않는다. 가중을 판단에 쓰면 그 선택을 `뒤집힘`에 밝힌다.
 - ASC가 Scorpio·Aquarius·Pisces라 차트 룰러가 전통 / 현대 둘이면 어느 룰러를 기준으로 상태를 판단했는지 `근거`에 쓰고,
   다른 룰러를 따르면 결론이 달라질 때 `대안`에 적는다.
+- 짝·자식·제자는 관계가 있는지를 정한다. 짝은 7H, 자식은 5H의 커스프·룰러 위치·품위와 하우스 안 행성으로, 제자는 9H·5H의
+  룰러와 행성으로 읽는다. 제자는 전통 체계에 직접 대응하는 하우스가 없으므로 신호의 해석을 근거에 밝힌다.
+- `없음`은 여러 신호가 함께 부재를 가리킬 때만 쓴다. 신호 하나만 있으면 `약함`이 기본이다. 빈 하우스 하나만으로 `없음`을 쓰지 않는다.
 - 결론은 하나만 쓴다. 다른 가능성은 `대안`과 `뒤집힘`에 근거와 함께 적는다. 확신도 표시는 쓰지 않는다.
 
 ## 4. 검증
