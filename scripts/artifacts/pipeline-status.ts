@@ -61,6 +61,8 @@ export type StepStatus = {
   generationAttempts: number
   editAttempts: number
   diagnostics?: string[]
+  /** 후보가 없는 생성 시도와 result.md가 없는 편집 시도. 작업 중인지 끊겼는지는 오케스트레이터가 확인한다 */
+  unfinished?: string[]
   action?: Record<string, unknown>
 }
 
@@ -159,7 +161,8 @@ function inputPaths(step: Step): string[] {
 function stepStatus(step: Step, context: Context, done: Set<StepId>, artifactsDir: string, version: string): StepStatus {
   const attempts = readAttempts(context.versionDir, step.id)
   const generations = attempts.filter(a => a.kind !== 'edit'), edits = attempts.filter(a => a.kind === 'edit')
-  const base = { id: step.id, generationAttempts: generations.length, editAttempts: edits.length }
+  const unfinished = [...generations.filter(a => a.candidate == null), ...edits.filter(a => a.result == null)].map(a => a.path)
+  const base = { id: step.id, generationAttempts: generations.length, editAttempts: edits.length, ...(unfinished.length > 0 ? { unfinished } : {}) }
   const validCandidate = (a: Attempt) => a.candidate != null && check(step, a.candidate, context, a.registry).length === 0
   const passedEdit = edits.find(a => a.result?.['상태'] === 'passed' && validCandidate(a))
 
