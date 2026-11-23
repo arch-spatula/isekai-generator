@@ -4,20 +4,14 @@
 > 작성일: 2026-11-05
 > 범위: 새 차트·개인화 GDD run의 루트 `TODO.md`
 
-## SQLite 전환 적용
+## 파일 기반 진행 상태 적용
 
-> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+> 2026-11-23부터 신규 생성의 진행 상태는 [SQLite 제거 명세](remove-sqlite-state.md)의 파일 기반 명령으로 관리한다. SQLite 상태 저장소와 그 CLI는 삭제되었다. 구형 아티팩트는 소급 변환하지 않는다.
 
-> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
-
-신규 실행은 run TODO와 단계 JSON을 만들지 않는다. `read-artifact-state.ts`의
-summary/next/input 조회가 진행 인계의 원본이다. 미완료 실행은 DB의 시도·제출·게시 상태와
-필요한 worker 생존 확인을 거쳐 재개한다. 구형 파일을 조회해 DB를 소급 생성하지 않는다.
-아래 TODO·checkpoint 파일 구조와 CLI는 전환 전 구현 기록이다.
-
-상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
-신규 게시 경로는 [책임별 폴더 계약](artifact-directory-layout.md)을 따른다. 아래
-`docs/GDD/` 경로는 전환 전 기록이며, 식별자 없는 기존 run에만 유지한다.
+진행 인계의 원본은 버전 폴더의 파일이다. `artifact-status.ts`가 산출 파일과 검증기로 단계별 상태와 다음 행동을 계산하고,
+후보가 없는 생성 시도와 결과가 없는 편집 시도를 `unfinished`로 돌려준다. 끊긴 시도는 실제 에이전트 상태를 확인한 뒤에만
+교체한다. 아래 TODO·checkpoint 파일 구조와 CLI, `docs/GDD/` 경로는 이전 구현의 기록이다. 게시 경로는
+[책임별 폴더 계약](artifact-directory-layout.md)을 따른다.
 
 ## 목적
 

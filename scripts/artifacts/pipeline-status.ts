@@ -2,7 +2,7 @@
  * 개인화 GDD 생성의 단계표와, 버전 폴더의 파일만 보고 진행 상태를 계산하는 읽기 전용 함수.
  * 계약: docs/spec/remove-sqlite-state.md
  */
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { buildEvidenceManifest, type ChartEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
 import { diagnoseSystemInterpretation } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
@@ -72,8 +72,9 @@ const ATTEMPT_DIR = /^(generate|repair|edit)-([1-9]\d*)$/
 const VERSION_DIR = /^v(0\.(?:0|[1-9]\d*))\.(0|[1-9]\d*)$/
 const EDIT_SCOPES = ['sentence', 'item', 'system'] as const
 
+/** 일반 파일이면 내용을, 없거나 디렉터리면 undefined를 돌려준다. */
 function read(path: string): string | undefined {
-  return existsSync(path) ? readFileSync(path, 'utf8') : undefined
+  return existsSync(path) && statSync(path).isFile() ? readFileSync(path, 'utf8') : undefined
 }
 
 /** result.md의 `키: 값` 줄을 읽는다. */
@@ -206,11 +207,13 @@ function stepStatus(step: Step, context: Context, done: Set<StepId>, artifactsDi
     if (original) {
       // 범위를 넓혀 가며 고치므로 직전 편집이 남긴 후보가 다음 편집의 source다.
       const source = [...edits].reverse().find(a => a.candidate != null) ?? original
-      const interrupted = edits.find(a => a.result == null)
-      if (interrupted) return { ...base, state: 'edit', action: { action: 'edit', resume: interrupted.path, source: join(source.path, 'candidate.md') } }
-      if (edits.length >= step.editLimit) return { ...base, state: 'exhausted', diagnostics: ['Defensive edit attempts exhausted'] }
       const failed = edits.filter(a => a.result?.['상태'] === 'editing-failed' && (step.id !== 'integration' || a.result?.['실패 종류'] === 'semantic')).length
-      return { ...base, state: 'edit', action: { action: 'edit', skill: 'edit-defensive-phrases', attempt: join('garbage', step.id, `edit-${nextNumber(attempts, ['edit'])}`), source: join(source.path, 'candidate.md'), scope: EDIT_SCOPES[Math.min(failed, EDIT_SCOPES.length - 1)] } }
+      const next = { action: 'edit', skill: 'edit-defensive-phrases', attempt: join('garbage', step.id, `edit-${nextNumber(attempts, ['edit'])}`), source: join(source.path, 'candidate.md'), scope: EDIT_SCOPES[Math.min(failed, EDIT_SCOPES.length - 1)] }
+      // 끊긴 편집은 결과가 없으므로 scope가 그대로다. 작업이 끝났음을 확인한 뒤 교체할 때 쓸 다음 경로도 함께 준다.
+      const interrupted = edits.find(a => a.result == null)
+      if (interrupted) return { ...base, state: 'edit', action: { ...next, resume: interrupted.path } }
+      if (edits.length >= step.editLimit) return { ...base, state: 'exhausted', diagnostics: ['Defensive edit attempts exhausted'] }
+      return { ...base, state: 'edit', action: next }
     }
   }
 

@@ -4,8 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { ActionError, claimAttemptDir, createAttempt, publishStep } from './pipeline-actions'
 import { pipelineStatus, type StepId } from './pipeline-status'
-import { interpretation, syntheticReport } from './sqlite-test-fixtures'
-import { integratedInterpretation } from '../fixtures/sqlite-pipeline'
+import { integratedInterpretation, interpretation, syntheticReport } from '../fixtures/pipeline-documents'
 
 const attemptCLI = join(import.meta.dir, '../artifact-attempt.ts')
 
@@ -78,6 +77,8 @@ describe('createAttempt', () => {
     expect(stateOf(dir, 'saju').unfinished).toEqual(['garbage/saju/generate-1'])
     rejectsWith('unfinished-attempt', () => createAttempt(dir, 'saju'))
     expect(createAttempt(dir, 'saju', { replaceUnfinished: true }).attempt).toBe('garbage/saju/generate-2')
+    expect(readFileSync(join(dir, 'garbage/saju/generate-1/result.md'), 'utf8')).toBe('상태: interrupted\n')
+    expect(stateOf(dir, 'saju')).toMatchObject({ generationAttempts: 2, unfinished: ['garbage/saju/generate-2'] })
   })
 
   test('creates a repair attempt after an invalid candidate', () => {

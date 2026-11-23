@@ -1,6 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { basename, relative, resolve } from 'node:path'
-import { ArtifactState } from './artifact-state-store'
+import { createHash } from 'node:crypto'
 import { diagnoseSystemInterpretation, type ChartSystem, type InterpretationDiagnostic } from '../../.agents/skills/interpret-chart-system/scripts/validate-system-interpretation'
 import { diagnoseIntegrationResponsibility } from '../../.agents/skills/interpret-chart-report/scripts/validate-interpretation'
 type Scope = 'sentence' | 'item' | 'system'
@@ -99,7 +97,7 @@ function validateReview(input: DefensiveEditInput, review: Review, edits: Edit[]
     if (!['fixed', 'preserved', 'needs-expansion', 'deferred'].includes(decision.status)) throw new Error('Invalid secondary decision')
   }
 }
-/** Pure edit contract shared by SQLite submissions and validators. */
+/** Pure edit contract used by the file-based edit judgment (artifact-edit.ts). */
 export function evaluateDefensivePayload(source: string, input: Pick<DefensiveEditInput, 'system' | 'attempt' | 'scope' | 'diagnostics'>, proposal: { sourceSha256?: string; edits: Edit[]; review: Review; reviewMarkdown?: string }): { candidate: string; errors: InterpretationDiagnostic[]; passed: boolean; unresolved: string[] } {
   if ((input.system === 'integration' || proposal.sourceSha256) && proposal.sourceSha256 !== hash(source)) throw new Error('Source hash mismatch')
   if (!Array.isArray(proposal.edits) || !proposal.reviewMarkdown?.trim()) throw new Error('Missing edits or semantic review report')
@@ -126,10 +124,3 @@ export function evaluateDefensivePayload(source: string, input: Pick<DefensiveEd
   }) : diagnostics
   return { candidate, errors, passed: !errors.length && !unresolved.length, unresolved }
 }
-
-export function prepareDefensiveEdit(runDirectory:string,system:ChartSystem): DefensiveEditInput & {attemptId:string;claim:string} {
- const state=new ArtifactState(resolve(runDirectory,'../..'))
- try {const result=state.prepare(basename(runDirectory),system,'edit',randomUUID()).data,a=state.attempt(result.attemptId),snapshot=JSON.parse(a.input);return {system,attempt:result.number,scope:result.scope,source:{output:relative(runDirectory,state.path(snapshot.source.path)),sha256:snapshot.source.sha256,attempt:state.attempt(snapshot.source.attemptId).number},originalSha256:snapshot.source.sha256,diagnostics:snapshot.diagnostics,candidate:relative(runDirectory,result.output),review:relative(runDirectory,result.output.replace('candidate.md','review.md')),input:'',edits:'',result:'',chart:'',evidence:'',attemptId:result.attemptId,claim:result.claim}}finally{state.close()}
-}
-export function finishDefensiveEdit(_runDirectory:string,_system:ChartSystem,_attempt:number,_executionFailed=false): DefensiveEditResult {throw new Error('Submit edits on stdin using artifact-state submit, then finish the assigned attempt')}
-export function verifyDefensiveAcceptance(runDirectory:string,system:ChartSystem):void {const state=new ArtifactState(resolve(runDirectory,'../..'),false,true);try{const run=state.run(basename(runDirectory));state.text(run.id,system)}finally{state.close()}}

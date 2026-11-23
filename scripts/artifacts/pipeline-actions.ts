@@ -51,6 +51,11 @@ export function createAttempt(versionDir: string, id: StepId, options: { replace
   const action = status.action as Record<string, any>
   if (action.resume && !options.replaceUnfinished) throw new ActionError('unfinished-attempt', `Resume ${action.resume} instead`)
 
+  // 교체하는 끊긴 시도는 결과를 한 번 써서 끝난 시도로 만든다. 한도에는 계속 포함된다.
+  for (const path of options.replaceUnfinished ? status.unfinished ?? [] : []) {
+    try { writeFileSync(join(versionDir, path, 'result.md'), '상태: interrupted\n', { flag: 'wx' }) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error }
+  }
+
   const step = STEPS.find(s => s.id === id)!
   const kind = status.state === 'edit' ? 'edit' : action.action as string
   const start = Number(String(action.attempt).match(/-(\d+)$/)![1])

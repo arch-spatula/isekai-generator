@@ -4,18 +4,13 @@
 > 작성일: 2026-11-04
 > 결정: [세계 구조 선택 분리](../ADR/2026-11-04-independent-world-concept-selection.md)
 
-## SQLite 전환 적용
+## 파일 기반 진행 상태 적용
 
-> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+> 2026-11-23부터 신규 생성의 진행 상태는 [SQLite 제거 명세](remove-sqlite-state.md)의 파일 기반 명령으로 관리한다. SQLite 상태 저장소와 그 CLI는 삭제되었다. 구형 아티팩트는 소급 변환하지 않는다.
 
-> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
-
-신규 실행의 세계 지문은 성공 확정된 다른 버전 폴더의 SQLite를 읽기 전용으로 열어 조회한다. 전투 지문과 입력을 분리하며 기존
-6축·동률·challenger 계약을 유지한다. 최종 확정은 채택 hash를 확인하여 두 종류 지문과 run 성공을
-자기 버전 폴더의 DB에 한 트랜잭션으로 기록한다. 아래 별도 JSON 파일,
-부분 등록, 파일 init/register 설명은 전환 전 구현 기록이다.
-
-상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+세계 지문은 같은 series에서 GDD가 게시된 다른 버전 폴더의 세계 브리프에서 모으고, 선택 시도 폴더의 `registry.json` 스냅샷으로
+고정한다. 비교는 `artifact-fingerprints.ts`로 하며 6축·동률·challenger 계약을 유지한다. 별도 최종 등록이나 run 성공 기록은 없다.
+아래 별도 JSON 파일, 부분 등록, 파일 init/register 설명은 이전 구현의 기록이다.
 
 ## 목적과 범위
 

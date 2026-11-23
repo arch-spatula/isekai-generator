@@ -1,21 +1,22 @@
 import { expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { allocateRun, git, readSeriesConfig, readRunManifest } from './artifacts/artifact-run'
+import { git, readSeriesConfig } from './artifacts/artifact-run'
+import { allocateRun } from './artifacts/pipeline-run'
 import { commitFixture, makeRepository } from './artifacts/test-fixtures'
 import { promoteArtifactSeries } from './promote-artifact-series'
 
 test('promotion only changes config; after committing, the first run is new series .0', () => {
   const root = makeRepository()
-  const old = allocateRun(root, 'chart-report')
-  const original = readRunManifest(old)
+  const old = allocateRun(root, 'chart-report', 'light', 'experiment').directory
+  const original = readFileSync(join(old, 'run.md'), 'utf8')
   const head = git(root, ['rev-parse', 'HEAD'])
   promoteArtifactSeries(root, '0.2', 'decision.md', ['incident.md'])
   expect(readSeriesConfig(root)).toMatchObject({ activeSeries: '0.2', baselineRevision: head, knownIssues: ['incident.md'] })
   expect(existsSync(join(root, 'artifacts', 'v0.2.0'))).toBe(false)
-  expect(readRunManifest(old)).toEqual(original)
+  expect(readFileSync(join(old, 'run.md'), 'utf8')).toBe(original)
   commitFixture(root)
-  expect(allocateRun(root, 'personalized-gdd', { purpose: 'release-candidate' })).toEndWith('/v0.2.0')
+  expect(allocateRun(root, 'personalized-gdd', 'light', 'release-candidate').directory).toEndWith('/v0.2.0')
 })
 
 test('rejects skipped minor, changed major, existing series and dirty working tree without changing config', () => {

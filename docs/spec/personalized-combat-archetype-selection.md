@@ -5,20 +5,14 @@
 > 근거 결정: [개인화 전투 원형을 후보 비교로 선택](../ADR/2026-11-03-personalized-combat-archetype-selection.md)
 > 범위: `chart-interpretation.md`와 개인화 Action RPG GDD 사이의 전투 원형 후보 생성·선택·검증
 
-## SQLite 전환 적용
+## 파일 기반 진행 상태 적용
 
-> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+> 2026-11-23부터 신규 생성의 진행 상태는 [SQLite 제거 명세](remove-sqlite-state.md)의 파일 기반 명령으로 관리한다. SQLite 상태 저장소와 그 CLI는 삭제되었다. 구형 아티팩트는 소급 변환하지 않는다.
 
-> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
-
-신규 실행의 전투 지문은 성공 확정된 다른 버전 폴더의 SQLite를 읽기 전용으로 열어 조회한다. 세계 지문과 논리적으로 분리하고
-이전 GDD 본문은 읽지 않는다. 비교 snapshot·최단 거리 동률·challenger 규칙을 유지하며,
-비교 수치와 일치 축은 도구가 계산한다. 등록은 최종 확정 시 세계 지문과 한 트랜잭션으로
-수행한다. 아래 JSON 레지스트리 경로·파일 init/register 계약은 전환 전 구현 기록이다.
-
-상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
-신규 게시 경로는 [책임별 폴더 계약](artifact-directory-layout.md)을 따른다. 아래
-`docs/GDD/` 경로는 전환 전 기록이며, 식별자 없는 기존 run에만 유지한다.
+전투 지문은 같은 series에서 GDD가 게시된 다른 버전 폴더의 전투 브리프에서 모으고, 선택 시도 폴더를 만들 때 `registry.json`
+스냅샷으로 고정한다. 비교는 `artifact-fingerprints.ts`가 그 스냅샷으로 계산하며 최단 거리 동률·challenger 규칙을 유지한다.
+별도 등록 단계는 없고 게시된 브리프가 다음 run의 비교 자료다. 아래 JSON 레지스트리 경로·파일 init/register 계약과
+`docs/GDD/` 경로는 이전 구현의 기록이다. 게시 경로는 [책임별 폴더 계약](artifact-directory-layout.md)을 따른다.
 
 ## 1. 목적
 

@@ -1,3 +1,4 @@
+import { buildEvidenceManifest } from '../../.agents/skills/generate-chart-report/scripts/chart-evidence'
 import { presentationFixture } from './game-presentation'
 const domains = ['성격과 기질', '직업과 적성', '재물', '연애와 배우자', '가족과 대인관계', '건강과 생활 리듬', '시기운']
 const items = domains.map((domain, index) => `### I-${String(index + 1).padStart(2, '0')}
@@ -185,4 +186,19 @@ export function revisedWorldBrief(previousVersion: string): string {
   const matches = [{ version: previousVersion, candidateId: 'W-01', equalAxes: 6 }]
   brief.registryReview = { comparedEntries: 1, initialClosest: matches, finalClosest: matches, similarityDifferences: [{ version: previousVersion, candidateId: 'W-01', interpretationFit: '기준 수립과 탐색의 긴장을 현재 해석에서 직접 연결한다.', spatialDifference: '현재의 관문 해제는 책임을 분산하는 우회 순서와 연결되어 조작의 선택 조건이 다르다.' }] }
   return serializeWorldBrief(brief)
+}
+
+/** 세 체계 구간을 모두 담은 최소 합성 차트 보고서 */
+export const syntheticReport = '四柱八字\n甲子\n紫微斗數 命盤\n命宮 子\nNatal Chart\nSun Aries\n'
+
+/** 합성 차트 보고서의 근거 ID를 쓰는 체계별 전문 해석 */
+export function interpretation(system = 'saju'): string {
+  const config = {
+    saju: { prefix: 'S', headings: ['# 사주팔자 심층 해석', '## 계산 전제', '## 원국과 십신 구조', '## 팔자 관계', '## 신살', '## 좌법과 인종법', '## 대운'], resolutions: ['원국 구조', '관계 작용', '운의 변화'] },
+    ziwei: { prefix: 'Z', headings: ['# 자미두수 심층 해석', '## 계산 전제', '## 명반 기본 구조', '## 십이궁과 성요', '## 본명 사화', '## 대한', '## 유년과 유월'], resolutions: ['궁위 역할', '성요 상태', '시간 층위'] },
+    natal: { prefix: 'N', headings: ['# 네이탈 차트 심층 해석', '## 계산 전제', '## 앵글과 하우스', '## 행성 배치', '## 주요 애스펙트', '## 차트 내부 종합'], resolutions: ['심리 기능', '삶의 영역', '내적 역동'] },
+  }[system]!
+  const evidence = buildEvidenceManifest(syntheticReport).systems[system as 'saju'][0].id
+  const domains = ['성격과 기질', '직업과 적성', '재물', '연애와 배우자', '가족과 대인관계', '건강과 생활 리듬', '시기운']
+  return config.headings.join('\n') + '\n## 전문 해석 항목\n' + domains.map((domain, index) => `### ${config.prefix}-0${index + 1}\n영역: ${domain}\n해상도: ${config.resolutions[index % 3]}\n해석: 이 차트의 구조를 실제 생활의 선택과 반응 방식에 연결하여 강점이 발현되는 조건과 반복해서 마찰이 생기는 조건을 함께 구체적으로 설명한다. 그 조건이 직업과 관계 및 일상의 반복되는 의사 결정에서 어떤 방식으로 작용하는지를 설명한다.\n근거: ${evidence}`).join('\n')
 }

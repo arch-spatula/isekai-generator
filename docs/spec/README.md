@@ -10,7 +10,6 @@
 
 - [생성 아티팩트의 책임별 폴더 분리 계획](artifact-directory-layout.md)
 
-- [SQLite 기반 아티팩트 상태 관리와 작업 재개 구현 계획](sqlite-artifact-state.md) — 폐기됨, 코드 제거 전 현재 동작 기록
 
 - [생성 아티팩트 버전 및 기준선 관리](artifact-generation-versioning.md)
 - [생성 진행 기록과 중단 후 인계](artifact-progress-handoff.md)

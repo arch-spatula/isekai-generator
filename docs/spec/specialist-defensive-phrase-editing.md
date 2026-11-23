@@ -4,19 +4,14 @@
 > 작성일: 2026-11-10
 > 범위: 전문 해석 생성 이후, 취합 에이전트에 전달하기 전 방어문구 검사·부분 편집
 
-## SQLite 전환 적용
+## 파일 기반 진행 상태 적용
 
-> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+> 2026-11-23부터 신규 생성의 진행 상태는 [SQLite 제거 명세](remove-sqlite-state.md)의 파일 기반 명령으로 관리한다. SQLite 상태 저장소와 그 CLI는 삭제되었다. 구형 아티팩트는 소급 변환하지 않는다.
 
-> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
-
-신규 실행의 편집 입력·제출·결과·채택은 DB에서 관리한다. edits/evidence/input/result/
-accepted JSON을 생성하지 않고 편집 제안을 stdin으로 제출한다. 세 scope와 총 3회 예산,
-의미 검토와 원본 hash 검증은 유지한다. 종료 확인된 운영 중단의 명시적 재개는 남은 예산
-안에서 같은 scope를 사용하며 scope 확대 사유로 삼지 않는다. 아래 파일 경로와 구형 CLI
-예시는 전환 전 기록이고, 새 명령과 게시·재개는 SQLite 명세가 우선한다.
-
-상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+편집 시도는 `garbage/<stage>/edit-<n>/`에 만든다. 편집 에이전트는 `artifact-input.ts`로 source·진단·`allowedTargets`를 받고,
+제안은 `artifact-edit.ts`로 판정해 `candidate.md`와 `result.md`를 한 번 쓴다. 제안 원문은 보관하지 않는다. 세 scope와 총 3회 예산,
+의미 검토와 source 해시 검증은 유지한다. 끊긴 편집을 확인 후 교체하면 같은 scope를 쓰며 scope 확대 사유로 삼지 않는다.
+아래 파일 경로와 구형 CLI 예시는 이전 구현의 기록이다.
 
 ## 1. 문제와 결정
 

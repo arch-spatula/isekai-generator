@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { parseWorldRegistry, closestWorldEntries } from './world-contract'
 import { worldFingerprints } from './world-fixtures'
 const entry = { version: 'v0.1.30', candidateId: 'W-01', fingerprint: worldFingerprints[0], spatialPlay: '연속된 숲의 관문을 열고 고정 도시로 귀환한다.' }
-// Persistence, insert failure and completion are tested through SQLite finalize, not a second file backend.
+// Registries are built from published briefs; see scripts/artifacts/pipeline-status.test.ts and pipeline-fingerprints.test.ts.
 test('world snapshots reject duplicate versions, unknown axes and corrupt input', () => {
   expect(parseWorldRegistry({ schemaVersion: 1, entries: [entry] }).entries).toEqual([entry])
   expect(() => parseWorldRegistry({ schemaVersion: 1, entries: [entry, entry] })).toThrow()
