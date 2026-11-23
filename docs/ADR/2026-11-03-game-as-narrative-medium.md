@@ -71,7 +71,7 @@
 
 ## 5.1 생성 프롬프트
 
-[`docs/prompts/personalized-action-rpg-concept.md`](../prompts/personalized-action-rpg-concept.md)에
+[`docs/legacy/prompts/personalized-action-rpg-concept.md`](../legacy/prompts/personalized-action-rpg-concept.md)에
 다음을 생성 원칙과 자체 점검 기준으로 반영한다.
 
 - 각 핵심 시스템이 주인공의 욕구, 갈등 또는 변화와 어떻게 연결되는지 설명할 것

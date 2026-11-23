@@ -6,7 +6,7 @@
 * **Scope:** 전문 해석·통합 해석 에이전트 호출 지시와 생성 후 편집
 
 이 문서는 2026-11-09 당시의 결정과 구현 전 상태를 보존한다. 현재 전문 해석 편집의
-구현 계약은 [전문 해석 편집 명세](../spec/specialist-defensive-phrase-editing.md)를 따른다.
+구현 계약은 [전문 해석 편집 명세](../legacy/spec/specialist-defensive-phrase-editing.md)를 따른다.
 
 ## Context
 
@@ -56,4 +56,4 @@
 ## Related Documents
 
 - [해석 품질 인시던트](../incidents/2026-11-03-interpretation-prompt-quality.md)
-- [전문 해석 복구 명세](../spec/specialist-interpretation-recovery.md)
+- [전문 해석 복구 명세](../legacy/spec/specialist-interpretation-recovery.md)

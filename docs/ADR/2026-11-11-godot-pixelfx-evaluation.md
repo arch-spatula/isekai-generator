@@ -151,7 +151,7 @@ Godot 네이티브 파티클·셰이더 또는 제한된 수작업 효과를 비
 
 ## 근거
 
-- [게임 표현 공통 계약](../spec/game-presentation-contract.md)
+- [게임 표현 공통 계약](../legacy/spec/game-presentation-contract.md)
 - [Tauri 출생 프로필·명식 톱니바퀴 UI 명세](../spec/tauri-birth-profile-gear-ui.md)
 - [Orrery 계산 엔진의 단계적 Lua 포팅](2026-11-02-orrery-core-lua-port.md)
 - [Pixelbolt를 활용한 코드 기반 이펙트 제작 계획](2026-11-09-pixelbolt-vfx-plan.md)

@@ -15,7 +15,7 @@
 - **주인공의 배경을 해석하지 않았다.** 통합 해석은 "어떤 사람인가"를 영역별로 정리했을 뿐, 어디서 태어나 어떻게 자랐고 무엇 때문에
   떠났는지 같은 일생의 사건을 담지 않았다. 배경을 해석할 재료가 충분히 있었는데도 그것을 해석하는 단계가 없었다.
 
-이전 [직역 개선 계획](../GDD/personalized-gdd-remediation-plan.md)은 현실 직무 명사를 능력으로 직역하는 문제(심사 → 심사관)만 다뤘다.
+이전 [직역 개선 계획](../legacy/GDD/personalized-gdd-remediation-plan.md)은 현실 직무 명사를 능력으로 직역하는 문제(심사 → 심사관)만 다뤘다.
 기호 직역과 배경 부재는 다루지 않았다.
 
 한편 Claude 스킬 흐름은 차트에서 일생 통합 해석 `life.md`까지 만든다. `life.md`는 기호를 생애 사건으로 옮긴 문서이며(별·궁·행성 이름을
@@ -55,6 +55,6 @@ chart-report → saju·ziwei·natal judgment → derived facts → saju·ziwei·
 ## 결과
 
 - [게임 번역 명세](../spec/life-to-game-translation.md)의 열린 질문 "두 생성 흐름을 잇는 방법"은 이 결정으로 정리된다. 흐름은 하나다.
-- 기존 GDD 템플릿(`docs/prompts/personalized-action-rpg-concept.md`)은 쓰지 않는다. GDD의 절은 번역 브리프와 앞 단계가 넘기는 것에서 새로 정한다
+- 기존 GDD 템플릿(`docs/legacy/prompts/personalized-action-rpg-concept.md`)은 쓰지 않는다. GDD의 절은 번역 브리프와 앞 단계가 넘기는 것에서 새로 정한다
   ([Claude 게임 설계 흐름](../spec/claude-game-design-flow.md)).
 - 이전 직역 개선 계획의 원칙(표면 명사 제거 → 행동 패턴 변환)은 세계관과 배경까지 넓혀 적용한다.

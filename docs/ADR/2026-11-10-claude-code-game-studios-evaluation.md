@@ -95,5 +95,5 @@ README의 브라우저 게임 비교·확장 사례는 저자의 보고이며 �
 
 - [게임 개발 결과물의 아티팩트 정의](2026-11-02-game-development-artifacts.md)
 - [구현·테스트 작성·테스트 리뷰의 역할 분리](../spec/three-agent-implementation-workflow.md)
-- [공통 게임 화면·아트 계약](../spec/game-presentation-contract.md)
+- [공통 게임 화면·아트 계약](../legacy/spec/game-presentation-contract.md)
 - [로컬 아티팩트와 영구 문서의 경계](../spec/local-artifact-document-boundary.md)

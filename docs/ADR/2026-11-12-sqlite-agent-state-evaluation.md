@@ -19,8 +19,8 @@
 모델 토큰이 소비되는 것은 아니다.
 
 [이벤트 기록 모듈](../../scripts/artifacts/artifact-events.ts)은 상태 파일과 별도로 로그를
-저장하므로 중단 시 실제 기록을 대조해야 한다. [세계 선택 명세](../spec/world-concept-selection.md)는
-전투·세계 레지스트리의 부분 등록을 별도로 처리한다. [진행 인계 명세](../spec/artifact-progress-handoff.md)는
+저장하므로 중단 시 실제 기록을 대조해야 한다. [세계 선택 명세](../legacy/spec/world-concept-selection.md)는
+전투·세계 레지스트리의 부분 등록을 별도로 처리한다. [진행 인계 명세](../legacy/spec/artifact-progress-handoff.md)는
 중단된 실행의 상태와 관련 기록을 확인하는 절차를 정의한다. 이처럼 저장 구조가
 에이전트 운영 지침과 복구 로직에 영향을 준다.
 

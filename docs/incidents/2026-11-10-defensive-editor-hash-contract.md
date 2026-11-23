@@ -51,7 +51,7 @@ input.json 파일 자체의 SHA-256 = H_json (H_source와 다름)
 위 사례는 관찰된 혼선만 추출한 합성이며 실제 개인 입력이나 편집 본문을 재현하지 않는다.
 최상위 제안 해시가 다르거나 원문이 준비 이후 바뀐 경우에는 계속 거부한다. 의미 보존,
 원문 일치, 범위, 진단·추가 대상 연결, 리뷰 완결성과 채택 해시 검증도 유지한다.
-상세 계약은 [방어문구 편집 명세](../spec/specialist-defensive-phrase-editing.md)를 따른다.
+상세 계약은 [방어문구 편집 명세](../legacy/spec/specialist-defensive-phrase-editing.md)를 따른다.
 
 ## 재현과 수용 검증
 

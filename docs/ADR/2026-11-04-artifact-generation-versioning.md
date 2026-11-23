@@ -126,7 +126,7 @@ minor는 사람의 승격 결정으로만 변경한다.
 # 5. Implementation Direction
 
 구현 계약과 단계는
-[생성 아티팩트 버전 및 기준선 관리 명세](../spec/artifact-generation-versioning.md)를
+[생성 아티팩트 버전 및 기준선 관리 명세](../legacy/spec/artifact-generation-versioning.md)를
 따른다. 이 ADR의 채택만으로 활성 series를 변경하지 않으며, 구현과 승격 조건 검증이
 끝날 때까지 현재 `v0.1`을 유지한다.
 

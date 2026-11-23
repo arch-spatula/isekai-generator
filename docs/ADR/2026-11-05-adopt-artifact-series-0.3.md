@@ -31,7 +31,7 @@ known issue로 유지한다. 소유자의 채택 의사에 따라 이 회귀 비
 
 ## 관련 문서
 
-- [생성 진행 기록 명세](../spec/artifact-progress-handoff.md)
-- [버전 관리 명세](../spec/artifact-generation-versioning.md)
+- [생성 진행 기록 명세](../legacy/spec/artifact-progress-handoff.md)
+- [버전 관리 명세](../legacy/spec/artifact-generation-versioning.md)
 - [해석 프롬프트 품질 이슈](../incidents/2026-11-03-interpretation-prompt-quality.md)
 - [해양 세계관 수렴 이슈](../incidents/2026-11-04-maritime-world-setting-convergence.md)

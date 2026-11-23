@@ -80,7 +80,7 @@ source 및 제출의 source hash를 먼저 확인한다. 이 무결성 검사가
 사유와 진단이 있는 `validation_failed`, 실행 실패는 안전한 사유와 진단이 있는
 `execution_failed`로 기록한다. `editing-required`는 여전히 전문 문서를 게시하지 않는다.
 
-상세 계약은 [방어문구 편집 명세](../spec/specialist-defensive-phrase-editing.md)와
+상세 계약은 [방어문구 편집 명세](../legacy/spec/specialist-defensive-phrase-editing.md)와
 [이벤트 기록 모듈](../../scripts/artifacts/artifact-events.ts)를 따른다. 전날 발견한 해시 계약 혼선과
 수용 검증은 [방어문구 편집 해시 계약 인시던트](2026-11-10-defensive-editor-hash-contract.md)에
 별도로 기록돼 있다.

@@ -78,10 +78,10 @@ artifacts/
 ## 구현 상태
 
 이 결정은 코드로 구현되지 않았다. 같은 날 SQLite 자체를 쓰지 않기로 대체되었고, 2026-11-23에 SQLite 코드가 삭제되었다
-([SQLite 제거 명세](../spec/remove-sqlite-state.md)).
+([SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md)).
 
 ## 관련 문서
 
-- [SQLite 제거 명세](../spec/remove-sqlite-state.md)
-- [책임별 폴더 계약](../spec/artifact-directory-layout.md)
-- [생성 아티팩트 버전 및 기준선 관리](../spec/artifact-generation-versioning.md)
+- [SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md)
+- [책임별 폴더 계약](../legacy/spec/artifact-directory-layout.md)
+- [생성 아티팩트 버전 및 기준선 관리](../legacy/spec/artifact-generation-versioning.md)

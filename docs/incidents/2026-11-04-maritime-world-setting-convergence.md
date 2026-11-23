@@ -6,7 +6,7 @@
 - 집중 관찰 구간: 관찰 23~관찰 28
 - 상태: 완화 설계·구현 및 결정적 테스트 완료, 실제 대표 입력 생성 회귀 대기
 - 후속 결정: [전투 선택과 세계 구조 선택 분리](../ADR/2026-11-04-independent-world-concept-selection.md)
-- 구현 명세: [세계 구조 선택](../spec/world-concept-selection.md)
+- 구현 명세: [세계 구조 선택](../legacy/spec/world-concept-selection.md)
 
 ## 자료의 보존 범위
 

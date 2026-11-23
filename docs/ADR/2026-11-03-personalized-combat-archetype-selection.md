@@ -185,4 +185,4 @@ GDD 지문 검증으로 파이프라인에 적용되었다. 구현 순서는 다
 - [개인화 GDD 전투 원형 수렴 이슈](../incidents/2026-11-03-combat-archetype-convergence.md)
 - [개인화 이세계 Action RPG 생성 프롬프트 설계](2026-09-24-personalized-action-rpg-concept-prompt.md)
 - [게임을 개인화된 서사 전달 매체로 정의](2026-11-03-game-as-narrative-medium.md)
-- [해석 지침](../prompts/interpretation-guidelines.md)
+- [해석 지침](../legacy/prompts/interpretation-guidelines.md)

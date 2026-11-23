@@ -36,4 +36,4 @@
 않는다. 대표 입력 회귀 생성으로 실제 효과를 별도 확인한다. 과거 결과와 지문은 소급 생성하거나
 수정하지 않으며 활성 artifact series는 `0.1`로 유지한다.
 
-구현 계약은 [세계 구조 선택 명세](../spec/world-concept-selection.md)를 따른다.
+구현 계약은 [세계 구조 선택 명세](../legacy/spec/world-concept-selection.md)를 따른다.

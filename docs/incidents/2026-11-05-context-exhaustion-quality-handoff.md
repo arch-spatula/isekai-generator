@@ -138,6 +138,6 @@
 
 ## 관련 문서
 
-- [생성 진행 기록과 중단 후 인계](../spec/artifact-progress-handoff.md): 단계 진행 인계의 현재 구현 범위
-- [전문 해석 실패 복구](../spec/specialist-interpretation-recovery.md): 기존 검증 실패와 3회 한도
+- [생성 진행 기록과 중단 후 인계](../legacy/spec/artifact-progress-handoff.md): 단계 진행 인계의 현재 구현 범위
+- [전문 해석 실패 복구](../legacy/spec/specialist-interpretation-recovery.md): 기존 검증 실패와 3회 한도
 - [해석 프롬프트 품질 이슈](2026-11-03-interpretation-prompt-quality.md): 별도의 실제 재발 기록
