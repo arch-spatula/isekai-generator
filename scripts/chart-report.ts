@@ -64,7 +64,7 @@ export async function allChartsToText(input: BirthInput, options: TextExportOpti
   return [saju, ziwei, natal].filter((part) => part != null).join('\n\n')
 }
 
-const KO_TEXT: Record<string, string> = {
+export const KO_TEXT: Record<string, string> = {
   'export.timeKst': '시각 기준: KST(UTC+09:00) 벽시계로 정규화; 역사적 표준시·서머타임 보정',
   'export.timeSolar': '시각 기준: IANA 현지 시각 → UTC → 경도·균시차 기반 진태양시',
   'export.timeUnspecified': '시각 기준: 원본 타임존 정보 미제공',

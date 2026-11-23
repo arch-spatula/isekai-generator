@@ -15,7 +15,7 @@ const MODERN_RULER: Partial<Record<ZodiacSign, PlanetId>> = { Scorpio: 'Pluto', 
 const EXALTATION: Partial<Record<ZodiacSign, PlanetId>> = {
   Aries: 'Sun', Taurus: 'Moon', Virgo: 'Mercury', Pisces: 'Venus', Capricorn: 'Mars', Cancer: 'Jupiter', Libra: 'Saturn',
 }
-const SIGNS = Object.keys(TRADITIONAL_RULER) as ZodiacSign[]
+export const SIGNS = Object.keys(TRADITIONAL_RULER) as ZodiacSign[]
 /** 본질적 품위 대상: 전통 7행성 */
 const TRADITIONAL_PLANETS: PlanetId[] = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']
 
