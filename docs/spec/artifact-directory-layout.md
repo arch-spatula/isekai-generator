@@ -39,7 +39,7 @@ artifacts/
             └── …
 ```
 
-상태 DB는 두지 않는다([파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)). 현재 코드는 제거 전까지 `artifacts/state.sqlite`를 만든다. 단독 차트 실행은 `charts/`에만
+상태 DB는 두지 않는다([파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)). 버전 폴더 루트에는 한 번 쓰는 `run.md`가 있다. 단독 차트 실행은 `charts/`에만
 게시하며, 쓰지 않는 폴더나 빈 안내 문서를 미리 만들지 않는다.
 
 | 단계 ID | 기존 `docs/GDD/` 내부 파일명 | 신규 게시 상대 경로 |
@@ -59,6 +59,8 @@ artifacts/
 임시 후보는 기존 `garbage/`에 두고, 기존 경로에 중복 게시하거나 별칭 링크를 만들지 않는다.
 
 ## 3. 기존 실행과의 경계
+
+> 이 절의 DB·`documents.final_path`·`runs.config` 서술은 2026-11-15 구현 당시의 기록이다. SQLite는 2026-11-23 삭제되었고, 지금은 [SQLite 제거 명세](remove-sqlite-state.md)의 단계표가 정식 경로를 정한다.
 
 - 신규 할당 run부터 새 경로를 사용한다. 기존 로컬 폴더와 DB의 경로를 이동·재작성하지 않는다.
 - DB에 저장된 `documents.final_path`는 해당 게시의 원본 경로다. 읽기·게시 복구는

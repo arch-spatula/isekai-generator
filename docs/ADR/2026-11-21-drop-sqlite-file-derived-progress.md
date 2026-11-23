@@ -1,6 +1,6 @@
 # ADR: 실행 상태 저장소를 없애고 진행 상태를 버전 폴더의 파일에서 계산한다
 
-* **Status:** Accepted — 문서 결정, 코드 제거 전
+* **Status:** Accepted — 구현 완료(2026-11-23)
 * **Date:** 2026-11-21
 * **Decision Owners:** Project Owner
 * **Supersedes:** [SQLite와 목적별 CLI ADR](2026-11-12-sqlite-agent-state-evaluation.md),
@@ -53,14 +53,11 @@ SQLite만이 해 줄 수 있는 일이 없었다.
 
 ## 구현 상태
 
-이 결정은 2026-11-21 문서로만 반영했다. **SQLite 코드는 아직 남아 있다.**
-
-- `scripts/artifacts/`의 상태 저장 계층, `scripts/artifact-state.ts`, `scripts/read-artifact-state.ts`와 `.agents/skills/`의
-  생성 스킬은 여전히 SQLite CLI로 동작하며 `artifacts/state.sqlite`를 만든다.
-- 이 코드와 스킬을 단계표·상태 명령·파일 기반 시도 기록으로 바꾸는 작업은 후속이다. 그 전까지 SQLite 관련 명세는
-  현재 코드의 동작 기록으로만 읽고 새 설계의 근거로 쓰지 않는다.
+2026-11-23에 [SQLite 제거 명세](../spec/remove-sqlite-state.md)의 다섯 단계로 구현을 마쳤다. 상태 저장 계층, `artifact-state.ts`,
+`read-artifact-state.ts`와 SQLite 전용 테스트는 삭제되었고, 생성 스킬은 상태·시도·입력·편집 판정·지문·게시 명령을 쓴다. 저장소에서
+`bun:sqlite`를 import하는 코드는 없다.
 
 ## 관련 문서
 
 - [실행 상태 SQLite를 아티팩트 루트에 둔 설계 오류](../incidents/2026-11-21-artifact-root-sqlite-design.md)
-- [SQLite 상태 관리·작업 재개 명세](../spec/sqlite-artifact-state.md) — 폐기됨, 현재 코드 동작 기록
+- [SQLite 제거 명세](../spec/remove-sqlite-state.md)

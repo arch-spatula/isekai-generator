@@ -5,8 +5,7 @@ import { createAttempt, publishStep } from './pipeline-actions'
 import { compareFingerprint } from './pipeline-fingerprints'
 import { allocateRun, attemptInput, finishEdit } from './pipeline-run'
 import { pipelineStatus, type StepId } from './pipeline-status'
-import { interpretation, syntheticReport } from './sqlite-test-fixtures'
-import { combatBrief, integratedInterpretation, pipelineGdd, worldBrief } from '../fixtures/sqlite-pipeline'
+import { combatBrief, integratedInterpretation, pipelineGdd, worldBrief, interpretation, syntheticReport } from '../fixtures/pipeline-documents'
 import { makeRepository } from './test-fixtures'
 
 function write(dir: string, path: string, text: string): void {

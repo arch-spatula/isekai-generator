@@ -2,10 +2,10 @@
 
 ## 상태
 
-- 상태: SQLite 폐기 결정·문서 갱신 완료, 아티팩트 루트 DB 삭제 완료, 코드 제거 전
+- 상태: 해결 — SQLite 폐기 결정, 아티팩트 루트 DB 삭제, SQLite 코드 제거 완료(2026-11-23)
 - 후속 결정: [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](../ADR/2026-11-21-per-version-sqlite-state.md) → 같은 날 [진행 상태를 버전 폴더의 파일에서 계산](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 대체
 - 원래 결정: [SQLite와 목적별 CLI ADR](../ADR/2026-11-12-sqlite-agent-state-evaluation.md)
-- 관련 명세: [SQLite 상태 관리·작업 재개 명세](../spec/sqlite-artifact-state.md)
+- 관련 명세: [SQLite 제거 명세](../spec/remove-sqlite-state.md) (당시의 SQLite 상태 관리 명세는 2026-11-23 삭제)
 
 ## 요약
 
@@ -75,9 +75,8 @@ SQLite는 방어 편집 제안을 stdin JSON으로 받아 시도 기록에 그�
 도구가 제안을 적용한 결과인 `candidate.md`와 `result.md`만 남긴다. 위 두 번째 재검증이 필요하므로, 통합 편집의 `result.md`에는
 진단마다 처리 결과(수정 또는 보존)와 보존 사유를 남긴다. 제안 원문 자체가 필요해지는 사례가 생기면 그때 보관 방식을 다시 정한다.
 
-## 남은 일
+## 해결
 
-- **코드 제거:** 현재 코드(`scripts/artifacts/artifact-state-store.ts` 등)는 여전히 `artifacts/state.sqlite`를 연다.
-  단계표·상태 명령·파일 기반 시도 기록으로 바꾸기 전에 SQLite 파이프라인으로 새 실행을 예약하면 루트 DB가 다시 생긴다.
-- **스킬 지침:** `generate-personalized-gdd` 스킬의 `registry-stale` 처리 안내는 현재 코드 동작과 맞춰 두었으므로
-  코드 변경과 함께 고친다.
+2026-11-23에 [SQLite 제거 명세](../spec/remove-sqlite-state.md)의 다섯 단계로 SQLite 상태 저장 계층과 CLI를 삭제했다. 생성 스킬은 버전
+폴더의 파일과 검증기로 진행 상태를 계산하는 명령을 쓰며, 실행이 DB 파일을 만들지 않는다. `generate-personalized-gdd` 스킬의
+`registry-stale` 안내도 함께 제거했다.

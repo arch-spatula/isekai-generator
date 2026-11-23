@@ -3,8 +3,7 @@ import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pipelineStatus, type StepId } from './pipeline-status'
-import { interpretation, syntheticReport } from './sqlite-test-fixtures'
-import { combatBrief, integratedInterpretation, pipelineGdd, worldBrief } from '../fixtures/sqlite-pipeline'
+import { combatBrief, integratedInterpretation, pipelineGdd, worldBrief, interpretation, syntheticReport } from '../fixtures/pipeline-documents'
 
 const EMPTY_REGISTRY = JSON.stringify({ schemaVersion: 1, entries: [] })
 

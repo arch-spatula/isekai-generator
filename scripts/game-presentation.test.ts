@@ -1,7 +1,3 @@
-import { Database } from 'bun:sqlite'
-import { beforeGdd, beforeFinalize } from './fixtures/sqlite-pipeline-runtime'
-import { pipelineGdd as fullPipelineGdd } from './fixtures/sqlite-pipeline'
-import { prepare, submit, finish, call, request } from './artifacts/sqlite-test-fixtures'
 import { gddTemplateFixture } from './fixtures/gdd-template'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -69,28 +65,6 @@ test('world and final GDD validation require matching presentation in every upst
     expect(isValidGdd(gdd, chart, fixtureInterpretation, invalid(combat), world)).toBe(false)
     expect(isValidGdd(gdd, chart, fixtureInterpretation, combat, invalid(world))).toBe(false)
   }
-})
-
-test('public finish rejects a GDD missing its shared presentation and cannot register it', () => {
-  const { root, run } = beforeGdd()
-  const attempt = prepare(root, run, 'gdd').data
-  writeFileSync(attempt.output, fullPipelineGdd().replace(presentationFixture, ''))
-  submit(root, attempt)
-  expect(finish(root, attempt).outcome).toBe('validation-failed')
-  const result = call(root, ['finalize', '--run', run, '--request', request()])
-  expect(result.code).toBe(1)
-  const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
-  try { expect(db.query('SELECT count(*) AS count FROM fingerprints').get()).toEqual({ count: 0 }) } finally { db.close() }
-})
-
-test('invalid presentation never overwrites an already accepted GDD', () => {
-  const { root, run, directory } = beforeFinalize()
-  const path = join(directory, 'game/personalized-action-rpg-concept.md')
-  const before = readFileSync(path, 'utf8')
-  const attempted = call(root, ['prepare', '--run', run, '--stage', 'gdd', '--kind', 'generate', '--request', request()])
-  expect(attempted.code).toBe(1)
-  expect(JSON.parse(attempted.stderr).error.code).toBe('stage-not-available')
-  expect(readFileSync(path, 'utf8')).toBe(before)
 })
 
 test('declaration validation does not pretend to judge prose semantics or ban negative mentions', () => {

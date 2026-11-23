@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { closestEntries, parseRegistry, type Axes } from './fingerprint-registry'
 const fingerprint: Axes = { combatRange: 'long', powerMedium: 'spell', initiative: 'reactive', spaceUse: 'swap', combatRhythm: 'cycle', mastery: 'aim', risk: 'focus_break' }
-// Runtime registration is covered through the atomic two-kind finalize in sqlite-pipeline.test.ts.
+// Snapshot comparison against attempt folders is covered in scripts/artifacts/pipeline-fingerprints.test.ts.
 describe('combat registry pure comparison contract', () => {
   test('accepts an empty snapshot and rejects duplicate versions or malformed axes', () => {
     expect(parseRegistry('{"schemaVersion":1,"entries":[]}').entries).toEqual([])

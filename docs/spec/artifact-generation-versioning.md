@@ -5,19 +5,13 @@
 > 근거 결정: [생성 아티팩트 버전을 기준선과 실행 이력으로 구분](../ADR/2026-11-04-artifact-generation-versioning.md)
 > 범위: `artifacts/vX.Y.Z` 생성 실행의 series 승격, patch 예약, 실행 상태와 계보 기록
 
-## SQLite 전환 적용
+## 파일 기반 진행 상태 적용
 
-> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+> 2026-11-23부터 신규 생성의 진행 상태는 [SQLite 제거 명세](remove-sqlite-state.md)의 파일 기반 명령으로 관리한다. SQLite 상태 저장소와 그 CLI는 삭제되었다. 구형 아티팩트는 소급 변환하지 않는다.
 
-> 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
-
-신규 실행의 상태·이벤트는 그 실행의 버전 폴더 루트 `artifacts/<version>/state.sqlite`에 기록한다
-([버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)). 버전 번호는 DB 카운터 없이 버전 폴더의 배타적 생성으로 확정한다.
-`.agents/artifact-series.json`은 Git 기준선 설정으로 유지한다. 구형 폴더는 이름만 확인하여
-번호 충돌을 피하고 내용 import는 하지 않는다. 아래 manifest 파일 생성·갱신 설명은 전환 전
-구현 기록이며 신규 실행 계약이 아니다.
-
-상세 계약은 [SQLite 상태 관리·작업 재개 명세](sqlite-artifact-state.md)를 따른다.
+신규 실행은 `artifact-allocate.ts`가 활성 series의 다음 버전 폴더를 배타적으로 만들고 한 번 쓰는 `run.md`에 종류·모드·목적·
+기준선과 source revision·dirty 여부를 남긴다. `.agents/artifact-series.json`은 Git 기준선 설정으로 유지한다. 구형 폴더는 이름만
+확인해 번호 충돌을 피하고 내용은 읽지 않는다. 아래 실행 manifest 생성·갱신과 상태 전이 설명은 이전 구현의 기록이며 현재 계약이 아니다.
 
 ## 1. 목적과 성공 조건
 

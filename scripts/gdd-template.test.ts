@@ -1,7 +1,3 @@
-import { Database } from 'bun:sqlite'
-import { beforeGdd } from './fixtures/sqlite-pipeline-runtime'
-import { pipelineGdd as fullPipelineGdd } from './fixtures/sqlite-pipeline'
-import { prepare, submit, finish, call, request } from './artifacts/sqlite-test-fixtures'
 import { expect, test } from 'bun:test'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -52,16 +48,4 @@ test('isValidGdd enforces structure on otherwise valid declarations and evidence
   const args = ['합성 차트 원본', fixtureInterpretation, combat, serializeWorldBrief()] as const
   expect(validator.isValidGdd(fullGdd, ...args)).toBe(true)
   for (const markdown of invalidOutlines) expect(validator.isValidGdd(declarations + markdown, ...args)).toBe(false)
-})
-
-test('public finish rejects an invalid GDD outline and preserves registration state', () => {
-  const { root, run } = beforeGdd()
-  const attempt = prepare(root, run, 'gdd').data
-  writeFileSync(attempt.output, fullPipelineGdd().replace(gddTitle, '# 임의 제목'))
-  submit(root, attempt)
-  expect(finish(root, attempt).outcome).toBe('validation-failed')
-  const result = call(root, ['finalize', '--run', run, '--request', request()])
-  expect(result.code).toBe(1)
-  const db = new Database(join(root, 'artifacts/state.sqlite'), { readonly: true })
-  try { expect(db.query('SELECT count(*) AS count FROM fingerprints').get()).toEqual({ count: 0 }) } finally { db.close() }
 })

@@ -68,11 +68,3 @@ export function parseRegistry(value: string): FingerprintRegistry {
   }
   return registry as FingerprintRegistry
 }
-
-export async function loadRegistry(repositoryRoot: string): Promise<FingerprintRegistry> {
- const {ArtifactState}=await import('../../../../scripts/artifacts/artifact-state-store')
- const state=new ArtifactState(repositoryRoot,false,true)
- try{return state.registry('combat')}finally{state.close()}
-}
-export async function initializeRegistry(_path:string):Promise<void>{throw new Error('Registry initialization belongs to artifact-state allocate')}
-export async function registerFingerprint(_path:string,_entry:RegistryEntry):Promise<void>{throw new Error('Use artifact-state finalize for atomic combat and world registration')}
