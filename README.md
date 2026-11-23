@@ -98,7 +98,14 @@ $implement-with-test-review docs/spec/<명세 파일>.md를 구현해줘.
 
 일생 해석 사이에는 스크립트 단계가 있습니다. `/<체계>-life` 앞에 `bun scripts/derive-judgment-facts.ts <saju|ziwei> <차트 폴더>`,
 `/life-integration` 앞에 `bun scripts/assemble-life-material.ts <차트 폴더>`를 실행합니다. 스킬이 필요한 시점에 알려 줍니다.
-`life.md` 이후의 게임 설계 단계는 [Claude 게임 설계 흐름](docs/spec/claude-game-design-flow.md)에 따라 만들고 있습니다.
+`life.md` 다음은 게임 설계 단계입니다. 각 단계는 앞 단계 문서만 읽습니다([Claude 게임 설계 흐름](docs/spec/claude-game-design-flow.md)).
+
+```text
+/translate-life <차트 폴더>
+/design-combat <차트 폴더>
+/design-world <차트 폴더>
+/write-gdd <차트 폴더>
+```
 
 | 스킬 | 용도 |
 | --- | --- |
@@ -106,6 +113,10 @@ $implement-with-test-review docs/spec/<명세 파일>.md를 구현해줘.
 | [saju-judgment](.claude/skills/saju-judgment/SKILL.md) 외 2개 | 체계별 1차 판단 |
 | [saju-life](.claude/skills/saju-life/SKILL.md) 외 2개 | 체계별 일생 해석 |
 | [life-integration](.claude/skills/life-integration/SKILL.md) | 세 체계 일생 해석을 하나의 일생 통합 해석(`life.md`)으로 합침 |
+| [translate-life](.claude/skills/translate-life/SKILL.md) | `life.md`를 게임 재료로 옮긴 번역 브리프(`translation-brief.md`) |
+| [design-combat](.claude/skills/design-combat/SKILL.md) | 후보 네 개를 비교해 고른 전투 설계(`combat.md`) |
+| [design-world](.claude/skills/design-world/SKILL.md) | 배경과 장에서 출발한 세계 설계(`world.md`) |
+| [write-gdd](.claude/skills/write-gdd/SKILL.md) | 앞 세 문서를 잇는 GDD(`gdd.md`) |
 
 ## 크레딧
 

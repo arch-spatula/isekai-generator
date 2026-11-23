@@ -24,6 +24,7 @@
 - 동료 후보와 일생 번역 브리프: `bun test scripts/check-translation-brief.test.ts` (`translation-brief/translation-brief.md`는 위 통합 문서를 입력으로 직접 쓴 가상 브리프)
 - 전투 설계: `bun test scripts/check-combat.test.ts` (`combat/combat.md`는 위 브리프를 입력으로 직접 쓴 가상 전투 설계)
 - 세계 설계: `bun test scripts/check-world.test.ts` (`world/world.md`는 위 브리프와 전투 설계를 입력으로 직접 쓴 가상 세계 설계)
+- GDD: `bun test scripts/check-gdd.test.ts` (`gdd/gdd.md`는 위 브리프·전투·세계 설계를 입력으로 직접 쓴 가상 GDD)
 - 차트 명칭 검사: `bun test scripts/chart-names.test.ts` (거부·허용 문장은 테스트 안의 합성 예시)
 
 테스트 통과는 해당 구조 계약의 검증이며 실제 개인화 품질이나 과거 관찰 집계를 재현했다는
