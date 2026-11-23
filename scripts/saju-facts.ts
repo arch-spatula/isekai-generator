@@ -124,10 +124,10 @@ export function sajuFactsToText(result: SajuResult): string {
     ['배우자', sex, male ? ['正財'] : ['正官']],
     ['자녀', sex, male ? ['正官', '偏官'] : ['食神', '傷官']],
   ]
-  lines.push('육친 (십신 → 가족 역할, 일간 외 천간과 지지 정기 기준 · 배우자 자리는 日支):')
+  lines.push("육친 (십신 → 가족 역할, 일간 외 천간과 지지 정기 기준 · 배우자 자리는 日支 · '원국에 없음'은 그 십신 글자가 없다는 뜻이며 그 사람이 없다는 뜻이 아님):")
   for (const [role, prefix, sipsins] of kin) {
     const found = positions.filter(({ sipsin }) => sipsins.includes(sipsin)).map(({ label, sipsin }) => `${label} ${sipsin}`)
-    lines.push(`  ${role} (${prefix}${sipsins.join('·')}): ${found.length > 0 ? found.join(', ') : '없음'}`)
+    lines.push(`  ${role} (${prefix}${sipsins.join('·')}): ${found.length > 0 ? found.join(', ') : '원국에 없음'}`)
   }
   lines.push(`  배우자 자리: 日支 ${day.pillar.branch} ${day.branchSipsin}`)
 
