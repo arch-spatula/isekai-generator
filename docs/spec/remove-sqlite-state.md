@@ -137,6 +137,15 @@ bun scripts/artifact-publish.ts <version-dir> <stage>
 - 지문 등록 단계가 없다. 게시된 브리프 자체가 다음 run의 비교 자료다.
 - 이렇게 모은 레지스트리는 선택 시도 폴더의 `registry.json` 스냅샷으로 고정한다(5절).
 
+```text
+bun scripts/artifact-fingerprints.ts <version-dir> <attempt> [--candidate '<JSON axes>']
+```
+
+- 선택 시도 폴더의 `registry.json`과 후보 지문을 비교해 `comparedEntries`, 같은 축 수가 가장 큰 모든 동률 항목(`closest`), `requiresChallenger`를
+  돌려준다. 근접 항목 계산은 브리프 검증기와 같은 함수(`closestEntries`, `closestWorldEntries`)를 쓴다. challenger 기준은 전투 5축,
+  세계 4축 이상이다. 후보를 주지 않으면 비교 항목 수만 돌려준다.
+- 읽기 전용이다. 시도 폴더가 전투·세계 선택이 아니거나, 스냅샷이 없거나 깨졌거나, 후보의 축이 맞지 않으면 오류 코드로 거부한다.
+
 ## 8. 실행 설정 `run.md`
 
 할당 때 버전 폴더 루트에 한 번 쓰고 수정하지 않는다.
