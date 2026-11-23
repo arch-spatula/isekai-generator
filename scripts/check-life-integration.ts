@@ -6,6 +6,7 @@ import { join } from 'node:path'
 
 import { LIFE_SYSTEMS, type LifeTextsBySystem, relationVotes } from './assemble-life-material.ts'
 import { CAST, CAST_FIELDS, CAST_ITEM_FIELDS, TIMELINE } from './check-life-document.ts'
+import { lifeTermErrors } from './chart-names.ts'
 import { checkRelations, RELATION_ITEMS } from './life-relations.ts'
 import { checkLifeDocument, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
@@ -90,6 +91,12 @@ export function checkLifeIntegration({ life, sources }: IntegrationTexts): strin
       report(forks.find((line) => line.item === item && line.key === '다른 길')!.line,
         `갈림길 > ${item}: 다른 길이 본선에 없는 체계를 인용하지 않는다`)
     }
+  }
+
+  // 문장에 차트 명칭과 판단·운세 용어를 쓰지 않는다(#66). 인용 안은 보지 않는다.
+  for (const error of lifeTermErrors(life)) {
+    const [line, ...rest] = error.split(': ')
+    report(Number(line), `${rest.join(': ')} — 통합 해석의 문장은 생애 사건 언어로 쓴다`)
   }
 
   // 상태를 판정하지 않는 인물의 부재(`함께 한 일`·`곁에 있던 시기`가 없음)는 두 체계 이상이 같은 필드를 없음으로 썼을 때만 쓴다(#65).
