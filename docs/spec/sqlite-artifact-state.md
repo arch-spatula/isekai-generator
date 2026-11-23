@@ -1,5 +1,8 @@
 # SQLite 기반 아티팩트 상태 관리와 작업 재개 구현 계획
 
+
+> **폐기됨(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 문서는 SQLite 코드가 제거되기 전까지의 현재 동작 기록이다. 새 설계나 구현의 근거로 쓰지 않는다.
+
 > 상태: 구현 완료 — 합성 통합 회귀·독립 리뷰 승인, 실제 라이트 생성 검증 진행
 > 작성일: 2026-11-12
 > 결정: [SQLite와 목적별 CLI ADR](../ADR/2026-11-12-sqlite-agent-state-evaluation.md), [버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)

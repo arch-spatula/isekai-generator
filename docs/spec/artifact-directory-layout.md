@@ -22,7 +22,6 @@ GDD를 모두 run 내부의 `docs/GDD/`에 게시했다. 문서의 책임을 구
 ```text
 artifacts/
 └── <version>/
-    ├── state.sqlite
     ├── charts/
     │   └── chart-report.md
     ├── interpretation/
@@ -40,7 +39,7 @@ artifacts/
             └── …
 ```
 
-SQLite DB와 WAL·SHM 파일은 버전 폴더 루트에 둔다([버전 폴더별 SQLite ADR](../ADR/2026-11-21-per-version-sqlite-state.md)). 단독 차트 실행은 `charts/`에만
+상태 DB는 두지 않는다([파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)). 현재 코드는 제거 전까지 `artifacts/state.sqlite`를 만든다. 단독 차트 실행은 `charts/`에만
 게시하며, 쓰지 않는 폴더나 빈 안내 문서를 미리 만들지 않는다.
 
 | 단계 ID | 기존 `docs/GDD/` 내부 파일명 | 신규 게시 상대 경로 |

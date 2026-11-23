@@ -6,6 +6,8 @@
 
 ## SQLite 전환 적용
 
+> **SQLite 폐기(2026-11-21):** [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소를 쓰지 않기로 했다. 이 절은 SQLite 코드가 제거되기 전까지의 현재 동작 기록이며 새 설계의 근거로 쓰지 않는다.
+
 > 신규 생성은 아래 SQLite 전환 계약을 사용한다. 구형 아티팩트는 소급 변환하지 않는다.
 
 신규 실행은 run TODO와 단계 JSON을 만들지 않는다. `read-artifact-state.ts`의

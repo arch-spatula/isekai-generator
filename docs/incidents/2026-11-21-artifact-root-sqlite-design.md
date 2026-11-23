@@ -2,8 +2,8 @@
 
 ## 상태
 
-- 상태: 결정·문서 갱신 완료, 아티팩트 루트 DB 삭제 완료, 코드 구현 전
-- 후속 결정: [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](../ADR/2026-11-21-per-version-sqlite-state.md)
+- 상태: SQLite 폐기 결정·문서 갱신 완료, 아티팩트 루트 DB 삭제 완료, 코드 제거 전
+- 후속 결정: [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](../ADR/2026-11-21-per-version-sqlite-state.md) → 같은 날 [진행 상태를 버전 폴더의 파일에서 계산](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 대체
 - 원래 결정: [SQLite와 목적별 CLI ADR](../ADR/2026-11-12-sqlite-agent-state-evaluation.md)
 - 관련 명세: [SQLite 상태 관리·작업 재개 명세](../spec/sqlite-artifact-state.md)
 
@@ -60,9 +60,13 @@ DB를 어디에 둘지는 비교하지 않았다.
 - 2026-11-21: 프로젝트 소유자 요청으로 아티팩트 루트의 `state.sqlite`와 WAL·SHM 파일을 삭제했다. 삭제 당시 DB에는
   실행 3건(미완료 1건, 성공 2건)과 지문 4행이 있었다. 이관하지 않았다.
 
+- 2026-11-21: 버전 폴더별 DB로 옮기는 결정을 다시 검토한 결과, SQLite만이 해 줄 수 있는 일이 없다고 판단했다. 진행 위치는
+  파일과 검증기로 계산할 수 있고, 시도·진단은 `garbage/` 시도 폴더의 파일로, run 간 지문은 게시된 브리프로 대신할 수 있다.
+  [파일 기반 진행 상태 ADR](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 SQLite 상태 저장소 자체를 쓰지 않기로 했다.
+
 ## 남은 일
 
-- **코드 구현:** 현재 코드(`scripts/artifacts/artifact-state-store.ts` 등)는 여전히 `artifacts/state.sqlite`를 연다.
-  구현 전에 SQLite 파이프라인으로 새 실행을 예약하면 루트 DB가 다시 생긴다.
+- **코드 제거:** 현재 코드(`scripts/artifacts/artifact-state-store.ts` 등)는 여전히 `artifacts/state.sqlite`를 연다.
+  단계표·상태 명령·파일 기반 시도 기록으로 바꾸기 전에 SQLite 파이프라인으로 새 실행을 예약하면 루트 DB가 다시 생긴다.
 - **스킬 지침:** `generate-personalized-gdd` 스킬의 `registry-stale` 처리 안내는 현재 코드 동작과 맞춰 두었으므로
   코드 변경과 함께 고친다.

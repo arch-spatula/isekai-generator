@@ -1,6 +1,6 @@
 # ADR: 실행 상태 SQLite를 각 버전 폴더 루트에 둔다
 
-* **Status:** Accepted — 문서 갱신 완료, 코드 구현 전
+* **Status:** Superseded — 같은 날 [파일 기반 진행 상태 ADR](2026-11-21-drop-sqlite-file-derived-progress.md)로 대체. DB 자체를 두지 않기로 했다
 * **Date:** 2026-11-21
 * **Decision Owners:** Project Owner
 * **Supersedes:** [SQLite와 목적별 CLI ADR](2026-11-12-sqlite-agent-state-evaluation.md)의 "저장소당 하나의 DB" 위치 결정,
