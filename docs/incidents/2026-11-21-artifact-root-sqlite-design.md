@@ -5,7 +5,7 @@
 - 상태: 해결 — SQLite 폐기 결정, 아티팩트 루트 DB 삭제, SQLite 코드 제거 완료(2026-11-23)
 - 후속 결정: [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](../ADR/2026-11-21-per-version-sqlite-state.md) → 같은 날 [진행 상태를 버전 폴더의 파일에서 계산](../ADR/2026-11-21-drop-sqlite-file-derived-progress.md)으로 대체
 - 원래 결정: [SQLite와 목적별 CLI ADR](../ADR/2026-11-12-sqlite-agent-state-evaluation.md)
-- 관련 명세: [SQLite 제거 명세](../spec/remove-sqlite-state.md) (당시의 SQLite 상태 관리 명세는 2026-11-23 삭제)
+- 관련 명세: [SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md) (당시의 SQLite 상태 관리 명세는 2026-11-23 삭제)
 
 ## 요약
 
@@ -71,12 +71,12 @@ SQLite는 방어 편집 제안을 stdin JSON으로 받아 시도 기록에 그�
 - 적용된 편집과 원문 위치·해시를 나중에 다시 대조하는 감사 기록
 - 통합 편집에서 자동 진단마다 수정했는지, 아니면 사유를 남기고 보존했는지(`false-positive`) 최종 확정 때 재검증
 
-파일 기반 전환([SQLite 제거 명세](../spec/remove-sqlite-state.md))에서는 제안 원문을 따로 보관하지 않는다. 시도 폴더에는
+파일 기반 전환([SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md))에서는 제안 원문을 따로 보관하지 않는다. 시도 폴더에는
 도구가 제안을 적용한 결과인 `candidate.md`와 `result.md`만 남긴다. 위 두 번째 재검증이 필요하므로, 통합 편집의 `result.md`에는
 진단마다 처리 결과(수정 또는 보존)와 보존 사유를 남긴다. 제안 원문 자체가 필요해지는 사례가 생기면 그때 보관 방식을 다시 정한다.
 
 ## 해결
 
-2026-11-23에 [SQLite 제거 명세](../spec/remove-sqlite-state.md)의 다섯 단계로 SQLite 상태 저장 계층과 CLI를 삭제했다. 생성 스킬은 버전
+2026-11-23에 [SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md)의 다섯 단계로 SQLite 상태 저장 계층과 CLI를 삭제했다. 생성 스킬은 버전
 폴더의 파일과 검증기로 진행 상태를 계산하는 명령을 쓰며, 실행이 DB 파일을 만들지 않는다. `generate-personalized-gdd` 스킬의
 `registry-stale` 안내도 함께 제거했다.

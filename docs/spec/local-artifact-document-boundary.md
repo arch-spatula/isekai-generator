@@ -141,7 +141,7 @@
 | [차트 근거 검증 이슈](../incidents/2026-11-03-chart-evidence-validation.md) | 발견 이력과 합성 재현 자료의 구분 |
 | [전투 원형 수렴 이슈](../incidents/2026-11-03-combat-archetype-convergence.md) | 실행 간 관찰과 재현 가능한 구조 비교의 분리 |
 | [해양 세계관 수렴 이슈](../incidents/2026-11-04-maritime-world-setting-convergence.md) | 당시 집계의 한계 표시, 원본 보존·fixture 전환 요구 정비 |
-| [GDD 직역 개선 계획](../GDD/personalized-gdd-remediation-plan.md) | 특정 이전 GDD·동일 개인 입력 의존을 평가표·합성 사례로 전환 |
+| [GDD 직역 개선 계획](../legacy/GDD/personalized-gdd-remediation-plan.md) | 특정 이전 GDD·동일 개인 입력 의존을 평가표·합성 사례로 전환 |
 | [기준선 채택 기록](../ADR/2026-11-05-adopt-artifact-series-0.2.md) | 로컬 성공 관찰과 저장소에서 재현 가능한 근거를 구별 |
 | 생성·선택·복구 spec 및 스킬 reference | 실제 과거 실행으로 오인할 수 있는 예제와 불필요한 실행 특정 정리 |
 

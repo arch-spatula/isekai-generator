@@ -172,7 +172,7 @@ Codex는 GDD를 쓰지 않는다. Claude 흐름은 Codex 기반에 의존하지 
 
 ## 8. 구현 순서
 
-1. **Codex 기반 제거(7절):** 지운 뒤 `bun run test`와 `bun run check:docs`가 통과한다.
+1. **Codex 기반 제거(7절, 2026-11-23 완료):** 지운 뒤 `bun run test`와 `bun run check:docs`가 통과한다.
 2. **번역 브리프:** 동료 후보 계산 스크립트, 차트 명칭 목록과 검사, `check-translation-brief`, `/translate-life` 스킬.
 3. **전투·세계:** `check-combat`·`check-world`, `/design-combat`·`/design-world` 스킬.
 4. **GDD:** `check-gdd`, `/write-gdd` 스킬.

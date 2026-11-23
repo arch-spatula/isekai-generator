@@ -53,11 +53,11 @@ SQLite만이 해 줄 수 있는 일이 없었다.
 
 ## 구현 상태
 
-2026-11-23에 [SQLite 제거 명세](../spec/remove-sqlite-state.md)의 다섯 단계로 구현을 마쳤다. 상태 저장 계층, `artifact-state.ts`,
+2026-11-23에 [SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md)의 다섯 단계로 구현을 마쳤다. 상태 저장 계층, `artifact-state.ts`,
 `read-artifact-state.ts`와 SQLite 전용 테스트는 삭제되었고, 생성 스킬은 상태·시도·입력·편집 판정·지문·게시 명령을 쓴다. 저장소에서
 `bun:sqlite`를 import하는 코드는 없다.
 
 ## 관련 문서
 
 - [실행 상태 SQLite를 아티팩트 루트에 둔 설계 오류](../incidents/2026-11-21-artifact-root-sqlite-design.md)
-- [SQLite 제거 명세](../spec/remove-sqlite-state.md)
+- [SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md)

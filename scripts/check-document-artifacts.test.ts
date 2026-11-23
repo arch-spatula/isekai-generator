@@ -1,8 +1,20 @@
-import { expect, test } from 'bun:test'
-import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
+import { afterEach, expect, test } from 'bun:test'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { checkDocument, checkRepositoryDocuments } from './check-document-artifacts'
-import { makeRepository } from './artifacts/test-fixtures'
+
+const repositories: string[] = []
+afterEach(() => { for (const repository of repositories.splice(0)) rmSync(repository, { recursive: true, force: true }) })
+
+/** 로컬 아티팩트를 무시하는 빈 git 저장소 */
+function makeRepository(): string {
+  const repository = mkdtempSync(join(tmpdir(), 'document-artifacts-'))
+  repositories.push(repository)
+  Bun.spawnSync(['git', 'init', '--quiet'], { cwd: repository })
+  writeFileSync(join(repository, '.gitignore'), '/artifacts/\n')
+  return repository
+}
 
 const root = '/workspace/project'
 const errors = (source: string) => checkDocument('docs/incident.md', source, root).filter(item => item.severity === 'error')

@@ -46,6 +46,6 @@
 ## 관련 문서
 
 - [생성 아티팩트 버전 관리 결정](2026-11-04-artifact-generation-versioning.md)
-- [버전 관리 명세](../spec/artifact-generation-versioning.md)
-- [전문 해석 실패 복구 명세](../spec/specialist-interpretation-recovery.md)
+- [버전 관리 명세](../legacy/spec/artifact-generation-versioning.md)
+- [전문 해석 실패 복구 명세](../legacy/spec/specialist-interpretation-recovery.md)
 - [해양 세계관 수렴 이슈](../incidents/2026-11-04-maritime-world-setting-convergence.md)

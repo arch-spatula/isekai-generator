@@ -4,7 +4,7 @@
 * **Date:** 2026-09-24
 * **Decision Owners:** Project Owner
 * **Scope:** 사주팔자·자미두수·네이탈 차트를 Seed로 사용하는 개인화 이세계 Action RPG 생성 시스템
-* **Related Artifact:** [개인화 이세계 Action RPG 생성 Master Prompt](../prompts/personalized-action-rpg-concept.md)
+* **Related Artifact:** [개인화 이세계 Action RPG 생성 Master Prompt](../legacy/prompts/personalized-action-rpg-concept.md)
 
 ---
 
@@ -35,7 +35,7 @@
 ## Related Documents
 
 - [출생 프로필 입력 UI 명세](../spec/birth-profile-input-ui.md)
-- [개인화 Action RPG 생성 Master Prompt](../prompts/personalized-action-rpg-concept.md)
+- [개인화 Action RPG 생성 Master Prompt](../legacy/prompts/personalized-action-rpg-concept.md)
 
 이 결정으로 Tauri 사용을 확정하지만, Tauri 플러그인 종류, 백그라운드 워커의 실행 방식,
 로컬 저장소 형식 및 톱니바퀴의 시각 디자인은 후속 ADR 또는 상세 명세에서 결정한다.

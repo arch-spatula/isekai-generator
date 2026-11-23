@@ -27,5 +27,5 @@ PR에는 이전·목표 series와 검증 결과를 기재하고 자동 merge하�
 
 ## 관련 문서
 
-- [출력 템플릿](../prompts/personalized-action-rpg-concept.md)
-- [버전 관리 명세](../spec/artifact-generation-versioning.md)
+- [출력 템플릿](../legacy/prompts/personalized-action-rpg-concept.md)
+- [버전 관리 명세](../legacy/spec/artifact-generation-versioning.md)

@@ -46,8 +46,8 @@
 
 ## 관련 문서
 
-- [책임별 게시 폴더 계약](../spec/artifact-directory-layout.md)
-- [SQLite 제거 명세](../spec/remove-sqlite-state.md) — 당시의 SQLite 상태 관리 명세는 2026-11-23 삭제
-- [버전 관리 명세](../spec/artifact-generation-versioning.md)
+- [책임별 게시 폴더 계약](../legacy/spec/artifact-directory-layout.md)
+- [SQLite 제거 명세](../legacy/spec/remove-sqlite-state.md) — 당시의 SQLite 상태 관리 명세는 2026-11-23 삭제
+- [버전 관리 명세](../legacy/spec/artifact-generation-versioning.md)
 - [해석 프롬프트 품질 이슈](../incidents/2026-11-03-interpretation-prompt-quality.md)
 - [해양 세계관 수렴 이슈](../incidents/2026-11-04-maritime-world-setting-convergence.md)

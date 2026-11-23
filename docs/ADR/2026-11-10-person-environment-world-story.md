@@ -14,10 +14,10 @@
 
 현재 지침에는 두 종류의 재료가 이미 있다.
 
-- [자미두수 해석](../prompts/ziwei-interpretation.md)은 명궁의 정체성과 선택 방식 외에
+- [자미두수 해석](../legacy/prompts/ziwei-interpretation.md)은 명궁의 정체성과 선택 방식 외에
   천이궁의 외부 환경, 교우궁의 사회적 협력, 전택궁의 생활 기반, 부모궁의 지원·기대를 다룬다.
-- [사주 해석](../prompts/saju-interpretation.md)은 원국과 관계 작용, 환경에 따른 발현,
-  운의 변화를 다룬다. [네이탈 해석](../prompts/natal-interpretation.md)은 심리 기능과
+- [사주 해석](../legacy/prompts/saju-interpretation.md)은 원국과 관계 작용, 환경에 따른 발현,
+  운의 변화를 다룬다. [네이탈 해석](../legacy/prompts/natal-interpretation.md)은 심리 기능과
   삶의 영역, 내적 동기·행동·환경 반응의 연결을 다룬다.
 - [통합 스킬](../../.agents/skills/interpret-chart-report/SKILL.md)은 내적 동기에서 행동,
   환경 반응, 반복 결과로 이어지는 인물 모델을 만들지만, 세계 설계에 사용할 환경 해석을
@@ -115,5 +115,5 @@
 - [전투 선택과 세계 구조 선택을 분리](2026-11-04-independent-world-concept-selection.md)
 - [게임을 개인화된 서사 전달 매체로 정의](2026-11-03-game-as-narrative-medium.md)
 - [게임 핵심 서사의 8단계 구조 채택](2026-11-03-eight-stage-story-structure.md)
-- [세계 구조 선택 명세](../spec/world-concept-selection.md)
+- [세계 구조 선택 명세](../legacy/spec/world-concept-selection.md)
 - [로컬 아티팩트와 영구 문서의 경계](../spec/local-artifact-document-boundary.md)

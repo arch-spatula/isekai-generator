@@ -82,45 +82,30 @@ docs/spec/<명세 파일>.md를 구현해줘.
 $implement-with-test-review docs/spec/<명세 파일>.md를 구현해줘.
 ```
 
-명식 계산 보고서만 필요하면 다음과 같이 요청합니다.
-
-달력 구분을 생략한 생년월일은 **양력**으로 처리하며 양력·음력 여부를 다시 묻지 않습니다.
-시간대는 명확한 출생지에서 정합니다. 예를 들어 대한민국 천안시는 `Asia/Seoul`을
-적용하므로 시간대를 별도로 입력할 필요가 없습니다. 명시한 달력·시간대는 기본값보다 우선합니다.
+명식 계산과 일생 해석은 Claude Code의 스킬로 요청합니다. 각 스킬은 같은 차트 폴더에 파일 하나를 쓰고, 앞 단계 파일이 없으면
+만드는 방법을 알린 뒤 멈춥니다. 달력 구분을 생략한 생년월일은 **양력**으로 처리하며, 시간대는 출생지에서 정합니다.
 
 ```text
-$generate-chart-report
-생년월일: <연월일>
-태어난 시간: <시:분>
-성별: <성별>
-태어난 도시: <국가와 도시>
+/chart-report <생년월일> <시:분> <도시> <성별>, 파일로 저장해줘
+/saju-judgment <차트 폴더>
+/ziwei-judgment <차트 폴더>
+/natal-judgment <차트 폴더>
+/saju-life <차트 폴더>
+/ziwei-life <차트 폴더>
+/natal-life <차트 폴더>
+/life-integration <차트 폴더>
 ```
 
-개인화 GDD 전체 생성을 요청하려면 다음 스킬을 사용합니다. 이 호출은 명식 계산부터
-해석·전투 및 세계 선택·GDD 작성까지 여러 에이전트가 수행하는 생성 요청입니다.
-
-```text
-$generate-personalized-gdd
-생년월일: <연월일>
-태어난 시간: <시:분>
-성별: <성별>
-태어난 도시: <국가와 도시>
-모드: light
-목적: experiment
-```
-
-단계별 스킬은 다음과 같습니다. 각 스킬에 필요한 입력과 실행 조건은 연결된 지침을 따릅니다.
-아래 경로는 입출력 이름을 설명하는 예시입니다.
+일생 해석 사이에는 스크립트 단계가 있습니다. `/<체계>-life` 앞에 `bun scripts/derive-judgment-facts.ts <saju|ziwei> <차트 폴더>`,
+`/life-integration` 앞에 `bun scripts/assemble-life-material.ts <차트 폴더>`를 실행합니다. 스킬이 필요한 시점에 알려 줍니다.
+`life.md` 이후의 게임 설계 단계는 [Claude 게임 설계 흐름](docs/spec/claude-game-design-flow.md)에 따라 만들고 있습니다.
 
 | 스킬 | 용도 |
 | --- | --- |
-| [generate-chart-report](.agents/skills/generate-chart-report/SKILL.md) | 출생정보로 `chart-report.md` 계산 |
-| [interpret-chart-system](.agents/skills/interpret-chart-system/SKILL.md) | 명식 보고서에서 사주·자미두수·네이탈 중 한 체계 해석 |
-| [edit-defensive-phrases](.agents/skills/edit-defensive-phrases/SKILL.md) | 배정된 전문 해석의 방어적 표현 검토 |
-| [interpret-chart-report](.agents/skills/interpret-chart-report/SKILL.md) | 세 전문 해석을 `chart-interpretation.md`로 통합 |
-| [select-gameplay-concept](.agents/skills/select-gameplay-concept/SKILL.md) | 통합 해석을 바탕으로 전투 콘셉트 선택 |
-| [select-world-concept](.agents/skills/select-world-concept/SKILL.md) | 전투 선택 이후 세계 콘셉트 선택 |
-| [generate-gdd-from-interpretation](.agents/skills/generate-gdd-from-interpretation/SKILL.md) | 통합 해석과 검증된 전투·세계 브리프로 GDD 작성 |
+| [chart-report](.claude/skills/chart-report/SKILL.md) | 출생정보로 사주·자미두수·네이탈 차트와 판단 근거 사실 계산 |
+| [saju-judgment](.claude/skills/saju-judgment/SKILL.md) 외 2개 | 체계별 1차 판단 |
+| [saju-life](.claude/skills/saju-life/SKILL.md) 외 2개 | 체계별 일생 해석 |
+| [life-integration](.claude/skills/life-integration/SKILL.md) | 세 체계 일생 해석을 하나의 일생 통합 해석(`life.md`)으로 합침 |
 
 ## 크레딧
 

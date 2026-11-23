@@ -147,6 +147,6 @@ ADR에서 결정한다.
 # 8. Related Documents
 
 - [개인화 이세계 Action RPG 생성 프롬프트 설계](2026-09-24-personalized-action-rpg-concept-prompt.md)
-- [개인화 Action RPG 생성 Master Prompt](../prompts/personalized-action-rpg-concept.md)
-- [GDD](../GDD/README.md)
+- [개인화 Action RPG 생성 Master Prompt](../legacy/prompts/personalized-action-rpg-concept.md)
+- [GDD](../legacy/GDD/README.md)
 - [기능 및 시스템 명세](../spec/README.md)
