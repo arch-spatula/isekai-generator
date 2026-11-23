@@ -74,3 +74,24 @@ export function chartNameErrors(text: string): string[] {
   }
   return errors
 }
+
+/**
+ * 일생 해석 문서(`life.md`)의 문장에 쓰지 않는 판단·운세·차트 해설 용어. 일상어와 겹치는 말(평이·인성·비겁·식상·육친·대한·신궁·사화 등)은 뺀다.
+ * 게임 단계에는 적용하지 않는다. 계약: docs/spec/life-integration.md
+ */
+export const INTERPRETATION_TERMS = [
+  '순풍', '역풍', '혼조',
+  '용신', '희신', '기신', '일간', '신강', '신약', '격국', '조후', '관성', '재성', '십신', '공망', '대운',
+  '명궁', '공궁', '주성', '보조성', '살성', '삼방사정',
+  '룰러', '애스펙트', '스텔리움', '섹트', '데트리먼트', '엑잘테이션', '커스프',
+]
+
+/** 줄마다 차트 명칭과 해석 용어를 찾아 `<줄>: <종류> '<말>'`로 돌려준다. `[체계:항목]` 인용 안은 보지 않는다. */
+export function lifeTermErrors(text: string): string[] {
+  const prose = text.replace(/\[[a-z]+:[^\]]*\]/g, '')
+  const errors = chartNameErrors(prose)
+  for (const [index, line] of prose.split('\n').entries()) {
+    for (const term of INTERPRETATION_TERMS) if (line.includes(term)) errors.push(`${index + 1}: 해석 용어 '${term}'`)
+  }
+  return errors.sort((a, b) => Number(a.split(':')[0]) - Number(b.split(':')[0]))
+}
