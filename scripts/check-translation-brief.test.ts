@@ -118,3 +118,24 @@ test('필드 줄이 아닌 문장과 빈 필드를 거부한다', () => {
   const empty = replaceOnce(brief, '함께 하는 일: 말 대신 결과로 손기술을 가르치며 주인공의 기준을 세운다', '함께 하는 일:')
   expect(check({ brief: empty })).toEqual([`${lineOf('함께 하는 일: 말 대신 결과로 손기술을 가르치며 주인공의 기준을 세운다')}: 동료 > 스승·후원자: 함께 하는 일가 비었다`])
 })
+
+test('주인공 절은 축과 반복되는 실패를 같은 이름의 life.md 항목으로 인용한다', () => {
+  const missing = brief.replace(/### 반복되는 실패\n[^#]*/, '')
+  expect(check({ brief: missing })).toEqual([`${lineOf('## 주인공')}: 주인공: 항목은 축, 반복되는 실패 순서여야 한다 (실제: 축)`])
+  const wrong = replaceOnce(brief, '근거: [life:반복되는 실패]', '근거: [life:상실]')
+  expect(check({ brief: wrong })).toEqual([`${lineOf('근거: [life:반복되는 실패]')}: 주인공 > 반복되는 실패: 근거에 [life:반복되는 실패]이 없다`])
+})
+
+test('장은 생애 단계를 연표 순서로 쓰고 그 단계를 인용한다', () => {
+  const swapped = replaceOnce(brief, '### 소년\n사건:', '### 소년_\n사건:').replace('### 장년\n사건:', '### 소년\n사건:').replace('### 소년_\n사건:', '### 장년\n사건:')
+  expect(check({ brief: swapped })).toContain(`${lineOf('## 장')}: 장: 생애 단계는 연표 순서로 한 번씩 쓴다 (실제: 장년, 청년, 소년)`)
+  const notStage = replaceOnce(brief, '### 장년\n사건:', '### 중년\n사건:')
+  expect(check({ brief: notStage })).toContain(`${lineOf('### 장년')}: 장 > 중년: 생애 단계 이름이 아니다`)
+  const basis = replaceOnce(brief, '근거: [life:장년]', '근거: [life:노년]')
+  expect(check({ brief: basis })).toEqual([`${lineOf('근거: [life:장년]')}: 장 > 장년: 근거에 [life:장년]이 없다`])
+})
+
+test('동료의 동행하는 장이 브리프의 장에 없으면 거부한다', () => {
+  const noYouth = brief.replace(/### 청년\n사건:[^#]*/, '')
+  expect(check({ brief: noYouth })).toEqual([`${lineOf('동행하는 장: 청년')}: 동료 > 연인·배우자: 청년는 브리프의 장이 아니다`])
+})

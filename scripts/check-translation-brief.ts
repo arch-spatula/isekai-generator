@@ -11,7 +11,9 @@ import { readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
-const SECTIONS = ['주인공 능력', '동료', '배경', '동기와 퀘스트', '옮기지 않은 인물']
+const SECTIONS = ['주인공', '주인공 능력', '동료', '배경', '장', '동기와 퀘스트', '옮기지 않은 인물']
+/** 주인공 절의 항목과 각각 인용해야 하는 life.md 항목 */
+const PROTAGONIST = ['축', '반복되는 실패']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
 const STAGE_NAMES = LIFE_STAGES.map((stage) => stage.name)
 const CITATION = /\[([^\]:]+):([^\]]*)\]/g
@@ -75,7 +77,35 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     if (field != null && field.value !== '' && lifeTargets(field.value).length === 0) report(field.line, `${where}: ${field.key}에 [life:<항목>] 인용이 없다`)
   }
 
-  // 동료: 후보 줄은 계산 결과와 같고, 동료는 후보 안에서만, 동행하는 장은 곁에 있던 시기 안에서만 고른다.
+  // 주인공: 축과 반복되는 실패. 근거는 life.md의 같은 이름 항목이다.
+  const protagonist = section('주인공')
+  if (protagonist != null) {
+    const names = protagonist.items.map(({ name }) => name)
+    if (names.join() !== PROTAGONIST.join()) report(protagonist.line, `주인공: 항목은 ${PROTAGONIST.join(', ')} 순서여야 한다 (실제: ${names.join(', ')})`)
+    for (const item of protagonist.items) {
+      const basis = fieldsOf(`주인공 > ${item.name}`, item, ['내용', '근거']).get('근거')
+      if (basis != null && basis.value !== '' && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `주인공 > ${item.name}: 근거에 [life:${item.name}]이 없다`)
+    }
+  }
+
+  // 장: 모험이 걸친 생애 단계를 연표 순서로. 근거는 그 단계다.
+  const chapters = section('장')
+  const chapterNames = chapters?.items.map(({ name }) => name) ?? []
+  if (chapters != null) {
+    if (chapters.items.length === 0) report(chapters.line, '장: 장 항목이 없다')
+    const known = chapterNames.filter((name) => STAGE_NAMES.includes(name))
+    if (known.join() !== [...known].sort((a, b) => STAGE_NAMES.indexOf(a) - STAGE_NAMES.indexOf(b)).join() || new Set(known).size !== known.length) {
+      report(chapters.line, `장: 생애 단계는 연표 순서로 한 번씩 쓴다 (실제: ${chapterNames.join(', ')})`)
+    }
+    for (const item of chapters.items) {
+      const where = `장 > ${item.name}`
+      if (!STAGE_NAMES.includes(item.name)) report(item.line, `${where}: 생애 단계 이름이 아니다`)
+      const basis = fieldsOf(where, item, ['사건', '근거']).get('근거')
+      if (basis != null && basis.value !== '' && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `${where}: 근거에 [life:${item.name}]이 없다`)
+    }
+  }
+
+  // 동료: 후보 줄은 계산 결과와 같고, 동료는 후보 안에서만, 동행하는 장은 곁에 있던 시기와 브리프의 장 안에서만 고른다.
   const chosen = new Set<string>()
   const companions = section('동료')
   if (companions != null) {
@@ -98,6 +128,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
       for (const stage of stages?.value.split(',').map((part) => part.trim()).filter(Boolean) ?? []) {
         if (!STAGE_NAMES.includes(stage)) report(stages!.line, `${where}: '${stage}'는 생애 단계 이름이 아니다`)
         else if (candidate != null && !candidate.stages.includes(stage)) report(stages!.line, `${where}: ${stage}는 곁에 있던 시기(${candidate.stages.join(', ')}) 밖이다`)
+        else if (chapters != null && !chapterNames.includes(stage)) report(stages!.line, `${where}: ${stage}는 브리프의 장이 아니다`)
       }
       const basis = fields.get('근거')
       if (basis != null && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `${where}: 근거에 [life:${item.name}]이 없다`)
