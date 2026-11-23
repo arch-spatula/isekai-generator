@@ -24,6 +24,7 @@
 - [세 체계 일생 통합](life-integration.md)
 - [일생의 모양과 관계 상태를 서사보다 먼저 정하기](life-shape-and-relationship-status.md)
 - [일생 해석의 게임 번역 규칙](life-to-game-translation.md)
+- [Claude 게임 설계 흐름](claude-game-design-flow.md)
 - [SQLite 상태 저장소 제거와 파일 기반 진행 상태](remove-sqlite-state.md)
 - [개인화 전투 원형 선택](personalized-combat-archetype-selection.md)
 - [개인화 세계 구조 선택](world-concept-selection.md)

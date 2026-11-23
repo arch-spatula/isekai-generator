@@ -26,4 +26,5 @@
 - [SQLite와 목적별 CLI를 통한 에이전트 상태 관리 평가](2026-11-12-sqlite-agent-state-evaluation.md) — 2026-11-21 파일 기반 진행 상태 결정으로 대체
 - [실행 상태 SQLite를 각 버전 폴더 루트에 둔다](2026-11-21-per-version-sqlite-state.md) — 같은 날 파일 기반 진행 상태 결정으로 대체
 - [실행 상태 저장소를 없애고 진행 상태를 버전 폴더의 파일에서 계산한다](2026-11-21-drop-sqlite-file-derived-progress.md)
+- [차트부터 GDD까지 하나의 Claude 흐름으로 만든다](2026-11-23-claude-gdd-flow.md)
 - [스토리 영감용 해석의 방어 문구를 생성 지시와 사후 편집에서 제거](2026-11-09-interpretation-defensive-wording-editing.md) — 2026-11-09 결정 기록
