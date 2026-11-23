@@ -31,6 +31,7 @@
           just
           lua5_1
           love
+          godot_4_7
           (python3.withPackages (pythonPackages: [
             pythonPackages.pyyaml
           ]))
