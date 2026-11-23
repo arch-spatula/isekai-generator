@@ -129,3 +129,24 @@ test('impact needs a fork only when 큼 and 작음 are mixed', () => {
   const mixed = { ...sources, natal: sources.natal.replace(/(### 부모[\s\S]*?)영향: 큼/, '$1영향: 작음') }
   expect(checkLifeIntegration({ life: valid, sources: mixed })).toContain('인물 사전 > 부모: 영향이 본선(큼)과 다른 체계를 갈림길의 다른 길에서 인용하지 않았다: natal')
 })
+
+// #65: 상태를 판정하지 않는 인물의 부재는 다수를 따른다(docs/spec/life-shape-and-relationship-status.md 5.5).
+test('상태 없는 인물의 함께 한 일을 한 체계도 없음으로 쓰지 않았는데 없음으로 쓰면 거부한다', () => {
+  const together = '함께 한 일: 한집에서 살림을 꾸리며 셈과 기준을 배웠다'
+  expect(check(mutate(together, '함께 한 일: 없음'))).toEqual([
+    `${lineOf(together)}: 인물 사전 > 부모: 함께 한 일을 없음으로 쓰려면 두 체계 이상이 없음이어야 한다 (없음: 없음)`,
+  ])
+})
+
+test('두 체계 이상이 없음이면 상태 없는 인물의 함께 한 일을 없음으로 쓸 수 있다', () => {
+  const sourceTogether = '함께 한 일: 한집에서 살림을 꾸리며 셈을 배웠다'
+  const absentIn = (system: 'saju' | 'ziwei' | 'natal') => {
+    expect(sources[system].split(sourceTogether)).toHaveLength(2)
+    return sources[system].replace(sourceTogether, '함께 한 일: 없음')
+  }
+  const life = mutate('함께 한 일: 한집에서 살림을 꾸리며 셈과 기준을 배웠다', '함께 한 일: 없음')
+  expect(checkLifeIntegration({ life, sources: { ...sources, saju: absentIn('saju'), ziwei: absentIn('ziwei') } })).toEqual([])
+  expect(checkLifeIntegration({ life, sources: { ...sources, saju: absentIn('saju') } })).toEqual([
+    `${lineOf('함께 한 일: 한집에서 살림을 꾸리며 셈과 기준을 배웠다')}: 인물 사전 > 부모: 함께 한 일을 없음으로 쓰려면 두 체계 이상이 없음이어야 한다 (없음: saju)`,
+  ])
+})

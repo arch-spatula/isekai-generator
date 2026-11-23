@@ -6,7 +6,7 @@ import { join } from 'node:path'
 
 import { LIFE_SYSTEMS, type LifeTextsBySystem, relationVotes } from './assemble-life-material.ts'
 import { CAST, CAST_FIELDS, CAST_ITEM_FIELDS, TIMELINE } from './check-life-document.ts'
-import { checkRelations } from './life-relations.ts'
+import { checkRelations, RELATION_ITEMS } from './life-relations.ts'
 import { checkLifeDocument, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
@@ -89,6 +89,20 @@ export function checkLifeIntegration({ life, sources }: IntegrationTexts): strin
     if (main.size > 0 && other.size > 0 && [...other].every((system) => main.has(system))) {
       report(forks.find((line) => line.item === item && line.key === '다른 길')!.line,
         `갈림길 > ${item}: 다른 길이 본선에 없는 체계를 인용하지 않는다`)
+    }
+  }
+
+  // 상태를 판정하지 않는 인물의 부재(`함께 한 일`·`곁에 있던 시기`가 없음)는 두 체계 이상이 같은 필드를 없음으로 썼을 때만 쓴다(#65).
+  const fieldOf = (text: string, person: string, key: string) =>
+    readLifeItems(text).find(({ section, name }) => section === '인물 사전' && name === person)?.fields.find(([field]) => field === key)?.[1]
+  for (const person of CAST.filter((name) => !(name in RELATION_ITEMS))) {
+    for (const key of ['함께 한 일', '곁에 있던 시기']) {
+      if (fieldOf(life, person, key) !== '없음') continue
+      const absent = LIFE_SYSTEMS.filter((system) => fieldOf(sources[system], person, key) === '없음')
+      if (absent.length < 2) {
+        const line = lines.find((field) => field.section === '인물 사전' && field.item === person && field.key === key)?.line ?? null
+        report(line, `인물 사전 > ${person}: ${key}${key === '함께 한 일' ? '을' : '를'} 없음으로 쓰려면 두 체계 이상이 없음이어야 한다 (없음: ${absent.join(', ') || '없음'})`)
+      }
     }
   }
 
