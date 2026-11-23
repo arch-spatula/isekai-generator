@@ -107,3 +107,25 @@ test('CLI reads life.md and the three life documents from the directory', () => 
   }
   expect(Bun.spawnSync(['bun', script]).stderr.toString()).toContain('usage')
 })
+
+// docs/spec/life-shape-and-relationship-status.md §5.3·§5.4: 상태·영향은 중앙값을 따르고 다른 값을 낸 체계는 갈림길에 남긴다.
+test('relation status and impact follow the three-system median', () => {
+  expect(check(mutate('상태: 있음', '상태: 약함'))).toContain('인물 사전 > 연인·배우자: 상태 불일치 — 문서 약함, 기대 있음')
+  expect(check(valid.replace(/(### 부모[\s\S]*?)영향: 큼/, '$1영향: 보통'))).toContain('인물 사전 > 부모: 영향 불일치 — 문서 보통, 기대 큼')
+  expect(check(mutate('인연: 경쟁자·적대자, 자녀, 형제·또래', '인연: 경쟁자·적대자, 자녀, 제자, 형제·또래'))).toContain("생애 연표 > 노년: 상태가 없음인 인물을 인연에 썼다 '제자'")
+})
+
+test('a system whose status differs from the median must appear in a fork', () => {
+  const dissent = { ...sources, ziwei: sources.ziwei.replace('상태: 있음', '상태: 약함') }
+  const missing = checkLifeIntegration({ life: valid, sources: dissent })
+  expect(missing).toContain('인물 사전 > 연인·배우자: 상태가 본선(있음)과 다른 체계를 갈림길의 다른 길에서 인용하지 않았다: ziwei')
+  const withFork = valid.trimEnd() + '\n### 짝을 만나는 때\n본선: 청년에 짝을 만나 함께 떠난다 [saju:연인·배우자]\n다른 길: 인연이 늦어 혼자 떠난다 [ziwei:연인·배우자]\n갈리는 조건: 첫 만남을 붙잡는가\n'
+  expect(checkLifeIntegration({ life: withFork, sources: dissent })).toEqual([])
+})
+
+test('impact needs a fork only when 큼 and 작음 are mixed', () => {
+  const mild = { ...sources, natal: sources.natal.replace(/(### 부모[\s\S]*?)영향: 큼/, '$1영향: 보통') }
+  expect(checkLifeIntegration({ life: valid, sources: mild })).toEqual([])
+  const mixed = { ...sources, natal: sources.natal.replace(/(### 부모[\s\S]*?)영향: 큼/, '$1영향: 작음') }
+  expect(checkLifeIntegration({ life: valid, sources: mixed })).toContain('인물 사전 > 부모: 영향이 본선(큼)과 다른 체계를 갈림길의 다른 길에서 인용하지 않았다: natal')
+})

@@ -40,7 +40,7 @@ test('the hand-written fixture passes', () => {
 test('requires the natal title and sections in order', () => {
   expect(check(mutate('# Natal 1차 판단', '# 네이탈 판단'))).toContain("1: 첫 줄은 '# Natal 1차 판단'이어야 한다")
   const swapped = mutate('## 우세 원소', '## X').replace('## 핵심 긴장', '## 우세 원소').replace('## X', '## 핵심 긴장')
-  expect(check(swapped)).toContain('섹션은 차트 룰러 상태, 주요 행성, 우세 원소, 핵심 긴장 순서여야 한다 (실제: 차트 룰러 상태, 주요 행성, 핵심 긴장, 우세 원소)')
+  expect(check(swapped)).toContain('섹션은 차트 룰러 상태, 주요 행성, 우세 원소, 핵심 긴장, 짝, 자식, 제자 순서여야 한다 (실제: 차트 룰러 상태, 주요 행성, 핵심 긴장, 우세 원소, 짝, 자식, 제자)')
 })
 
 test('compares 차트 with ASC, Sun and Moon signs and the house system', () => {
@@ -55,7 +55,7 @@ test('compares 차트 with ASC, Sun and Moon signs and the house system', () => 
 })
 
 test('limits 차트 룰러 상태, 주요 행성 and 우세 원소 to their allowed values', () => {
-  expect(check(mutate('결론: 약', '결론: 보통'))).toContain(`${lineOf('결론: 약')}: 차트 룰러 상태: 결론 '보통' — 허용값 강 · 중 · 약`)
+  expect(check(mutate('결론: 약\n', '결론: 보통\n'))).toContain(`${lineOf('결론: 약')}: 차트 룰러 상태: 결론 '보통' — 허용값 강 · 중 · 약`)
   // 주요 행성 후보는 10행성이고 Chiron 같은 보조 천체는 아니다.
   expect(check(mutate('결론: Venus', '결론: Chiron'))).toContain(
     `${lineOf('결론: Venus')}: 주요 행성: 결론 'Chiron' — 허용값 Sun · Moon · Mercury · Venus · Mars · Jupiter · Saturn · Uranus · Neptune · Pluto`)

@@ -15,6 +15,8 @@ export interface LifeSection {
   /** 필수 항목 뒤에 다른 이름의 항목을 더할 수 있는지 */
   extraItems?: boolean
   fields: string[]
+  /** 특정 항목에만 더 있는 필드 (항목 이름 → 필드) */
+  itemFields?: Record<string, string[]>
   /** 생애 단계 이름을 하나 이상 포함해야 하는 필드 */
   stageFields?: string[]
 }
@@ -117,7 +119,8 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
     if (match == null) return report(line, `${where}: '키: 값' 필드가 아닌 줄이다`)
     const [, key, value] = match
     const sectionSpec = spec.sections.find(({ name }) => name === section)
-    if (sectionSpec != null && !sectionSpec.fields.includes(key)) return report(line, `${where}: 알 수 없는 필드 '${key}'`)
+    const allowedFields = [...(sectionSpec?.fields ?? []), ...(sectionSpec?.itemFields?.[(item as Item).name] ?? [])]
+    if (sectionSpec != null && !allowedFields.includes(key)) return report(line, `${where}: 알 수 없는 필드 '${key}'`)
     const fields = (item as Item).fields
     fields.set(key, [...(fields.get(key) ?? []), { value: value.trim(), line }])
   })
@@ -146,7 +149,7 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
 
     for (const { name, fields } of items) {
       const where = `${sectionSpec.name} > ${name}`
-      for (const key of sectionSpec.fields) {
+      for (const key of [...sectionSpec.fields, ...(sectionSpec.itemFields?.[name] ?? [])]) {
         const entries = fields.get(key) ?? []
         if (entries.length === 0) report(null, `${where}: ${key} 필드가 없다`)
         for (const entry of entries.slice(1)) report(entry.line, `${where}: ${key} 필드가 두 번 이상 있다`)

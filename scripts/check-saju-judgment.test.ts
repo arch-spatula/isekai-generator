@@ -44,9 +44,9 @@ test('rejects a 원국 that differs from saju-chart.md (時日月年)', () => {
 
 test('rejects missing or reordered sections', () => {
   const withoutJohu = valid.replace(/## 조후\n[\s\S]*?\n\n(?=## 용신)/, '')
-  expect(check(withoutJohu)).toContain('섹션은 일간 강약, 격국, 조후, 용신, 희신, 기신 순서여야 한다 (실제: 일간 강약, 격국, 용신, 희신, 기신)')
+  expect(check(withoutJohu)).toContain('섹션은 일간 강약, 격국, 조후, 용신, 희신, 기신, 짝, 자식, 제자 순서여야 한다 (실제: 일간 강약, 격국, 용신, 희신, 기신, 짝, 자식, 제자)')
   const swapped = mutate('## 희신', '## 기신X').replace('## 기신\n', '## 희신\n').replace('## 기신X', '## 기신')
-  expect(check(swapped)).toContain('섹션은 일간 강약, 격국, 조후, 용신, 희신, 기신 순서여야 한다 (실제: 일간 강약, 격국, 조후, 용신, 기신, 희신)')
+  expect(check(swapped)).toContain('섹션은 일간 강약, 격국, 조후, 용신, 희신, 기신, 짝, 자식, 제자 순서여야 한다 (실제: 일간 강약, 격국, 조후, 용신, 기신, 희신, 짝, 자식, 제자)')
 })
 
 test('requires each field exactly once and 기준 only in 용신', () => {
@@ -129,4 +129,12 @@ test('CLI reads the directory and exits by result', () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+// docs/spec/life-shape-and-relationship-status.md §5.1: 짝·자식·제자는 있음·약함·없음 중 하나이고 대안은 결론과 달라야 한다.
+test('limits relation status sections to 있음 · 약함 · 없음 with a different alternative', () => {
+  expect(check(mutate('## 짝\n결론: 있음', '## 짝\n결론: 많음'))).toContain(`${lineOf('## 짝') + 1}: 짝: 결론 '많음' — 허용값 있음 · 약함 · 없음`)
+  expect(check(mutate('대안: 있음 — 식상이 [facts:십신 분포]', '대안: 약함 — 식상이 [facts:십신 분포]'))).toContain(`${lineOf('대안: 있음 — 식상이 [facts:십신 분포]에 있고 [chart:時柱]가 뒷받침한다')}: 자식: 대안 값이 결론과 같다 (약함)`)
+  const withoutDisciple = valid.replace(/\n## 제자\n[\s\S]*$/, '\n')
+  expect(check(withoutDisciple)).toContain('섹션은 일간 강약, 격국, 조후, 용신, 희신, 기신, 짝, 자식, 제자 순서여야 한다 (실제: 일간 강약, 격국, 조후, 용신, 희신, 기신, 짝, 자식)')
 })

@@ -30,6 +30,11 @@ export interface JudgmentSpec {
 
 interface Field { value: string; line: number }
 
+/** 관계 상태 판정값. 순서가 있어 통합 본선은 중앙값으로 정한다(`있음 > 약함 > 없음`). */
+export const RELATION_STATUS = ['있음', '약함', '없음']
+/** 세 체계 1차 판단 끝에 붙는 관계 상태 섹션. 계약: docs/spec/life-shape-and-relationship-status.md 5.1 */
+export const RELATION_SECTIONS: JudgmentSection[] = ['짝', '자식', '제자'].map((name) => ({ name, allowed: RELATION_STATUS }))
+
 /** 이름 뒤 ' (정의)'나 ':' 앞까지가 항목 이름이다. */
 function itemName(line: string): string {
   return line.split(/ \(|:/)[0].trim()

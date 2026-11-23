@@ -25,3 +25,21 @@
 근거: [chart:Major Aspects] [facts:앵글 하우스 행성]
 대안: Sun □ Jupiter — 섹트 광체 Sun이 [facts:섹트 소속]에 있고 [chart:Major Aspects]에서 Jupiter와 □다
 뒤집힘: orb보다 광체가 걸린 애스펙트를 우선하면 Sun □ Jupiter
+
+## 짝
+결론: 있음
+근거: 7하우스와 관계 행성 [chart:Venus]의 상태가 [facts:본질적 품위]에서 무난하다
+대안: 약함 — [chart:Saturn]이 관계를 늦춘다고 보면 약함
+뒤집힘: Saturn의 제약을 Venus의 품위보다 무겁게 보면 약함
+
+## 자식
+결론: 약함
+근거: 5하우스를 맡는 행성의 [facts:본질적 품위]가 약하다
+대안: 있음 — [chart:Moon]의 돌봄이 강하다고 보면 있음
+뒤집힘: Moon의 돌봄을 5하우스 룰러보다 중시하면 있음
+
+## 제자
+결론: 없음
+근거: 가르침과 전수를 맡는 [chart:Jupiter]가 [facts:본질적 품위]에서 힘을 얻지 못한다
+대안: 약함 — [chart:Mercury]가 말과 배움을 전한다고 보면 약함
+뒤집힘: Mercury의 전달을 Jupiter의 품위보다 중시하면 약함

@@ -2,7 +2,7 @@
  * 사주 1차 판단 문서(saju-judgment.md)의 구조와 근거 인용을 검사한다.
  * 판단 내용의 옳고 그름은 보지 않는다. 계약: docs/spec/saju-first-pass-judgment.md
  */
-import { chartTitles, checkJudgmentDocument, factItems, runJudgmentCli } from './judgment-document.ts'
+import { chartTitles, checkJudgmentDocument, factItems, RELATION_SECTIONS, runJudgmentCli } from './judgment-document.ts'
 
 const ELEMENTS = ['木', '火', '土', '金', '水']
 export const POSITIONS = ['時', '日', '月', '年'].flatMap((pillar) => ['干', '支', '柱'].map((part) => pillar + part))
@@ -28,6 +28,7 @@ export function checkSajuJudgment({ judgment, chart, facts }: SajuJudgmentInput)
       { name: '용신', allowed: ELEMENTS, extra: { key: '기준', allowed: ['억부', '조후', '통관', '병약', '전왕'] } },
       { name: '희신', allowed: ELEMENTS },
       { name: '기신', allowed: ELEMENTS },
+      ...RELATION_SECTIONS,
     ],
     facts: { file: 'saju-facts.md', items: factItems(facts) },
     chart: { file: 'saju-chart.md', names: new Set([...chartTitles(chart), ...POSITIONS]) },

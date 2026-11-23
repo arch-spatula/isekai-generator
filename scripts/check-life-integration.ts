@@ -4,8 +4,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { LIFE_SYSTEMS, type LifeTextsBySystem } from './assemble-life-material.ts'
-import { CAST, TIMELINE } from './check-life-document.ts'
+import { LIFE_SYSTEMS, type LifeTextsBySystem, relationVotes } from './assemble-life-material.ts'
+import { CAST, CAST_FIELDS, CAST_ITEM_FIELDS, TIMELINE } from './check-life-document.ts'
+import { checkRelations } from './life-relations.ts'
 import { checkLifeDocument, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
@@ -19,7 +20,7 @@ const CITED_FIELDS = ['근거', '본선', '다른 길']
 const SECTIONS = [
   { name: '일생의 축', items: ['축'], fields: ['내용', '근거'] },
   { name: '생애 연표', items: STAGE_NAMES, fields: TIMELINE.fields.filter((field) => field !== '운') },
-  { name: '인물 사전', items: CAST, fields: ['성향', '주인공과의 관계', '관계의 변화', '근거'], stageFields: ['관계의 변화'] },
+  { name: '인물 사전', items: CAST, fields: CAST_FIELDS, itemFields: CAST_ITEM_FIELDS, stageFields: ['관계의 변화'] },
   { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '꽃피는 시기', '막히는 조건', '근거'], stageFields: ['꽃피는 시기'] },
   { name: '상처와 회복', items: ['반복되는 실패', '상실', '회복'], fields: ['내용', '발현 조건', '근거'] },
   { name: '갈림길', items: [], extraItems: true, fields: ['본선', '다른 길', '갈리는 조건'] },
@@ -89,6 +90,24 @@ export function checkLifeIntegration({ life, sources }: IntegrationTexts): strin
       report(forks.find((line) => line.item === item && line.key === '다른 길')!.line,
         `갈림길 > ${item}: 다른 길이 본선에 없는 체계를 인용하지 않는다`)
     }
+  }
+
+  // 상태·영향은 세 체계의 중앙값을 따르고, 본선과 다른 값을 낸 체계는 갈림길의 다른 길에서 인용한다(영향은 큼과 작음이 섞일 때만).
+  const status = relationVotes(sources, '상태'), impact = relationVotes(sources, '영향')
+  errors.push(...checkRelations(life, {
+    expectedStatus: new Map([...status].map(([person, vote]) => [person, vote.main])),
+    expectedImpact: new Map([...impact].map(([person, vote]) => [person, vote.main])),
+    timeline: true,
+  }))
+  const otherPaths = new Set(forks.filter((line) => line.key === '다른 길').flatMap(({ citations }) => citations.map(({ system, target }) => `[${system}:${target}]`)))
+  const requireFork = (person: string, key: string, values: Record<System, string>, main: string) => {
+    const dissent = LIFE_SYSTEMS.filter((system) => values[system] !== main && !otherPaths.has(`[${system}:${person}]`))
+    if (dissent.length > 0) report(null, `인물 사전 > ${person}: ${key === '상태' ? '상태가' : '영향이'} 본선(${main})과 다른 체계를 갈림길의 다른 길에서 인용하지 않았다: ${dissent.join(', ')}`)
+  }
+  for (const [person, { values, main }] of status) requireFork(person, '상태', values, main)
+  for (const [person, { values, main }] of impact) {
+    const set = new Set(Object.values(values))
+    if (set.has('큼') && set.has('작음')) requireFork(person, '영향', values, main)
   }
   return errors
 }
