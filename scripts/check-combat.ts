@@ -4,6 +4,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { readLifeItems } from './life-document.ts'
 import {
   checkCitationsAndNames, checkSectionOrder, fieldsOf, itemNames, parseGameDocument, sectionItemNames, targetsOf, type Report,
 } from './game-document.ts'
@@ -34,6 +35,9 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
   checkSectionOrder(sections, SECTIONS, report)
   const section = (name: string) => sections.find((candidate) => candidate.name === name)
   const abilities = new Set(sectionItemNames(brief, '주인공 능력'))
+  // 주 재능에서 나온 능력: 채택한 후보는 이 능력을 출처로 한다(#75).
+  const mainAbilities = readLifeItems(brief).filter(({ section, fields }) => section === '주인공 능력'
+    && fields.some(([key, value]) => key === '출처' && value.includes('[life:주 재능]'))).map(({ name }) => name)
   const companions = sectionItemNames(brief, '동료')
 
   // 후보: 네 개, 출처는 브리프의 주인공 능력, 축 값은 허용값, 후보 쌍마다 세 축 이상 다름, 채택은 하나
@@ -43,7 +47,7 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
   const adopted: string[] = []
   for (const item of candidates) {
     const where = `후보 > ${item.name}`
-    const fields = fieldsOf(where, item, ['출처', '플레이', ...Object.keys(AXES), '판단'], report)
+    const fields = fieldsOf(where, item, ['출처', '조작하는 것', '플레이', '혼자일 때', ...Object.keys(AXES), '판단'], report)
     const source = fields.get('출처')
     if (source != null && source.value !== '') {
       const targets = targetsOf(source.value, 'brief')
@@ -60,7 +64,13 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
     axes.set(item.name, values)
     const verdict = fields.get('판단')
     if (verdict != null && verdict.value !== '') {
-      if (verdict.value === '채택') adopted.push(item.name)
+      if (verdict.value === '채택') {
+        adopted.push(item.name)
+        const cited = targetsOf(source?.value ?? '', 'brief')
+        if (mainAbilities.length > 0 && !cited.some((target) => mainAbilities.includes(target))) {
+          report(verdict.line, `${where}: 채택한 후보는 주 재능에서 나온 능력(${mainAbilities.join(', ')})을 출처로 해야 한다`)
+        }
+      }
       else if (!/^제외 — \S/.test(verdict.value)) report(verdict.line, `${where}: 판단은 '채택' 또는 '제외 — <이유>'이다`)
     }
   }
