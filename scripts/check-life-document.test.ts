@@ -40,7 +40,7 @@ test('checks the title, 원국 and section order', () => {
   expect(check(mutate('원국: 癸巳 丙寅 己卯 庚辰', '원국: 庚辰 己卯 丙寅 癸巳')))
     .toContain('3: 원국 불일치 — 문서 庚辰 己卯 丙寅 癸巳, saju-chart.md 癸巳 丙寅 己卯 庚辰')
   const swapped = mutate('## 재능과 생업', '## X').replace('## 상처와 회복', '## 재능과 생업').replace('## X', '## 상처와 회복')
-  expect(check(swapped)).toContain('섹션은 생애 연표, 인물 사전, 재능과 생업, 상처와 회복 순서여야 한다 (실제: 생애 연표, 인물 사전, 상처와 회복, 재능과 생업)')
+  expect(check(swapped)).toContain('섹션은 배경, 생애 연표, 인물 사전, 재능과 생업, 상처와 회복 순서여야 한다 (실제: 배경, 생애 연표, 인물 사전, 상처와 회복, 재능과 생업)')
 })
 
 test('requires every stage and cast member in order, and the required talents first', () => {
@@ -245,7 +245,7 @@ test('natal: checks the title and 차트 identity', () => {
 test('natal: a timeline section is not part of the document', () => {
   const timeline = '## 생애 연표\n### 유년\n운: 없음\n\n## 인물 사전'
   expect(checkNatal(mutateNatal('## 인물 사전', timeline)))
-    .toContain('섹션은 인물 사전, 재능과 생업, 상처와 회복 순서여야 한다 (실제: 생애 연표, 인물 사전, 재능과 생업, 상처와 회복)')
+    .toContain('섹션은 배경, 인물 사전, 재능과 생업, 상처와 회복 순서여야 한다 (실제: 배경, 생애 연표, 인물 사전, 재능과 생업, 상처와 회복)')
 })
 
 test('natal: chart citations accept planets and angles only, and derived citations are rejected', () => {
@@ -302,4 +302,49 @@ test('생업 이름에 현대 제도·기술의 말을 쓰면 거부한다', () 
 test('natal: 생업의 시기는 생애 단계 대신 조건으로 쓴다', () => {
   expect(checkNatal(natalValid)).toEqual([])
   expect(checkNatal(mutateNatal('### 생업: 기록관\n', ''))).toContain("재능과 생업: '생업: <이름>' 생업 항목이 하나 이상 있어야 한다")
+})
+
+// 배경(#97): 자란 환경은 환경을 가리키는 자리에서 읽고, 본인을 가리키는 자리를 근거로 쓰지 않는다.
+// 자리 대응은 docs/spec/life-narrative-interpretation.md 3절 배경 표에서 정했다.
+test('background: every item of 배경 is required in order', () => {
+  const withoutHome = valid.replace(/### 자란 집\n[\s\S]*?(?=### 떠남의 조건)/, '')
+  expect(check(withoutHome)).toContain('배경: 항목은 뿌리, 자란 집, 떠남의 조건 순서여야 한다 (실제: 뿌리, 떠남의 조건)')
+  expect(check(mutate('막은 것: 예법이 엄해 집 밖의 일을 제 뜻대로 벌이기 어렵다\n', ''))).toContain('배경 > 자란 집: 막은 것 필드가 없다')
+})
+
+test('background: saju 뿌리 must cite the year pillar and 자란 집 the month pillar', () => {
+  // 년주 대신 월주만 인용한 뿌리: 다른 기둥에서 뿌리를 읽은 경우
+  expect(check(mutate('근거: [chart:年柱] [facts:육친]', '근거: [chart:月柱] [facts:육친]')))
+    .toEqual(['배경 > 뿌리: 근거에 [chart:年柱] [chart:年干] [chart:年支] 중 하나가 없다'])
+  expect(check(mutate('근거: [chart:月柱] [facts:육친]', '근거: [chart:年干] [facts:육친]')))
+    .toEqual(['배경 > 자란 집: 근거에 [chart:月柱] [chart:月干] [chart:月支] 중 하나가 없다'])
+  // 지지 하나만 인용해도 그 기둥의 자리다.
+  expect(check(mutate('근거: [chart:年柱] [facts:육친]', '근거: [chart:年支]'))).toEqual([])
+})
+
+test('background: saju rejects the day master as a source of the environment', () => {
+  expect(check(mutate('근거: [chart:月柱] [facts:육친]', '근거: [chart:月柱] [chart:日干]')))
+    .toEqual(['배경 > 자란 집: [chart:日干]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
+})
+
+test('background: ziwei reads 父母·福德·田宅·遷移 and rejects the life palace', () => {
+  // 관찰된 실패: 명궁 보조성이 없다는 사실을 "도와주는 이 없는 유년 환경"으로 쓴 경우
+  expect(checkZiwei(mutateZiwei('근거: [chart:田宅]', '근거: [chart:田宅] [facts:삼방사정 보조성 수]')))
+    .toEqual(['배경 > 자란 집: [facts:삼방사정 보조성 수]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
+  expect(checkZiwei(mutateZiwei('근거: [chart:遷移]\n', '근거: [chart:命宮]\n'))).toEqual([
+    '배경 > 떠남의 조건: [chart:命宮]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다',
+    '배경 > 떠남의 조건: 근거에 [chart:遷移] 중 하나가 없다',
+  ])
+})
+
+test('background: natal cites the houses and rejects the ascendant and chart ruler', () => {
+  expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성] [chart:MC]', '근거: [chart:MC]'))).toEqual([])
+  expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성] [chart:MC]', '근거: [facts:차트 룰러] [chart:MC]')))
+    .toEqual(['배경 > 자란 집: [facts:차트 룰러]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
+  expect(checkNatal(mutateNatal('모습: 집안의 내력이 멀리 있는 사람들과 맺은 인연과 약속에 기대 있다\n준 것: 먼 곳에도 찾아갈 사람이 있다는 든든함\n막은 것: 집안의 중심이 늘 바깥 인연에 쏠려 집 안이 비어 있다\n근거: [facts:하우스별 룰러와 행성]',
+    '모습: 집안의 내력이 멀리 있는 사람들과 맺은 인연과 약속에 기대 있다\n준 것: 먼 곳에도 찾아갈 사람이 있다는 든든함\n막은 것: 집안의 중심이 늘 바깥 인연에 쏠려 집 안이 비어 있다\n근거: [chart:ASC]')))
+    .toEqual([
+      '배경 > 뿌리: [chart:ASC]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다',
+      '배경 > 뿌리: 근거에 [facts:하우스별 룰러와 행성] [chart:Houses] 중 하나가 없다',
+    ])
 })

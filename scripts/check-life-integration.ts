@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { LIFE_SYSTEMS, type LifeTextsBySystem, relationVotes } from './assemble-life-material.ts'
-import { CAST, CAST_FIELDS, CAST_ITEM_FIELDS, TIMELINE } from './check-life-document.ts'
+import { BACKGROUND, CAST, CAST_FIELDS, CAST_ITEM_FIELDS, TIMELINE } from './check-life-document.ts'
 import { lifeTermErrors } from './chart-names.ts'
 import { checkRelations, RELATION_ITEMS } from './life-relations.ts'
 import { checkLifeDocument, readLifeItems } from './life-document.ts'
@@ -20,6 +20,7 @@ const CITED_FIELDS = ['근거', '본선', '다른 길']
 
 const SECTIONS = [
   { name: '일생의 축', items: ['축'], fields: ['내용', '근거'] },
+  BACKGROUND,
   { name: '생애 연표', items: STAGE_NAMES, fields: TIMELINE.fields.filter((field) => field !== '운') },
   { name: '인물 사전', items: CAST, fields: CAST_FIELDS, itemFields: CAST_ITEM_FIELDS, stageFields: ['관계의 변화'] },
   { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '다루는 것', '꽃피는 시기', '막히는 조건', '근거'], stageFields: ['꽃피는 시기'], livelihood: { timeline: true } },
@@ -27,7 +28,7 @@ const SECTIONS = [
   { name: '갈림길', items: [], extraItems: true, fields: ['본선', '다른 길', '갈리는 조건'] },
 ]
 /** 같은 이름의 원본 항목을 문서 어딘가에서 인용해야 하는 항목과 그 체계 */
-const SAME_NAME: [string[], System[]][] = [[STAGE_NAMES, ['saju', 'ziwei']], [CAST, [...LIFE_SYSTEMS]]]
+const SAME_NAME: [string[], System[]][] = [[BACKGROUND.items, [...LIFE_SYSTEMS]], [STAGE_NAMES, ['saju', 'ziwei']], [CAST, [...LIFE_SYSTEMS]]]
 /** 섹션 안에서 세 체계를 각각 한 번 이상 인용해야 하는 섹션 */
 const EVERY_SYSTEM = ['재능과 생업', '상처와 회복']
 

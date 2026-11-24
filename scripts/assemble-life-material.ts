@@ -15,6 +15,7 @@ export type LifeTextsBySystem = Record<(typeof LIFE_SYSTEMS)[number], string>
 
 /** 같은 이름 항목을 필드별로 나란히 놓는 섹션과 그 섹션이 있는 체계. 나머지 섹션은 체계별로 나열한다. */
 const SIDE_BY_SIDE: Record<string, readonly LifeSystem[]> = {
+  '배경': LIFE_SYSTEMS,
   '생애 연표': ['saju', 'ziwei'],
   '인물 사전': LIFE_SYSTEMS,
 }

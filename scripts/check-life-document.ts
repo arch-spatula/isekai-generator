@@ -10,7 +10,7 @@ import { chartPillars, POSITIONS } from './check-saju-judgment.ts'
 import { natalIdentity, PLANETS } from './check-natal-judgment.ts'
 import { ziweiIdentity } from './check-ziwei-judgment.ts'
 import { chartTitles, factItems, readConclusions } from './judgment-document.ts'
-import { checkLifeDocument as checkStructure, type LifeSection, stageLines } from './life-document.ts'
+import { checkLifeDocument as checkStructure, type LifeSection, readLifeItems, stageLines } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 import { checkRelations, RELATION_ITEMS, WEIGHT_FIELDS } from './life-relations.ts'
 
@@ -20,6 +20,12 @@ export const TIMELINE: LifeSection = {
   name: '생애 연표',
   items: LIFE_STAGES.map((stage) => stage.name),
   fields: ['운', '주제', '전환점', '인연', '시련', '얻는 것', '잃는 것', '성격 변화', '근거'],
+}
+/** 주인공이 자란 환경. 인물이 아니라 조건(생활 기반·지원·기대·제약)이다. 계약: docs/spec/life-narrative-interpretation.md 3절 */
+export const BACKGROUND: LifeSection = {
+  name: '배경',
+  items: ['뿌리', '자란 집', '떠남의 조건'],
+  fields: ['모습', '준 것', '막은 것', '근거'],
 }
 export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
 /** 인물 사전 필드. 상태는 RELATION_ITEMS 칸에만 있다 (docs/spec/life-shape-and-relationship-status.md 5.2·5.4) */
@@ -35,11 +41,61 @@ function commonSections(timeline: boolean): LifeSection[] {
   ]
 }
 
+/**
+ * 배경 항목마다 근거에 있어야 하는 자리(하나 이상)와 배경 절에서 쓰지 않는 본인 자리.
+ * 본인을 가리키는 자리에서 읽은 성향을 환경으로 쓰는 실수를 막는다(#97). 계약: docs/spec/life-narrative-interpretation.md 3절
+ */
+interface BackgroundRule { items: Record<string, string[]>; forbidden: string[] }
+
+const YEAR = ['[chart:年柱]', '[chart:年干]', '[chart:年支]']
+const MONTH = ['[chart:月柱]', '[chart:月干]', '[chart:月支]']
+const BACKGROUND_RULES: Record<'saju' | 'ziwei' | 'natal', BackgroundRule> = {
+  saju: {
+    items: {
+      뿌리: YEAR,
+      '자란 집': MONTH,
+      '떠남의 조건': [...YEAR, ...MONTH, '[chart:八字關係]', '[facts:생애 단계별 大運]', '[derived:생애 단계별 운 기조]'],
+    },
+    forbidden: ['[chart:日干]', '[chart:日柱]', '[judgment:일간 강약]'],
+  },
+  ziwei: {
+    items: { 뿌리: ['[chart:父母]', '[chart:福德]'], '자란 집': ['[chart:田宅]', '[chart:父母]'], '떠남의 조건': ['[chart:遷移]'] },
+    forbidden: ['[chart:命宮]', '[facts:명궁 주성]', '[facts:명궁 삼방사정]', '[facts:삼방사정 보조성 수]', '[judgment:명궁 역량]', '[judgment:격국]'],
+  },
+  // 하우스는 하나씩 인용할 이름이 없어 하우스 표나 하우스별 사실 한 항목으로 인용된다. 어느 하우스를 읽었는지는 스킬 지침과 의미 검토가 맡는다.
+  natal: {
+    items: {
+      뿌리: ['[facts:하우스별 룰러와 행성]', '[chart:Houses]'],
+      '자란 집': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]', '[chart:MC]'],
+      '떠남의 조건': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]'],
+    },
+    forbidden: ['[chart:ASC]', '[facts:ASC]', '[facts:차트 룰러]', '[judgment:차트 룰러 상태]'],
+  },
+}
+
+/** 배경 절의 인용이 자리 규칙을 따르는지 */
+function backgroundCitations(life: string, rule: BackgroundRule): string[] {
+  const errors: string[] = []
+  for (const { section, name, fields } of readLifeItems(life)) {
+    if (section !== BACKGROUND.name) continue
+    const citations = fields.flatMap(([, value]) => value.match(/\[[a-z]+:[^\]]*\]/g) ?? [])
+    for (const citation of new Set(citations.filter((c) => rule.forbidden.includes(c)))) {
+      errors.push(`배경 > ${name}: ${citation}는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다`)
+    }
+    const required = rule.items[name]
+    const basis = fields.find(([key]) => key === '근거')?.[1] ?? ''
+    if (required != null && basis !== '' && !required.some((citation) => basis.includes(citation))) {
+      errors.push(`배경 > ${name}: 근거에 ${required.join(' ')} 중 하나가 없다`)
+    }
+  }
+  return errors
+}
+
 const SYSTEMS = {
   saju: (texts: LifeTexts) => checkStructure(texts.life, {
     title: '# 四柱 일생 해석',
     identity: { key: '원국', expected: chartPillars(texts.chart), file: 'saju-chart.md' },
-    sections: [TIMELINE, ...commonSections(true)],
+    sections: [BACKGROUND, TIMELINE, ...commonSections(true)],
     luck: { file: 'saju-facts.md', expected: stageLines(texts.facts, '생애 단계별 大運') },
     citations: {
       facts: { file: 'saju-facts.md', items: factItems(texts.facts) },
@@ -51,7 +107,7 @@ const SYSTEMS = {
   ziwei: (texts: LifeTexts) => checkStructure(texts.life, {
     title: '# 紫微斗數 일생 해석',
     identity: { key: '명반', expected: ziweiIdentity(texts.chart), file: 'ziwei-chart.md' },
-    sections: [TIMELINE, ...commonSections(true)],
+    sections: [BACKGROUND, TIMELINE, ...commonSections(true)],
     luck: { file: 'ziwei-facts.md', expected: stageLines(texts.facts, '생애 단계별 大限') },
     citations: {
       facts: { file: 'ziwei-facts.md', items: factItems(texts.facts) },
@@ -65,7 +121,7 @@ const SYSTEMS = {
   natal: (texts: LifeTexts) => checkStructure(texts.life, {
     title: '# Natal 일생 해석',
     identity: { key: '차트', expected: natalIdentity(texts.chart), file: 'natal-chart.md' },
-    sections: commonSections(false),
+    sections: [BACKGROUND, ...commonSections(false)],
     citations: {
       facts: { file: 'natal-facts.md', items: factItems(texts.facts) },
       chart: { file: 'natal-chart.md', names: new Set([...chartTitles(texts.chart), ...PLANETS, 'ASC', 'MC']) },
@@ -101,6 +157,7 @@ export function checkLifeDocument(system: LifeSystem, texts: LifeTexts): string[
     ...SYSTEMS[system](texts),
     ...checkRelations(texts.life, { expectedStatus: expectedStatus(texts.judgment), timeline: system !== 'natal' }),
     ...(system === 'saju' ? luckToneCitations(texts.life) : []),
+    ...backgroundCitations(texts.life, BACKGROUND_RULES[system]),
   ]
 }
 

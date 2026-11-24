@@ -84,8 +84,8 @@ test('배경 항목이 빠지거나 경로가 두 단계가 아니면 거부한�
   const threeSteps = replaceOnce(brief, '경로: 품이 넓은 어머니와 자주 자리를 비우는 아버지 → 기대와 실망을 번갈아 품음',
     '경로: 품이 넓은 어머니와 자주 자리를 비우는 아버지 → 기대와 실망을 번갈아 품음 → 한쪽 기둥이 늘 비어 있는 집')
   expect(check({ brief: threeSteps })).toEqual([`${lineOf('### 가족 구조') + 1}: 배경 > 가족 구조: 경로는 '→'로 이은 두 단계(삶의 사실 → 반복되는 행동·감정)여야 한다`])
-  const place = replaceOnce(brief, '경로: 약속을 자주 어기는 어른들 곁에서 자람 → 만든 것을 건네 인정받으려는 습관\n',
-    '경로: 약속을 자주 어기는 어른들 곁에서 자람 → 만든 것을 건네 인정받으려는 습관\n장소의 사정: 결과만 믿는 마을\n')
+  const originPath = '경로: 장사로 일어섰지만 멀리 맺은 약속이 자주 흐지부지되는 집안에서 태어남 → 말로 한 약속보다 손에 쥔 것을 믿는 습관\n'
+  const place = replaceOnce(brief, originPath, `${originPath}장소의 사정: 결과만 믿는 마을\n`)
   expect(check({ brief: place })).toEqual([`${lineOf('### 출신지') + 2}: 배경 > 출신지: 허용하지 않는 필드 '장소의 사정'`])
 })
 
@@ -104,12 +104,12 @@ test('인물 사전의 칸이 어디에도 없으면 거부하고, 부재한 인
 test('life.md에 없는 항목과 다른 체계 인용을 거부한다', () => {
   const unknown = replaceOnce(brief, '재료: [life:부모] [life:상실]', '재료: [life:부모] [life:실패]')
   expect(check({ brief: unknown })).toEqual([`${lineOf('재료: [life:부모] [life:상실]')}: [life:실패] — life.md에 없는 항목`])
-  const system = replaceOnce(brief, '근거: [life:유년] [life:부모]', '근거: [saju:유년] [life:부모]')
-  expect(check({ brief: system })).toEqual([`${lineOf('근거: [life:유년] [life:부모]')}: [saju:유년] — 번역 브리프는 [life:<항목>]만 인용한다`])
+  const system = replaceOnce(brief, '근거: [life:뿌리] [life:부모]', '근거: [life:뿌리] [saju:부모]')
+  expect(check({ brief: system })).toEqual([`${lineOf('근거: [life:뿌리] [life:부모]')}: [saju:부모] — 번역 브리프는 [life:<항목>]만 인용한다`])
 })
 
 test('차트 명칭을 거부한다', () => {
-  const changed = replaceOnce(brief, '만든 것을 건네 인정받으려는 습관', '무곡을 닮은 셈 습관')
+  const changed = replaceOnce(brief, '말로 한 약속보다 손에 쥔 것을 믿는 습관', '무곡을 닮은 셈 습관')
   expect(check({ brief: changed })).toEqual([`${lineOf('### 출신지') + 1}: 차트 명칭 '무곡'`])
 })
 
@@ -165,4 +165,18 @@ test('생업 절이 비었거나 생업 항목이 life.md의 생업을 인용하
   expect(check({ brief: brief.slice(0, start) + brief.slice(end + 1) })).toEqual([`${lineOf('## 생업')}: 생업: 생업 항목이 없다`])
   const basis = replaceOnce(brief, '근거: [life:생업: 목수]', '근거: [life:주 재능]')
   expect(check({ brief: basis })).toEqual([`${lineOf('근거: [life:생업: 목수]')}: 생업 > 목수: 근거에 [life:생업: <이름>] 인용이 없다`])
+})
+
+// 배경(#97): 출신지·성장 환경·떠남의 계기는 life.md 배경(차트의 환경 자리에서 읽은 것)을 옮긴다. 인물 칸과 생애 연표만으로는
+// 주인공 성향이 환경 자리에 들어간다. 대응은 docs/spec/life-to-game-translation.md 3.4절에서 정했다.
+test('출신지·성장 환경·떠남의 계기는 life.md 배경 항목을 인용해야 한다', () => {
+  const origin = '근거: [life:뿌리] [life:부모]'
+  expect(check({ brief: replaceOnce(brief, origin, '근거: [life:유년] [life:부모]') }))
+    .toEqual([`${lineOf(origin)}: 배경 > 출신지: 근거에 life.md 배경의 [life:뿌리] [life:자란 집] 중 하나가 없다`])
+  expect(check({ brief: replaceOnce(brief, origin, '근거: [life:자란 집]') })).toEqual([])
+  const leaving = '근거: [life:떠남의 조건] [life:소년] [life:스승·후원자]'
+  expect(check({ brief: replaceOnce(brief, leaving, '근거: [life:소년] [life:스승·후원자]') }))
+    .toEqual([`${lineOf(leaving)}: 배경 > 떠남의 계기: 근거에 life.md 배경의 [life:떠남의 조건] 중 하나가 없다`])
+  // 가족 구조는 인물 사전에서 읽으므로 배경 항목을 요구하지 않는다.
+  expect(check({ brief: replaceOnce(brief, '근거: [life:부모] [life:형제·또래]', '근거: [life:부모]') })).toEqual([])
 })

@@ -15,6 +15,8 @@ const SECTIONS = ['주인공', '주인공 능력', '생업', '동료', '배경',
 /** 주인공 절의 항목과 각각 인용해야 하는 life.md 항목 */
 const PROTAGONIST = ['축', '반복되는 실패']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
+/** 환경을 옮기는 배경 항목과 근거에 있어야 하는 life.md 배경 항목(하나 이상). 가족 구조는 인물 사전에서 읽는다(#97). */
+const BACKGROUND_SOURCES: Record<string, string[]> = { 출신지: ['뿌리', '자란 집'], '성장 환경': ['자란 집'], '떠남의 계기': ['떠남의 조건'] }
 const STAGE_NAMES = LIFE_STAGES.map((stage) => stage.name)
 const CITATION = /\[([^\]:]+):([^\]]*)\]/g
 
@@ -158,7 +160,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     if (basis != null && basis.value !== '' && !lifeTargets(basis.value).some(isLivelihood)) report(basis.line, `${where}: 근거에 [life:생업: <이름>] 인용이 없다`)
   }
 
-  // 배경: 네 항목, 두 단계 경로(삶의 사실 → 반복되는 행동·감정), life 인용. 장소의 성격은 정체성 단계가 정한다(#86).
+  // 배경: 네 항목, 두 단계 경로(삶의 사실 → 반복되는 행동·감정), life 인용. 환경 항목은 life.md 배경을 인용한다(#97). 장소의 성격은 정체성 단계가 정한다(#86).
   const background = section('배경')
   if (background != null) {
     const names = background.items.map(({ name }) => name)
@@ -171,7 +173,12 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
         const steps = path.value.split('→').map((step) => step.trim())
         if (steps.length !== 2 || steps.some((step) => step === '')) report(path.line, `${where}: 경로는 '→'로 이은 두 단계(삶의 사실 → 반복되는 행동·감정)여야 한다`)
       }
-      requireLife(where, fields.get('근거'))
+      const basis = fields.get('근거')
+      requireLife(where, basis)
+      const sources = BACKGROUND_SOURCES[item.name]
+      if (basis != null && basis.value !== '' && sources != null && !lifeTargets(basis.value).some((target) => sources.includes(target))) {
+        report(basis.line, `${where}: 근거에 life.md 배경의 ${sources.map((name) => `[life:${name}]`).join(' ')} 중 하나가 없다`)
+      }
     }
   }
 

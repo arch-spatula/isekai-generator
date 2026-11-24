@@ -17,10 +17,11 @@ const lives = {
 }
 const script = join(import.meta.dir, 'assemble-life-material.ts')
 
-test('lays out sections and items: timeline and cast side by side, talents and wounds per system', () => {
+test('lays out sections and items: background, timeline and cast side by side, talents and wounds per system', () => {
   const headings = lifeMaterial(lives).split('\n').filter((line) => line.startsWith('#'))
   const perSystem = (items: string[]) => ['saju', 'ziwei', 'natal'].flatMap((system) => items.map((item) => `### ${system} ${item}`))
   expect(headings).toEqual([
+    '## 배경', ...['뿌리', '자란 집', '떠남의 조건'].map((item) => `### ${item}`),
     '## 생애 연표', ...['유년', '소년', '청년', '장년', '노년'].map((stage) => `### ${stage}`),
     '## 인물 사전', ...['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자'].map((name) => `### ${name}`),
     '## 재능과 생업', ...['saju 주 재능', 'saju 보조 재능', 'saju 생업: 목수', 'saju 생업: 공방 선생', 'ziwei 주 재능', 'ziwei 보조 재능', 'ziwei 생업: 마을 관리인',
@@ -31,11 +32,17 @@ test('lays out sections and items: timeline and cast side by side, talents and w
 
 test('puts each field of the same-name item next to each other and drops 근거', () => {
   const lines = lifeMaterial(lives).split('\n')
-  expect(lines.slice(0, 6)).toEqual([
+  expect(lines.slice(0, 7)).toEqual([
     '일생 통합 재료 (세 체계 일생 해석을 항목 이름으로 모은 것 · 해석 아님)',
     '─────',
-    '## 생애 연표',
-    '### 유년',
+    '## 배경',
+    '### 뿌리',
+    '모습 [saju]: 윗대부터 바깥을 오가며 물건을 사고팔아 살림을 일으킨 집안이다',
+    '모습 [ziwei]: 윗대는 사람 좋기로 알려졌지만 맺은 약속이 자주 흐지부지되는 집안이다',
+    '모습 [natal]: 집안의 내력이 멀리 있는 사람들과 맺은 인연과 약속에 기대 있다',
+  ])
+  const childhood = lines.indexOf('### 유년')
+  expect(lines.slice(childhood + 1, childhood + 3)).toEqual([
     '운 [saju]: 대운 이전 0–7, 1運 庚辰 8–17',
     '운 [ziwei]: 大限 이전 1–1歲, 命宮 乙酉 2–11歲, 父母 丙戌 12–21歲',
   ])

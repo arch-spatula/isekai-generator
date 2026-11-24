@@ -1,6 +1,6 @@
 # ADR: 인물과 주변 환경의 해석을 구분해 세계관과 스토리 설정에 활용
 
-* **Status:** Accepted — 구현 미반영
+* **Status:** Accepted — Claude 흐름의 차트 해석 층 반영은 [배경 해석 ADR](2026-11-24-chart-background-interpretation.md)(#97)
 * **Date:** 2026-11-10
 * **Decision Owners:** Project Owner
 * **Scope:** 전문·통합 해석의 의미 보존과 세계 후보·GDD의 세계관 및 스토리 설계

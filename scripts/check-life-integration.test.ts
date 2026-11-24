@@ -36,7 +36,7 @@ test('checks the title, the absence of an identity line and the section order', 
   expect(check(mutate('# 일생 통합 해석', '# 四柱 일생 해석'))).toContain("1: 첫 줄은 '# 일생 통합 해석'이어야 한다")
   expect(check(mutate('# 일생 통합 해석\n', '# 일생 통합 해석\n원국: 癸巳 丙寅 己卯 庚辰\n'))).toContain('2: 섹션 밖의 줄이다')
   expect(check(mutate('## 갈림길\n', '')))
-    .toContain('섹션은 일생의 축, 생애 연표, 인물 사전, 재능과 생업, 상처와 회복, 갈림길 순서여야 한다 (실제: 일생의 축, 생애 연표, 인물 사전, 재능과 생업, 상처와 회복)')
+    .toContain('섹션은 일생의 축, 배경, 생애 연표, 인물 사전, 재능과 생업, 상처와 회복, 갈림길 순서여야 한다 (실제: 일생의 축, 배경, 생애 연표, 인물 사전, 재능과 생업, 상처와 회복)')
 })
 
 test('timeline has no 운 field and talents bloom in a named life stage', () => {
@@ -175,4 +175,12 @@ test('통합 문서에 생업 항목이 없으면 거부한다', () => {
   expect(check(valid.slice(0, start) + valid.slice(end + 1))).toEqual(["재능과 생업: '생업: <이름>' 생업 항목이 하나 이상 있어야 한다"])
   expect(check(mutate('근거: [saju:생업: 목수] [ziwei:생업: 마을 관리인]', '근거: [saju:생업: 목수] [ziwei:생업: 대장장이]')))
     .toEqual([`${lineOf('근거: [saju:생업: 목수] [ziwei:생업: 마을 관리인]')}: 재능과 생업 > 생업: 목수: ziwei-life.md에 없는 항목 [ziwei:생업: 대장장이]`])
+})
+
+// 배경(#97): 세 체계가 각자 읽은 배경을 한 집안의 모습으로 합치고, 어느 체계의 배경도 조용히 빠지지 않는다.
+test('background: every system background item must be cited', () => {
+  expect(check(mutate('근거: [saju:자란 집] [ziwei:자란 집] [natal:자란 집]', '근거: [saju:자란 집] [natal:자란 집]')))
+    .toContain('같은 이름의 원본 항목을 인용하지 않았다: [ziwei:자란 집]')
+  const withoutLeaving = valid.replace(/### 떠남의 조건\n[\s\S]*?(?=\n## 생애 연표)/, '')
+  expect(check(withoutLeaving)).toContain('배경: 항목은 뿌리, 자란 집, 떠남의 조건 순서여야 한다 (실제: 뿌리, 자란 집)')
 })

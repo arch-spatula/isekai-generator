@@ -46,11 +46,14 @@ test('부직업의 재료에 생업이나 능력이 없으면 거부한다', () 
   expect(check(changed)).toEqual([`${lineOf('재료: [brief:목수] [brief:성질을 읽고 빚는 손]')}: 부직업 > 수레 고치는 사람: 재료에 [brief:<생업>]이나 [brief:<주인공 능력>]이 없다`])
 })
 
-test('출신 도시에 산업·권력·역사가 없거나 배경을 인용하지 않으면 거부한다', () => {
+test('출신 도시에 산업·권력·역사가 없거나 출신지를 인용하지 않으면 거부한다', () => {
   const noPower = replaceOnce(identity, '권력: 목재 조합이 수량과 몫을 장부로 셈하고, 납기를 어긴 공방에서 일감을 거둔다\n', '')
   expect(check(noPower)).toEqual([`${lineOf('### 하구 목재 시장')}: 출신 도시 > 하구 목재 시장: 권력 필드가 없다`])
   const basis = replaceOnce(identity, '근거: [brief:출신지] [brief:가족 구조]', '근거: [brief:소년]')
-  expect(check(basis)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신 도시 > 하구 목재 시장: 근거에 [brief:<배경 항목>]이 없다`])
+  expect(check(basis)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신 도시 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
+  // 가족 구조만으로는 출신 도시의 재료가 되지 않는다. 출신지가 차트의 환경 자리에서 읽은 배경을 옮긴다(#97).
+  const familyOnly = replaceOnce(identity, '근거: [brief:출신지] [brief:가족 구조]', '근거: [brief:가족 구조]')
+  expect(check(familyOnly)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신 도시 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
 })
 
 test('장별 세계가 브리프의 장과 다르거나 그 장을 인용하지 않으면 거부한다', () => {

@@ -10,7 +10,6 @@ import {
 
 const TITLE = '# 이세계 정체성'
 const SECTIONS = ['클래스', '부직업', '출신 도시', '장별 세계']
-const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
 
 export interface IdentityTexts { identity: string; brief: string }
 
@@ -67,13 +66,13 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
     }
   }
 
-  // 출신 도시: 자체 산업·권력·역사를 가진 곳. 브리프의 배경(환경에 관한 사실)에 기댄다.
+  // 출신 도시: 자체 산업·권력·역사를 가진 곳. 브리프 배경의 출신지(life.md 배경의 뿌리·자란 집을 옮긴 환경)에 기댄다(#97).
   const city = single(section('출신 도시'))
   if (city != null) {
     const where = `출신 도시 > ${city.name}`
     const basis = fieldsOf(where, city, ['산업', '권력', '역사', '주인공의 자리', '근거'], report).get('근거')
-    if (basis != null && !targetsOf(basis.value, 'brief').some((target) => BACKGROUND.includes(target))) {
-      report(basis.line, `${where}: 근거에 [brief:<배경 항목>]이 없다`)
+    if (basis != null && !targetsOf(basis.value, 'brief').includes('출신지')) {
+      report(basis.line, `${where}: 근거에 [brief:출신지]가 없다`)
     }
   }
 
