@@ -57,19 +57,19 @@ test('런 밖 성장이 브리프의 능력을 인용하지 않으면 거부한�
   expect(check({ combat: changed })).toEqual([`${lineOf(line)}: 전투 방식: 런 밖 성장에 [brief:<주인공 능력>] 인용이 없다`])
 })
 
-test('동료 기술은 브리프의 동료마다 하나이고 동료가 아닌 인물은 거부한다', () => {
+test('동료의 행동은 브리프의 동료마다 하나이고 동료가 아닌 인물은 거부한다', () => {
   const missing = combat.replace(/### 연인·배우자\n[^#]*$/, '')
-  expect(check({ combat: missing })).toEqual([`${lineOf('## 동료 기술')}: 동료 기술: 브리프의 동료 '연인·배우자'의 기술이 없다`])
-  const stranger = replaceOnce(combat, '### 스승·후원자\n기술:', '### 부모\n기술:').replace('근거: [brief:스승·후원자]', '근거: [brief:부모]')
+  expect(check({ combat: missing })).toEqual([`${lineOf('## 동료의 행동')}: 동료의 행동: 브리프의 동료 '연인·배우자'의 행동이 없다`])
+  const stranger = replaceOnce(combat, '### 스승·후원자\n행동:', '### 부모\n행동:').replace('근거: [brief:스승·후원자]', '근거: [brief:부모]')
   const errors = check({ combat: stranger })
-  expect(errors).toContain(`${lineOf('### 스승·후원자')}: 동료 기술 > 부모: 브리프의 동료가 아니다`)
-  expect(errors).toContain(`${lineOf('## 동료 기술')}: 동료 기술: 브리프의 동료 '스승·후원자'의 기술이 없다`)
+  expect(errors).toContain(`${lineOf('### 스승·후원자')}: 동료의 행동 > 부모: 브리프의 동료가 아니다`)
+  expect(errors).toContain(`${lineOf('## 동료의 행동')}: 동료의 행동: 브리프의 동료 '스승·후원자'의 행동이 없다`)
 })
 
-test('브리프의 동료가 없으면 동료 기술 절은 비어도 된다', () => {
+test('브리프의 동료가 없으면 동료의 행동 절은 비어도 된다', () => {
   const companions = brief.slice(brief.indexOf('## 동료'), brief.indexOf('## 배경'))
   const alone = brief.replace(companions, '## 동료\n후보: 없음\n혼자: 곁에서 함께 한 사람이 없다\n\n')
-  const noSkills = combat.slice(0, combat.indexOf('## 동료 기술')) + '## 동료 기술\n'
+  const noSkills = combat.slice(0, combat.indexOf('## 동료의 행동')) + '## 동료의 행동\n'
   expect(check({ combat: noSkills, brief: alone })).toEqual([])
 })
 

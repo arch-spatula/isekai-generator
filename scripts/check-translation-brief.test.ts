@@ -47,7 +47,6 @@ test('정상 브리프는 통과한다', () => {
 test('후보가 없으면 혼자 모험하는 브리프가 통과하고 동료를 쓰면 거부한다', () => {
   const companions = brief.slice(brief.indexOf('## 동료'), brief.indexOf('## 배경'))
   const alone = brief.replace(companions, '## 동료\n후보: 없음\n혼자: 영향이 큰 사람 가운데 곁에서 함께 한 사람이 없다\n\n')
-    .replace('출처: [life:연인·배우자]', '출처: [life:주 재능]')
     .replace('- 제자:', '- 연인·배우자: 영향 보통\n- 스승·후원자: 영향 보통\n- 제자:')
   expect(check({ brief: alone, life: noCandidates })).toEqual([])
   const errors = check({ life: noCandidates })
@@ -71,11 +70,11 @@ test('동료 항목과 혼자를 함께 쓰면 거부한다', () => {
   expect(check({ brief: changed })).toEqual([`${lineOf('### 스승·후원자')}: 동료: 동료 항목과 혼자를 함께 쓸 수 없다`])
 })
 
-test('능력의 출처가 재능 항목이나 고른 동료가 아니면 거부한다', () => {
+test('능력의 출처가 재능 항목이 아니면 거부한다', () => {
   const changed = replaceOnce(brief, '출처: [life:보조 재능]', '출처: [life:벗·동료]')
-  expect(check({ brief: changed })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:벗·동료]는 재능 항목이나 동료가 아니다`])
+  expect(check({ brief: changed })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:벗·동료]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`])
   const notChosen = replaceOnce(brief, '출처: [life:보조 재능]', '출처: [life:부모]')
-  expect(check({ brief: notChosen })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:부모]는 재능 항목이나 동료가 아니다`])
+  expect(check({ brief: notChosen })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:부모]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`])
 })
 
 test('배경 항목이 빠지거나 해석 경로가 세 단계가 아니면 거부한다', () => {
@@ -89,7 +88,7 @@ test('배경 항목이 빠지거나 해석 경로가 세 단계가 아니면 거
 })
 
 test('짧지만 완결된 값은 길이를 이유로 거부하지 않는다', () => {
-  const short = replaceOnce(brief, '약점: 함께 하는 사람과 크게 엇갈리면 쓸 수 없다', '약점: 둘이 갈라서면 못 쓴다')
+  const short = replaceOnce(brief, '약점: 자기 자리와 마음을 돌보지 않으면 남의 틈만 보고 자기 틈을 놓친다', '약점: 제 틈을 못 본다')
   expect(check({ brief: short })).toEqual([])
 })
 
@@ -144,4 +143,10 @@ test('동료의 동행하는 장이 브리프의 장에 없으면 거부한다',
 test('주인공 능력에 다루는 것이 없으면 거부한다', () => {
   const changed = replaceOnce(brief, '다루는 것: 나무와 쇠 같은 재료와 도구\n', '')
   expect(check({ brief: changed })).toEqual([`${lineOf('### 성질을 읽고 빚는 손')}: 주인공 능력 > 성질을 읽고 빚는 손: 다루는 것 필드가 없다`])
+})
+
+// #71: 관계는 능력의 출처가 아니다. 동료로 고른 인물도 마찬가지다.
+test('동료로 고른 인물을 능력의 출처로 쓰면 거부한다', () => {
+  const changed = replaceOnce(brief, '출처: [life:보조 재능]', '출처: [life:연인·배우자]')
+  expect(check({ brief: changed })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:연인·배우자]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`])
 })
