@@ -34,7 +34,7 @@ test('이름만 다르고 축이 거의 같은 후보를 거부한다', () => {
 
 test('축 값이 허용값이 아니면 거부한다', () => {
   const changed = replaceOnce(combat, '힘의 매개체: 주문', '힘의 매개체: 노래')
-  expect(check({ combat: changed })).toEqual([`${lineOf('힘의 매개체: 주문')}: 후보 > 성질을 바꾸는 손: 힘의 매개체 '노래' — 허용값 신체 · 무기 · 주문 · 소환체 · 설치물 · 환경`])
+  expect(check({ combat: changed })).toEqual([`${lineOf('힘의 매개체: 주문')}: 후보 > 성질을 바꾸는 손: 힘의 매개체 '노래' — 허용값 신체 · 무기 · 주문 · 소환체 · 설치물 · 환경 · 장치 · 기호 · 소리 · 물질`])
 })
 
 test('출처가 브리프의 주인공 능력이 아니면 거부한다', () => {
@@ -81,4 +81,11 @@ test('제외 메커니즘의 용어, 차트 명칭, 다른 문서 인용을 거�
   expect(check({ combat: name })).toEqual([`${lineOf(line)}: 차트 명칭 '칠살'`])
   const life = replaceOnce(combat, '출처: [brief:고칠 곳을 짚는 눈]', '출처: [brief:고칠 곳을 짚는 눈] [life:보조 재능]')
   expect(check({ combat: life })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: [life:보조 재능] — 이 문서는 [brief:]만 인용한다`])
+})
+
+test('2026-11-24 개정으로 더한 축 값을 받아들인다', () => {
+  // 전투 원형 ADR 2.1 개정: 손재주·학문·예술·돌봄 재능의 매개와 방식
+  const changed = replaceOnce(combat, '전투 거리: 원거리\n힘의 매개체: 주문\n주도 방식: 직접 타격\n공간 활용: 추격',
+    '전투 거리: 원거리\n힘의 매개체: 장치\n주도 방식: 제작\n공간 활용: 지형 변형')
+  expect(check({ combat: changed.replace('숙련의 핵심: 자원 조합\n위험 구조: 과열', '숙련의 핵심: 정밀 조작\n위험 구조: 오작동') })).toEqual([])
 })
