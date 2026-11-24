@@ -47,8 +47,8 @@ test('채택이 하나가 아니거나 전투 방식의 채택과 다르면 거�
   expect(check({ combat: two })).toContain(`${lineOf('## 후보')}: 후보: 채택한 후보는 하나여야 한다 (실제: 2)`)
   const other = replaceOnce(combat, '채택: 빚어 세우는 손', '채택: 틈을 짚는 일격')
   expect(check({ combat: other })).toEqual([`${lineOf('채택: 빚어 세우는 손')}: 전투 방식: 채택 '틈을 짚는 일격' — 후보에서 채택한 것은 '빚어 세우는 손'`])
-  const noReason = replaceOnce(combat, '판단: 제외 — 동료가 청년의 장에만 있어 다른 장에서 전투가 성립하지 않는다', '판단: 제외')
-  expect(check({ combat: noReason })).toEqual([`${lineOf('판단: 제외 — 동료가 청년의 장에만 있어 다른 장에서 전투가 성립하지 않는다')}: 후보 > 함께 지키는 터: 판단은 '채택' 또는 '제외 — <이유>'이다`])
+  const noReason = replaceOnce(combat, '판단: 제외 — 지형을 넓히는 일이 중심이 되어 재료를 골라 빚는 주 재능이 조작에서 가려진다', '판단: 제외')
+  expect(check({ combat: noReason })).toEqual([`${lineOf('판단: 제외 — 지형을 넓히는 일이 중심이 되어 재료를 골라 빚는 주 재능이 조작에서 가려진다')}: 후보 > 함께 지키는 터: 판단은 '채택' 또는 '제외 — <이유>'이다`])
 })
 
 test('런 밖 성장이 브리프의 능력을 인용하지 않으면 거부한다', () => {
@@ -88,4 +88,21 @@ test('2026-11-24 개정으로 더한 축 값을 받아들인다', () => {
   const changed = replaceOnce(combat, '전투 거리: 원거리\n힘의 매개체: 주문\n주도 방식: 직접 타격\n공간 활용: 추격',
     '전투 거리: 원거리\n힘의 매개체: 장치\n주도 방식: 제작\n공간 활용: 지형 변형')
   expect(check({ combat: changed.replace('숙련의 핵심: 자원 조합\n위험 구조: 과열', '숙련의 핵심: 정밀 조작\n위험 구조: 오작동') })).toEqual([])
+})
+
+// #75: 후보는 재능의 다루는 것에서 만들고, 혼자 성립을 보이며, 채택은 주 재능에서 나온 능력을 출처로 한다.
+test('후보에 조작하는 것이나 혼자일 때가 없으면 거부한다', () => {
+  const noTarget = replaceOnce(combat, '조작하는 것: 적의 동작에서 어긋난 곳\n', '')
+  expect(check({ combat: noTarget })).toEqual([`${lineOf('### 틈을 짚는 일격')}: 후보 > 틈을 짚는 일격: 조작하는 것 필드가 없다`])
+  const noSolo = replaceOnce(combat, '혼자일 때: 혼자 상대의 동작을 읽어 받아친다\n', '')
+  expect(check({ combat: noSolo })).toEqual([`${lineOf('### 틈을 짚는 일격')}: 후보 > 틈을 짚는 일격: 혼자일 때 필드가 없다`])
+})
+
+test('채택한 후보가 주 재능에서 나온 능력을 출처로 하지 않으면 거부한다', () => {
+  const adoptOther = replaceOnce(combat, '판단: 채택', '판단: 제외 — 비교를 위해 내려 둔다')
+    .replace('판단: 제외 — 눈은 손을 돕는 재능이라 혼자 전투의 중심이 되면 주 재능이 가려진다', '판단: 채택')
+    .replace('채택: 빚어 세우는 손', '채택: 틈을 짚는 일격')
+  expect(check({ combat: adoptOther })).toEqual([
+    `${lineOf('판단: 제외 — 눈은 손을 돕는 재능이라 혼자 전투의 중심이 되면 주 재능이 가려진다')}: 후보 > 틈을 짚는 일격: 채택한 후보는 주 재능에서 나온 능력(성질을 읽고 빚는 손)을 출처로 해야 한다`,
+  ])
 })
