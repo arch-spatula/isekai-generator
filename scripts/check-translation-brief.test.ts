@@ -77,14 +77,16 @@ test('능력의 출처가 재능 항목이 아니면 거부한다', () => {
   expect(check({ brief: notChosen })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:부모]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`])
 })
 
-test('배경 항목이 빠지거나 해석 경로가 세 단계가 아니면 거부한다', () => {
+test('배경 항목이 빠지거나 경로가 두 단계가 아니면 거부한다', () => {
   const missing = brief.replace(/### 가족 구조\n[^#]*/, '')
   expect(check({ brief: missing })).toContain(`${lineOf('## 배경')}: 배경: 항목은 출신지, 성장 환경, 가족 구조, 떠남의 계기 순서여야 한다 (실제: 출신지, 성장 환경, 떠남의 계기)`)
-  const twoSteps = replaceOnce(brief, '경로: 품이 넓은 어머니와 자주 자리를 비우는 아버지 → 기대와 실망을 번갈아 품음 → 한쪽 기둥이 늘 비어 있는 집',
-    '경로: 품이 넓은 어머니와 자주 자리를 비우는 아버지 → 한쪽 기둥이 늘 비어 있는 집')
-  expect(check({ brief: twoSteps })).toEqual([`${lineOf('### 가족 구조') + 1}: 배경 > 가족 구조: 경로는 '→'로 이은 세 단계여야 한다`])
-  const noPlace = replaceOnce(brief, '장소의 사정: 바깥과의 약속이 자주 깨져 마을 사람들은 손에 쥔 결과만 믿고 서로의 몫을 엄격히 셈한다\n', '')
-  expect(check({ brief: noPlace })).toEqual([`${lineOf('### 출신지')}: 배경 > 출신지: 장소의 사정 필드가 없다`])
+  // #86: 셋째 단계(장소·공동체의 성격)는 쓰지 않는다. 장소는 정체성 단계가 만든다.
+  const threeSteps = replaceOnce(brief, '경로: 품이 넓은 어머니와 자주 자리를 비우는 아버지 → 기대와 실망을 번갈아 품음',
+    '경로: 품이 넓은 어머니와 자주 자리를 비우는 아버지 → 기대와 실망을 번갈아 품음 → 한쪽 기둥이 늘 비어 있는 집')
+  expect(check({ brief: threeSteps })).toEqual([`${lineOf('### 가족 구조') + 1}: 배경 > 가족 구조: 경로는 '→'로 이은 두 단계(삶의 사실 → 반복되는 행동·감정)여야 한다`])
+  const place = replaceOnce(brief, '경로: 약속을 자주 어기는 어른들 곁에서 자람 → 만든 것을 건네 인정받으려는 습관\n',
+    '경로: 약속을 자주 어기는 어른들 곁에서 자람 → 만든 것을 건네 인정받으려는 습관\n장소의 사정: 결과만 믿는 마을\n')
+  expect(check({ brief: place })).toEqual([`${lineOf('### 출신지') + 2}: 배경 > 출신지: 허용하지 않는 필드 '장소의 사정'`])
 })
 
 test('짧지만 완결된 값은 길이를 이유로 거부하지 않는다', () => {
@@ -107,7 +109,7 @@ test('life.md에 없는 항목과 다른 체계 인용을 거부한다', () => {
 })
 
 test('차트 명칭을 거부한다', () => {
-  const changed = replaceOnce(brief, '말보다 만든 것으로 서로를 믿는 작은 일꾼 마을', '무곡이 다스리는 장부 도시')
+  const changed = replaceOnce(brief, '만든 것을 건네 인정받으려는 습관', '무곡을 닮은 셈 습관')
   expect(check({ brief: changed })).toEqual([`${lineOf('### 출신지') + 1}: 차트 명칭 '무곡'`])
 })
 
@@ -155,4 +157,12 @@ test('동료로 고른 인물을 능력의 출처로 쓰면 거부한다', () =>
 test('생업 항목을 능력의 출처로 쓰면 거부한다', () => {
   const changed = replaceOnce(brief, '출처: [life:보조 재능]', '출처: [life:생업: 목수]')
   expect(check({ brief: changed })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:생업: 목수]는 생업 항목이다 (생업은 능력의 출처가 아니다)`])
+})
+
+// #86: 브리프는 life.md의 생업을 옮겨 정체성 단계에 넘긴다.
+test('생업 절이 비었거나 생업 항목이 life.md의 생업을 인용하지 않으면 거부한다', () => {
+  const start = brief.indexOf('### 목수'), end = brief.indexOf('\n## 동료')
+  expect(check({ brief: brief.slice(0, start) + brief.slice(end + 1) })).toEqual([`${lineOf('## 생업')}: 생업: 생업 항목이 없다`])
+  const basis = replaceOnce(brief, '근거: [life:생업: 목수]', '근거: [life:주 재능]')
+  expect(check({ brief: basis })).toEqual([`${lineOf('근거: [life:생업: 목수]')}: 생업 > 목수: 근거에 [life:생업: <이름>] 인용이 없다`])
 })

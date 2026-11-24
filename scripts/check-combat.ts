@@ -4,6 +4,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { classAbilities } from './check-identity.ts'
 import {
   checkCitationsAndNames, checkSectionOrder, fieldsOf, itemNames, parseGameDocument, sectionItemNames, targetsOf, type Report,
 } from './game-document.ts'
@@ -25,9 +26,9 @@ const CANDIDATE_COUNT = 4
 const MIN_DIFFERENT_AXES = 3
 const STYLE_FIELDS = ['채택', '핵심 행동', '약점', '적', '런 한 번', '런 중 보상', '런 밖 성장']
 
-export interface CombatTexts { combat: string; brief: string }
+export interface CombatTexts { combat: string; brief: string; identity: string }
 
-export function checkCombat({ combat, brief }: CombatTexts): string[] {
+export function checkCombat({ combat, brief, identity }: CombatTexts): string[] {
   const errors: string[] = []
   const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
   const sections = parseGameDocument(combat, TITLE, report)
@@ -35,6 +36,8 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
   const section = (name: string) => sections.find((candidate) => candidate.name === name)
   const abilities = new Set(sectionItemNames(brief, '주인공 능력'))
   const companions = sectionItemNames(brief, '동료')
+  // 후보는 정체성 단계가 고른 클래스 안에서 만든다. 출처는 클래스의 재료인 능력이다(#86).
+  const klass = classAbilities(identity, brief)
 
   // 후보: 네 개, 출처는 브리프의 주인공 능력, 축 값은 허용값, 후보 쌍마다 세 축 이상 다름, 채택은 하나
   const candidates = section('후보')?.items ?? []
@@ -48,7 +51,10 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
     if (source != null && source.value !== '') {
       const targets = targetsOf(source.value, 'brief')
       if (targets.length === 0) report(source.line, `${where}: 출처에 [brief:<주인공 능력>] 인용이 없다`)
-      for (const target of targets) if (!abilities.has(target)) report(source.line, `${where}: 출처 [brief:${target}]는 브리프의 주인공 능력이 아니다`)
+      for (const target of targets) {
+        if (!abilities.has(target)) report(source.line, `${where}: 출처 [brief:${target}]는 브리프의 주인공 능력이 아니다`)
+        else if (klass != null && !klass.abilities.includes(target)) report(source.line, `${where}: 출처 [brief:${target}]는 클래스 '${klass.name}'의 재료가 아니다`)
+      }
     }
     const values: Record<string, string> = {}
     for (const [axis, allowed] of Object.entries(AXES)) {
@@ -109,7 +115,7 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
     for (const field of skills.fields) report(field.line, `동료의 행동: 허용하지 않는 필드 '${field.key}'`)
   }
 
-  checkCitationsAndNames(combat, { brief: itemNames(brief) }, report, true)
+  checkCitationsAndNames(combat, { brief: itemNames(brief), identity: itemNames(identity) }, report, true)
   return errors
 }
 
@@ -127,7 +133,7 @@ if (import.meta.main) {
       process.exit(1)
     }
   }
-  const errors = checkCombat({ combat: read('combat.md'), brief: read('translation-brief.md') })
+  const errors = checkCombat({ combat: read('combat.md'), brief: read('translation-brief.md'), identity: read('identity.md') })
   for (const error of errors) console.log(error)
   process.exit(errors.length > 0 ? 1 : 0)
 }

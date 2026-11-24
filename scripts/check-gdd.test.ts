@@ -8,12 +8,13 @@ import { checkGdd } from './check-gdd.ts'
 const fixtures = join(import.meta.dir, 'fixtures')
 const read = (path: string) => readFileSync(join(fixtures, path), 'utf8')
 const brief = read('translation-brief/translation-brief.md'), combat = read('combat/combat.md'), world = read('world/world.md'), gdd = read('gdd/gdd.md')
+const identity = read('identity/identity.md')
 
 function replaceOnce(text: string, from: string, to: string): string {
   expect(text.split(from)).toHaveLength(2)
   return text.replace(from, to)
 }
-const check = (changes: { gdd?: string; brief?: string } = {}) => checkGdd({ gdd: changes.gdd ?? gdd, brief: changes.brief ?? brief, combat, world })
+const check = (changes: { gdd?: string; brief?: string } = {}) => checkGdd({ gdd: changes.gdd ?? gdd, brief: changes.brief ?? brief, identity, combat, world })
 const lineOf = (text: string) => gdd.split('\n').indexOf(text) + 1
 
 test('정상 GDD는 통과한다', () => {
@@ -28,7 +29,7 @@ test('절이 빠지거나 순서가 다르면 거부한다', () => {
 test('인용이 없는 절을 거부한다', () => {
   const scene = gdd.slice(gdd.indexOf('## 대표 장면'))
   const changed = gdd.replace(scene, '## 대표 장면\n주인공이 새 터전에서 첫 런을 치른다.\n')
-  expect(check({ gdd: changed })).toEqual([`${lineOf('## 대표 장면')}: 대표 장면: [brief:]·[combat:]·[world:] 인용이 없다`])
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 대표 장면')}: 대표 장면: [brief:]·[identity:]·[combat:]·[world:] 인용이 없다`])
 })
 
 test('주인공 절이 배경 네 항목을 모두 인용하지 않으면 거부한다', () => {
@@ -75,7 +76,13 @@ test('제외 메커니즘, 차트 명칭, life 인용, 없는 인용 대상을 �
   expect(check({ gdd: gdd.replace(line, `${line} 보상은 인벤토리 칸에 배치한다.`) })).toEqual([`${lineOf(line)}: 쓰지 않는 메커니즘의 용어 '인벤토리 칸'`])
   expect(check({ gdd: replaceOnce(gdd, '# 빚는 사람의 터', '# 탐랑의 터') })).toEqual(["1: 차트 명칭 '탐랑'"])
   expect(check({ gdd: replaceOnce(gdd, '[brief:축].\n\n## 주인공', '[brief:축] [life:축].\n\n## 주인공') })).toEqual([
-    `${lineOf('## 주인공') - 2}: [life:축] — 이 문서는 [brief:]·[combat:]·[world:]만 인용한다`,
+    `${lineOf('## 주인공') - 2}: [life:축] — 이 문서는 [brief:]·[identity:]·[combat:]·[world:]만 인용한다`,
   ])
   expect(check({ gdd: replaceOnce(gdd, '[world:새 터전]. 같은', '[world:없는 땅]. 같은') })).toContain(`${lineOf('### 청년') + 1}: [world:없는 땅] — 인용 대상 문서에 없는 항목`)
+})
+
+// #86: 주인공 절은 정체성 단계의 클래스와 부직업을 잇는다.
+test('주인공 절이 클래스나 부직업을 인용하지 않으면 거부한다', () => {
+  const changed = replaceOnce(gdd, ' [identity:수레 고치는 사람]', '')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 주인공')}: 주인공: 부직업 [identity:수레 고치는 사람]를 인용하지 않았다`])
 })

@@ -11,7 +11,7 @@ import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
-const SECTIONS = ['주인공', '주인공 능력', '동료', '배경', '장', '동기와 퀘스트', '옮기지 않은 인물']
+const SECTIONS = ['주인공', '주인공 능력', '생업', '동료', '배경', '장', '동기와 퀘스트', '옮기지 않은 인물']
 /** 주인공 절의 항목과 각각 인용해야 하는 life.md 항목 */
 const PROTAGONIST = ['축', '반복되는 실패']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
@@ -149,18 +149,27 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     }
   }
 
-  // 배경: 네 항목, 세 단계 해석 경로, life 인용
+  // 생업: life.md의 생업 항목을 옮긴다. 정체성 단계가 클래스·부직업·출신 도시의 재료로 쓴다(#86).
+  const livelihoods = section('생업')
+  if (livelihoods != null && livelihoods.items.length === 0) report(livelihoods.line, '생업: 생업 항목이 없다')
+  for (const item of livelihoods?.items ?? []) {
+    const where = `생업 > ${item.name}`
+    const basis = fieldsOf(where, item, ['시기', '내용', '근거']).get('근거')
+    if (basis != null && basis.value !== '' && !lifeTargets(basis.value).some(isLivelihood)) report(basis.line, `${where}: 근거에 [life:생업: <이름>] 인용이 없다`)
+  }
+
+  // 배경: 네 항목, 두 단계 경로(삶의 사실 → 반복되는 행동·감정), life 인용. 장소의 성격은 정체성 단계가 정한다(#86).
   const background = section('배경')
   if (background != null) {
     const names = background.items.map(({ name }) => name)
     if (names.join() !== BACKGROUND.join()) report(background.line, `배경: 항목은 ${BACKGROUND.join(', ')} 순서여야 한다 (실제: ${names.join(', ')})`)
     for (const item of background.items) {
       const where = `배경 > ${item.name}`
-      const fields = fieldsOf(where, item, item.name === '출신지' ? ['경로', '장소의 사정', '근거'] : ['경로', '근거'], ['경로', '장소의 사정', '근거'])
+      const fields = fieldsOf(where, item, ['경로', '근거'])
       const path = fields.get('경로')
       if (path != null && path.value !== '') {
         const steps = path.value.split('→').map((step) => step.trim())
-        if (steps.length !== 3 || steps.some((step) => step === '')) report(path.line, `${where}: 경로는 '→'로 이은 세 단계여야 한다`)
+        if (steps.length !== 2 || steps.some((step) => step === '')) report(path.line, `${where}: 경로는 '→'로 이은 두 단계(삶의 사실 → 반복되는 행동·감정)여야 한다`)
       }
       requireLife(where, fields.get('근거'))
     }
