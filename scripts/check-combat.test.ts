@@ -90,7 +90,7 @@ test('2026-11-24 개정으로 더한 축 값을 받아들인다', () => {
   expect(check({ combat: changed.replace('숙련의 핵심: 자원 조합\n위험 구조: 과열', '숙련의 핵심: 정밀 조작\n위험 구조: 오작동') })).toEqual([])
 })
 
-// #75: 후보는 재능의 다루는 것에서 만들고, 혼자 성립을 보이며, 채택은 주 재능에서 나온 능력을 출처로 한다.
+// #75·#82: 후보는 재능의 다루는 것에서 만들고 혼자 성립을 보인다. 채택은 재능 전체를 놓고 고르고, 능력마다 하나씩 만들지 않는다.
 test('후보에 조작하는 것이나 혼자일 때가 없으면 거부한다', () => {
   const noTarget = replaceOnce(combat, '조작하는 것: 적의 동작에서 어긋난 곳\n', '')
   expect(check({ combat: noTarget })).toEqual([`${lineOf('### 틈을 짚는 일격')}: 후보 > 틈을 짚는 일격: 조작하는 것 필드가 없다`])
@@ -98,11 +98,20 @@ test('후보에 조작하는 것이나 혼자일 때가 없으면 거부한다',
   expect(check({ combat: noSolo })).toEqual([`${lineOf('### 틈을 짚는 일격')}: 후보 > 틈을 짚는 일격: 혼자일 때 필드가 없다`])
 })
 
-test('채택한 후보가 주 재능에서 나온 능력을 출처로 하지 않으면 거부한다', () => {
+test('주 재능이 아닌 능력에서 나온 후보도 채택할 수 있다', () => {
   const adoptOther = replaceOnce(combat, '판단: 채택', '판단: 제외 — 비교를 위해 내려 둔다')
     .replace('판단: 제외 — 눈은 손을 돕는 재능이라 혼자 전투의 중심이 되면 주 재능이 가려진다', '판단: 채택')
     .replace('채택: 빚어 세우는 손', '채택: 틈을 짚는 일격')
-  expect(check({ combat: adoptOther })).toEqual([
-    `${lineOf('판단: 제외 — 눈은 손을 돕는 재능이라 혼자 전투의 중심이 되면 주 재능이 가려진다')}: 후보 > 틈을 짚는 일격: 채택한 후보는 주 재능에서 나온 능력(성질을 읽고 빚는 손)을 출처로 해야 한다`,
-  ])
+  expect(check({ combat: adoptOther })).toEqual([])
+})
+
+test('후보를 능력마다 하나씩만 만들면 거부한다', () => {
+  // 브리프에 능력 둘을 더하고 후보 넷이 서로 다른 능력을 하나씩 인용하게 한다.
+  const extra = '### 무게를 읽는 감각\n출처: [life:주 재능]\n다루는 것: 물건의 무게와 균형\n약점: 서두르면 어긋난다\n### 셈하는 눈\n출처: [life:보조 재능]\n다루는 것: 수와 기록\n약점: 지치면 놓친다\n\n## 동료'
+  const fourAbilities = replaceOnce(brief, '\n## 동료', `\n${extra}`)
+  const spread = combat
+    .replace('출처: [brief:성질을 읽고 빚는 손]\n조작하는 것: 터를 이루는 지형', '출처: [brief:무게를 읽는 감각]\n조작하는 것: 터를 이루는 지형')
+    .replace('출처: [brief:성질을 읽고 빚는 손]\n조작하는 것: 재료의 성질', '출처: [brief:셈하는 눈]\n조작하는 것: 재료의 성질')
+  expect(check({ combat: spread, brief: fourAbilities })).toEqual([`${lineOf('## 후보')}: 후보: 같은 능력에서 나온 후보가 둘 이상 있어야 한다 (능력마다 하나씩 만들지 않는다)`])
+  expect(check({ combat, brief: fourAbilities })).toEqual([])
 })
