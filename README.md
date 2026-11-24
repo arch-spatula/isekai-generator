@@ -120,6 +120,8 @@ $implement-with-test-review docs/spec/<명세 파일>.md를 구현해줘.
 | [design-world](.claude/skills/design-world/SKILL.md) | 출신 도시와 장별 세계에서 출발한 세계 설계(`world.md`) |
 | [write-gdd](.claude/skills/write-gdd/SKILL.md) | 앞 네 문서를 잇는 GDD(`gdd.md`) |
 
+`/design-identity`·`/design-combat`·`/design-world`는 검증기를 통과한 뒤 작성자와 다른 검토 에이전트([game-step-reviewer](.claude/agents/game-step-reviewer.md))를 불러 `<단계>-review-<n>.md`를 남깁니다.
+
 ## 크레딧
 
 이 프로젝트의 사주팔자·자미두수·네이탈 차트 계산에는 [Orrery의 `@orrery/core`](https://github.com/rath/orrery/tree/main/packages/core)를 사용할 예정입니다. Orrery가 밝힌 계산 엔진의 계보와 기반 기술은 다음과 같습니다.

@@ -1,0 +1,78 @@
+/**
+ * 게임 단계 검토 문서(`<단계>-review-<n>.md`)의 형식과 지적 위치를 검사한다. 판정의 타당성은 보지 않는다.
+ * 계약: docs/spec/claude-game-design-flow.md 4.7절, docs/ADR/2026-11-24-isekai-identity-design.md 5번
+ */
+import { readFileSync } from 'node:fs'
+import { basename, dirname, join } from 'node:path'
+import { checkSectionOrder, fieldsOf, headingNames, parseGameDocument, type Report } from './game-document.ts'
+
+/** 검토하는 단계와 그 산출물 */
+export const REVIEWED = { identity: 'identity.md', combat: 'combat.md', world: 'world.md' } as const
+export type ReviewedStage = keyof typeof REVIEWED
+export const VERDICTS = ['통과', '되돌림']
+/** 지적의 기준. 정체성·세계의 목표와 경계, 전투의 비교에서 나온다 */
+export const CRITERIA = ['재해석', '투영', '이세계다움', '모순', '직역', '비교']
+/** 위치에 항목 대신 쓸 수 있는 말 */
+const WHOLE = '문서 전체'
+
+export interface ReviewTexts { review: string; stage: ReviewedStage; target: string }
+
+export function checkReview({ review, stage, target }: ReviewTexts): string[] {
+  const errors: string[] = []
+  const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
+  const sections = parseGameDocument(review, '# 검토', report)
+  checkSectionOrder(sections, ['판정', '지적'], report)
+
+  const verdictSection = sections.find(({ name }) => name === '판정')
+  let verdict: string | undefined
+  if (verdictSection != null) {
+    for (const item of verdictSection.items) report(item.line, `판정: 항목을 두지 않는다`)
+    const fields = fieldsOf('판정', verdictSection, ['대상', '판정'], report)
+    const targetField = fields.get('대상')
+    if (targetField != null && targetField.value !== '' && targetField.value !== REVIEWED[stage]) {
+      report(targetField.line, `판정: 대상은 ${REVIEWED[stage]}이다 (실제: ${targetField.value})`)
+    }
+    const verdictField = fields.get('판정')
+    verdict = verdictField?.value
+    if (verdictField != null && verdict !== '' && !VERDICTS.includes(verdict!)) report(verdictField.line, `판정: 판정은 ${VERDICTS.join(' 또는 ')}이다`)
+  }
+
+  const findings = sections.find(({ name }) => name === '지적')
+  if (findings != null) {
+    for (const field of findings.fields) report(field.line, `지적: 허용하지 않는 필드 '${field.key}'`)
+    if (verdict === '되돌림' && findings.items.length === 0) report(findings.line, '지적: 되돌림이면 지적이 하나 이상 있어야 한다')
+    const names = headingNames(target)
+    for (const item of findings.items) {
+      const where = `지적 > ${item.name}`
+      const fields = fieldsOf(where, item, ['위치', '기준', '내용', '고칠 방향'], report)
+      const place = fields.get('위치')
+      if (place != null && place.value !== '' && place.value !== WHOLE && !names.has(place.value)) {
+        report(place.line, `${where}: 위치 '${place.value}'는 ${REVIEWED[stage]}의 제목이 아니다 ('${WHOLE}'도 쓸 수 있다)`)
+      }
+      const criterion = fields.get('기준')
+      if (criterion != null && criterion.value !== '' && !CRITERIA.includes(criterion.value)) report(criterion.line, `${where}: 기준은 ${CRITERIA.join(' · ')} 중 하나다`)
+    }
+  }
+  return errors
+}
+
+if (import.meta.main) {
+  const [path] = process.argv.slice(2)
+  const match = path == null ? null : basename(path).match(/^(identity|combat|world)-review-\d+\.md$/)
+  if (path == null || match == null) {
+    console.error('usage: bun scripts/check-review.ts <차트 디렉터리>/<identity|combat|world>-review-<n>.md')
+    process.exit(1)
+  }
+  const stage = match[1] as ReviewedStage
+  const read = (file: string) => {
+    try {
+      return readFileSync(file, 'utf8')
+    } catch {
+      console.error(`읽을 수 없음: ${file}`)
+      process.exit(1)
+    }
+  }
+  const errors = checkReview({ review: read(path), stage, target: read(join(dirname(path), REVIEWED[stage])) })
+  for (const error of errors) console.log(error)
+  process.exit(errors.length > 0 ? 1 : 0)
+}
