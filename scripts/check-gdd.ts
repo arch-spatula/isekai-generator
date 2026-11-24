@@ -11,7 +11,7 @@ const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 �
 
 interface Block { name: string; line: number; text: string; items: { name: string; line: number; text: string }[] }
 
-export interface GddTexts { gdd: string; brief: string; combat: string; world: string }
+export interface GddTexts { gdd: string; brief: string; combat: string; world: string; identity: string }
 
 function parse(gdd: string): Block[] {
   const blocks: Block[] = []
@@ -41,7 +41,7 @@ function regionChapters(world: string): Map<string, string> {
   return result
 }
 
-export function checkGdd({ gdd, brief, combat, world }: GddTexts): string[] {
+export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): string[] {
   const errors: string[] = []
   const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
   if (!/^# \S/.test(gdd.split('\n')[0])) report(1, "첫 줄은 '# <게임 제목>'이어야 한다")
@@ -54,14 +54,19 @@ export function checkGdd({ gdd, brief, combat, world }: GddTexts): string[] {
 
   for (const { name, line, text } of blocks) {
     if (text.trim() === '') report(line, `${name}: 본문이 없다`)
-    else if (citationsIn(text).length === 0) report(line, `${name}: [brief:]·[combat:]·[world:] 인용이 없다`)
+    else if (citationsIn(text).length === 0) report(line, `${name}: [brief:]·[identity:]·[combat:]·[world:] 인용이 없다`)
   }
 
-  // 주인공: 배경 네 항목을 모두 인용한다.
+  // 주인공: 배경 네 항목과 정체성의 클래스·부직업을 모두 인용한다(#86).
   const protagonist = block('주인공')
   if (protagonist != null) {
     const cited = cites(protagonist.text, 'brief')
     for (const name of BACKGROUND) if (!cited.includes(name)) report(protagonist.line, `주인공: [brief:${name}]을 인용하지 않았다`)
+    const role = cites(protagonist.text, 'identity')
+    for (const section of ['클래스', '부직업']) {
+      const names = sectionItemNames(identity, section)
+      if (!names.some((name) => role.includes(name))) report(protagonist.line, `주인공: ${section} [identity:${names[0] ?? `<${section}>`}]를 인용하지 않았다`)
+    }
   }
 
   // 동료: 브리프의 동료마다 항목 하나. 동료가 없으면 항목 없이 혼자인 이유를 쓴다.
@@ -103,7 +108,7 @@ export function checkGdd({ gdd, brief, combat, world }: GddTexts): string[] {
     report(story.line, '서사의 변화: [brief:<퀘스트>]나 [world:<서사 갈등>] 인용이 없다')
   }
 
-  checkCitationsAndNames(gdd, { brief: itemNames(brief), combat: headingNames(combat), world: headingNames(world) }, report, true)
+  checkCitationsAndNames(gdd, { brief: itemNames(brief), identity: itemNames(identity), combat: headingNames(combat), world: headingNames(world) }, report, true)
   return errors
 }
 
@@ -121,7 +126,7 @@ if (import.meta.main) {
       process.exit(1)
     }
   }
-  const errors = checkGdd({ gdd: read('gdd.md'), brief: read('translation-brief.md'), combat: read('combat.md'), world: read('world.md') })
+  const errors = checkGdd({ gdd: read('gdd.md'), brief: read('translation-brief.md'), identity: read('identity.md'), combat: read('combat.md'), world: read('world.md') })
   for (const error of errors) console.log(error)
   process.exit(errors.length > 0 ? 1 : 0)
 }

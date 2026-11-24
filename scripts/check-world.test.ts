@@ -9,12 +9,13 @@ const fixtures = join(import.meta.dir, 'fixtures')
 const brief = readFileSync(join(fixtures, 'translation-brief/translation-brief.md'), 'utf8')
 const combat = readFileSync(join(fixtures, 'combat/combat.md'), 'utf8')
 const world = readFileSync(join(fixtures, 'world/world.md'), 'utf8')
+const identity = readFileSync(join(fixtures, 'identity/identity.md'), 'utf8')
 
 function replaceOnce(text: string, from: string, to: string): string {
   expect(text.split(from)).toHaveLength(2)
   return text.replace(from, to)
 }
-const check = (changed = world) => checkWorld({ world: changed, brief, combat })
+const check = (changed = world) => checkWorld({ world: changed, brief, combat, identity })
 const lineOf = (text: string) => world.split('\n').indexOf(text) + 1
 
 test('정상 세계 설계는 통과한다', () => {
@@ -31,16 +32,16 @@ test('브리프의 장에 지역이 없거나 브리프에 없는 장을 쓰면 
   ])
 })
 
-test('첫 지역은 브리프의 첫 장이고 출신지나 성장 환경에서 시작한다', () => {
-  const basis = replaceOnce(world, '근거: [brief:출신지] [brief:성장 환경] [brief:소년]', '근거: [brief:소년]')
-  expect(check(basis)).toEqual([`${lineOf('근거: [brief:출신지] [brief:성장 환경] [brief:소년]')}: 지역 > 셈하는 마을: 첫 지역의 근거에 [brief:출신지] 또는 [brief:성장 환경]이 없다`])
+test('첫 지역은 브리프의 첫 장이고 정체성의 출신 도시에서 시작한다', () => {
+  const basis = replaceOnce(world, '근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]', '근거: [brief:출신지] [brief:소년]')
+  expect(check(basis)).toEqual([`${lineOf('근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]')}: 지역 > 셈하는 마을: 첫 지역의 근거에 출신 도시 [identity:하구 목재 시장]가 없다`])
 })
 
 test('근거 없는 설정은 창작으로 구분하면 통과하고, 인용도 창작 표시도 없으면 거부한다', () => {
   const line = '근거: [brief:같은 자리의 사람] 창작: 맞수가 무리를 이끈다는 설정'
   expect(check(replaceOnce(world, line, '근거: 창작: 맞수가 무리를 이끈다는 설정'))).toEqual([])
   expect(check(replaceOnce(world, line, '근거: 맞수가 무리를 이끈다는 설정'))).toEqual([
-    `${lineOf(line)}: 세력 > 같은 재주의 맞수 무리: 근거에 [brief:<항목>] 인용이 없다 (근거 없는 설정은 '창작:'으로 시작한다)`,
+    `${lineOf(line)}: 세력 > 같은 재주의 맞수 무리: 근거에 [brief:<항목>]이나 [identity:<항목>] 인용이 없다 (근거 없는 설정은 '창작:'으로 시작한다)`,
   ])
 })
 

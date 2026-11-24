@@ -8,12 +8,14 @@ import { checkCombat } from './check-combat.ts'
 const fixtures = join(import.meta.dir, 'fixtures')
 const brief = readFileSync(join(fixtures, 'translation-brief/translation-brief.md'), 'utf8')
 const combat = readFileSync(join(fixtures, 'combat/combat.md'), 'utf8')
+const identity = readFileSync(join(fixtures, 'identity/identity.md'), 'utf8')
 
 function replaceOnce(text: string, from: string, to: string): string {
   expect(text.split(from)).toHaveLength(2)
   return text.replace(from, to)
 }
-const check = (changes: { combat?: string; brief?: string } = {}) => checkCombat({ combat: changes.combat ?? combat, brief: changes.brief ?? brief })
+const check = (changes: { combat?: string; brief?: string; identity?: string } = {}) =>
+  checkCombat({ combat: changes.combat ?? combat, brief: changes.brief ?? brief, identity: changes.identity ?? identity })
 const lineOf = (text: string) => combat.split('\n').indexOf(text) + 1
 
 test('정상 전투 설계는 통과한다', () => {
@@ -80,7 +82,7 @@ test('제외 메커니즘의 용어, 차트 명칭, 다른 문서 인용을 거�
   const name = replaceOnce(combat, line, '런 중 보상: 칠살의 힘을 고른다')
   expect(check({ combat: name })).toEqual([`${lineOf(line)}: 차트 명칭 '칠살'`])
   const life = replaceOnce(combat, '출처: [brief:고칠 곳을 짚는 눈]', '출처: [brief:고칠 곳을 짚는 눈] [life:보조 재능]')
-  expect(check({ combat: life })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: [life:보조 재능] — 이 문서는 [brief:]만 인용한다`])
+  expect(check({ combat: life })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: [life:보조 재능] — 이 문서는 [brief:]·[identity:]만 인용한다`])
 })
 
 test('2026-11-24 개정으로 더한 축 값을 받아들인다', () => {
@@ -107,11 +109,19 @@ test('주 재능이 아닌 능력에서 나온 후보도 채택할 수 있다', 
 
 test('후보를 능력마다 하나씩만 만들면 거부한다', () => {
   // 브리프에 능력 둘을 더하고 후보 넷이 서로 다른 능력을 하나씩 인용하게 한다.
-  const extra = '### 무게를 읽는 감각\n출처: [life:주 재능]\n다루는 것: 물건의 무게와 균형\n약점: 서두르면 어긋난다\n### 셈하는 눈\n출처: [life:보조 재능]\n다루는 것: 수와 기록\n약점: 지치면 놓친다\n\n## 동료'
-  const fourAbilities = replaceOnce(brief, '\n## 동료', `\n${extra}`)
+  const extra = '### 무게를 읽는 감각\n출처: [life:주 재능]\n다루는 것: 물건의 무게와 균형\n약점: 서두르면 어긋난다\n### 셈하는 눈\n출처: [life:보조 재능]\n다루는 것: 수와 기록\n약점: 지치면 놓친다\n\n## 생업'
+  const fourAbilities = replaceOnce(brief, '\n## 생업', `\n${extra}`)
   const spread = combat
     .replace('출처: [brief:성질을 읽고 빚는 손]\n조작하는 것: 터를 이루는 지형', '출처: [brief:무게를 읽는 감각]\n조작하는 것: 터를 이루는 지형')
     .replace('출처: [brief:성질을 읽고 빚는 손]\n조작하는 것: 재료의 성질', '출처: [brief:셈하는 눈]\n조작하는 것: 재료의 성질')
-  expect(check({ combat: spread, brief: fourAbilities })).toEqual([`${lineOf('## 후보')}: 후보: 같은 능력에서 나온 후보가 둘 이상 있어야 한다 (능력마다 하나씩 만들지 않는다)`])
-  expect(check({ combat, brief: fourAbilities })).toEqual([])
+  const wideClass = replaceOnce(identity, '재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈]',
+    '재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈] [brief:무게를 읽는 감각] [brief:셈하는 눈]')
+  expect(check({ combat: spread, brief: fourAbilities, identity: wideClass })).toEqual([`${lineOf('## 후보')}: 후보: 같은 능력에서 나온 후보가 둘 이상 있어야 한다 (능력마다 하나씩 만들지 않는다)`])
+  expect(check({ combat, brief: fourAbilities, identity: wideClass })).toEqual([])
+})
+
+// #86: 후보는 정체성 단계가 고른 클래스 안에서 만든다.
+test('후보의 출처가 클래스의 재료가 아니면 거부한다', () => {
+  const narrow = replaceOnce(identity, '재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈]', '재료: [brief:성질을 읽고 빚는 손]')
+  expect(check({ identity: narrow })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: 후보 > 틈을 짚는 일격: 출처 [brief:고칠 곳을 짚는 눈]는 클래스 '결 새김꾼'의 재료가 아니다`])
 })
