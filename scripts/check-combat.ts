@@ -4,7 +4,6 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { readLifeItems } from './life-document.ts'
 import {
   checkCitationsAndNames, checkSectionOrder, fieldsOf, itemNames, parseGameDocument, sectionItemNames, targetsOf, type Report,
 } from './game-document.ts'
@@ -35,9 +34,6 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
   checkSectionOrder(sections, SECTIONS, report)
   const section = (name: string) => sections.find((candidate) => candidate.name === name)
   const abilities = new Set(sectionItemNames(brief, '주인공 능력'))
-  // 주 재능에서 나온 능력: 채택한 후보는 이 능력을 출처로 한다(#75).
-  const mainAbilities = readLifeItems(brief).filter(({ section, fields }) => section === '주인공 능력'
-    && fields.some(([key, value]) => key === '출처' && value.includes('[life:주 재능]'))).map(({ name }) => name)
   const companions = sectionItemNames(brief, '동료')
 
   // 후보: 네 개, 출처는 브리프의 주인공 능력, 축 값은 허용값, 후보 쌍마다 세 축 이상 다름, 채택은 하나
@@ -64,15 +60,18 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
     axes.set(item.name, values)
     const verdict = fields.get('판단')
     if (verdict != null && verdict.value !== '') {
-      if (verdict.value === '채택') {
-        adopted.push(item.name)
-        const cited = targetsOf(source?.value ?? '', 'brief')
-        if (mainAbilities.length > 0 && !cited.some((target) => mainAbilities.includes(target))) {
-          report(verdict.line, `${where}: 채택한 후보는 주 재능에서 나온 능력(${mainAbilities.join(', ')})을 출처로 해야 한다`)
-        }
-      }
+      if (verdict.value === '채택') adopted.push(item.name)
       else if (!/^제외 — \S/.test(verdict.value)) report(verdict.line, `${where}: 판단은 '채택' 또는 '제외 — <이유>'이다`)
     }
+  }
+  // 능력마다 후보를 하나씩 만들지 않는다. 같은 능력의 다루는 것을 다르게 해석한 후보가 둘 이상 있어야 한다(#82).
+  const perAbility = new Map<string, number>()
+  for (const item of candidates) {
+    const source = item.fields.find((field) => field.key === '출처')
+    for (const target of new Set(targetsOf(source?.value ?? '', 'brief'))) perAbility.set(target, (perAbility.get(target) ?? 0) + 1)
+  }
+  if (candidates.length === CANDIDATE_COUNT && ![...perAbility.values()].some((count) => count >= 2)) {
+    report(section('후보')!.line, '후보: 같은 능력에서 나온 후보가 둘 이상 있어야 한다 (능력마다 하나씩 만들지 않는다)')
   }
   const names = [...axes.keys()]
   for (const [index, first] of names.entries()) {
