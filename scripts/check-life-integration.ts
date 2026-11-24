@@ -22,7 +22,7 @@ const SECTIONS = [
   { name: '일생의 축', items: ['축'], fields: ['내용', '근거'] },
   { name: '생애 연표', items: STAGE_NAMES, fields: TIMELINE.fields.filter((field) => field !== '운') },
   { name: '인물 사전', items: CAST, fields: CAST_FIELDS, itemFields: CAST_ITEM_FIELDS, stageFields: ['관계의 변화'] },
-  { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '꽃피는 시기', '막히는 조건', '근거'], stageFields: ['꽃피는 시기'] },
+  { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '다루는 것', '꽃피는 시기', '막히는 조건', '근거'], stageFields: ['꽃피는 시기'] },
   { name: '상처와 회복', items: ['반복되는 실패', '상실', '회복'], fields: ['내용', '발현 조건', '근거'] },
   { name: '갈림길', items: [], extraItems: true, fields: ['본선', '다른 길', '갈리는 조건'] },
 ]

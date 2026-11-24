@@ -139,3 +139,9 @@ test('동료의 동행하는 장이 브리프의 장에 없으면 거부한다',
   const noYouth = brief.replace(/### 청년\n사건:[^#]*/, '')
   expect(check({ brief: noYouth })).toEqual([`${lineOf('동행하는 장: 청년')}: 동료 > 연인·배우자: 청년는 브리프의 장이 아니다`])
 })
+
+// #70: 주인공 능력은 재능이 다루는 대상·매체를 남긴다.
+test('주인공 능력에 다루는 것이 없으면 거부한다', () => {
+  const changed = replaceOnce(brief, '다루는 것: 나무와 쇠 같은 재료와 도구\n', '')
+  expect(check({ brief: changed })).toEqual([`${lineOf('### 성질을 읽고 빚는 손')}: 주인공 능력 > 성질을 읽고 빚는 손: 다루는 것 필드가 없다`])
+})

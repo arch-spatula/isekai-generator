@@ -45,8 +45,9 @@ test('puts each field of the same-name item next to each other and drops 근거'
     '성향 [natal]: 집안의 중심은 멀리 있는 사람과의 약속에 마음을 두어, 집 안보다 바깥에서 더 자주 모습을 보인다',
   ])
   const natalTalent = lines.indexOf('### natal 주 재능')
-  expect(lines.slice(natalTalent + 1, natalTalent + 4)).toEqual([
+  expect(lines.slice(natalTalent + 1, natalTalent + 5)).toEqual([
     '내용: 사람 사이의 균형을 읽고 흩어진 사람들을 하나의 자리에 모은다',
+    '다루는 것: 사람과 무리',
     '꽃피는 시기: 많은 사람 앞에서 책임을 맡았을 때 드러난다',
     '막히는 조건: 혼자 결정해야 하는 일만 남을 때',
   ])
