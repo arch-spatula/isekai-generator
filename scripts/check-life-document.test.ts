@@ -49,7 +49,7 @@ test('requires every stage and cast member in order, and the required talents fi
   expect(check(mutate('### 스승·후원자', '### 스승'))).toContain(
     '인물 사전: 항목은 부모, 형제·또래, 연인·배우자, 자녀, 제자, 벗·동료, 스승·후원자, 경쟁자·적대자 순서여야 한다 (실제: 부모, 형제·또래, 연인·배우자, 자녀, 제자, 벗·동료, 스승, 경쟁자·적대자)')
   // 재능은 필수 두 항목 뒤에 자유 항목을 더할 수 있다.
-  const extra = '### 생활 기술\n내용: 낡은 도구를 고쳐 쓴다\n꽃피는 시기: 노년에 손이 느려진 뒤에도 남는다\n막히는 조건: 도구가 없을 때\n근거: [facts:통근]\n\n## 상처와 회복'
+  const extra = '### 생활 기술\n내용: 낡은 도구를 고쳐 쓴다\n다루는 것: 낡은 도구\n꽃피는 시기: 노년에 손이 느려진 뒤에도 남는다\n막히는 조건: 도구가 없을 때\n근거: [facts:통근]\n\n## 상처와 회복'
   expect(check(mutate('## 상처와 회복', extra))).toEqual([])
   expect(check(mutate('### 주 재능', '### 큰 재능'))).toContain('재능과 생업: 항목은 주 재능, 보조 재능으로 시작해야 한다 (실제: 큰 재능, 보조 재능)')
 })
@@ -260,4 +260,10 @@ test('natal: chart citations accept planets and angles only, and derived citatio
 test('natal: every first-pass judgment section must be cited', () => {
   // 우세 원소는 보조 재능에서만 인용된다.
   expect(checkNatal(mutateNatal('[judgment:우세 원소] ', ''))).toEqual(['1차 판단 섹션을 인용하지 않았다: 우세 원소'])
+})
+
+// #70: 재능은 다루는 대상·매체를 남긴다.
+test('재능 항목에 다루는 것이 없으면 거부한다', () => {
+  const line = '다루는 것: 나무와 쇠 같은 재료, 그것을 다듬는 도구'
+  expect(check(mutate(`${line}\n`, ''))).toContain('재능과 생업 > 주 재능: 다루는 것 필드가 없다')
 })

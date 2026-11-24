@@ -140,7 +140,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
   if (abilities != null && abilities.items.length === 0) report(abilities.line, '주인공 능력: 능력 항목이 없다')
   for (const item of abilities?.items ?? []) {
     const where = `주인공 능력 > ${item.name}`
-    const source = fieldsOf(where, item, ['출처', '약점']).get('출처')
+    const source = fieldsOf(where, item, ['출처', '다루는 것', '약점']).get('출처')
     requireLife(where, source)
     for (const target of lifeTargets(source?.value ?? '')) {
       if (!talents.has(target) && !chosen.has(target)) report(source!.line, `${where}: 출처 [life:${target}]는 재능 항목이나 동료가 아니다`)
