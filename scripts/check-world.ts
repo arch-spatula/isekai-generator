@@ -23,10 +23,10 @@ export function checkWorld({ world, brief, combat, identity }: WorldTexts): stri
   // 첫 지역은 정체성 단계가 만든 출신 도시에서 시작한다(#86).
   const cities = sectionItemNames(identity, '출신 도시')
 
-  /** 근거는 브리프나 정체성을 인용하거나 `창작:`으로 시작한다 */
+  /** 근거는 일생의 사실에서 왔다고 주장하는 요소에만 쓰고, 쓰면 브리프나 정체성을 인용한다. 지어낸 요소에는 근거를 쓰지 않는다(#87). */
   const requireBasis = (where: string, field: Field | undefined) => {
-    if (field != null && field.value !== '' && !field.value.startsWith('창작:') && targetsOf(field.value, 'brief').length === 0 && targetsOf(field.value, 'identity').length === 0) {
-      report(field.line, `${where}: 근거에 [brief:<항목>]이나 [identity:<항목>] 인용이 없다 (근거 없는 설정은 '창작:'으로 시작한다)`)
+    if (field != null && field.value !== '' && targetsOf(field.value, 'brief').length === 0 && targetsOf(field.value, 'identity').length === 0) {
+      report(field.line, `${where}: 근거에 [brief:<항목>]이나 [identity:<항목>] 인용이 없다 (지어낸 설정이면 근거 줄을 쓰지 않는다)`)
     }
   }
   const requireItems = (name: string) => {
@@ -41,7 +41,8 @@ export function checkWorld({ world, brief, combat, identity }: WorldTexts): stri
   const covered = new Set<string>()
   for (const [index, item] of regions.entries()) {
     const where = `지역 > ${item.name}`
-    const fields = fieldsOf(where, item, ['장', '성격', '사정', '전장', '근거'], report)
+    // 근거는 첫 지역(출신 도시)에만 필수다.
+    const fields = fieldsOf(where, item, index === 0 ? ['장', '성격', '사정', '전장', '근거'] : ['장', '성격', '사정', '전장'], report, ['장', '성격', '사정', '전장', '근거'])
     const chapter = fields.get('장')
     if (chapter != null && chapter.value !== '') {
       if (!chapters.includes(chapter.value)) report(chapter.line, `${where}: 장 '${chapter.value}'는 브리프의 장(${chapters.join(', ')})이 아니다`)
@@ -61,7 +62,7 @@ export function checkWorld({ world, brief, combat, identity }: WorldTexts): stri
   // 세력: 자체 목적과 제약, 주인공과의 관계
   for (const item of requireItems('세력')) {
     const where = `세력 > ${item.name}`
-    requireBasis(where, fieldsOf(where, item, ['목적', '제약', '주인공과의 관계', '근거'], report).get('근거'))
+    requireBasis(where, fieldsOf(where, item, ['목적', '제약', '주인공과의 관계'], report, ['목적', '제약', '주인공과의 관계', '근거']).get('근거'))
   }
 
   // 서사 갈등: 주인공의 축과 반복되는 실패가 세계와 부딪치는 곳. 둘 다 어딘가에서 인용한다.

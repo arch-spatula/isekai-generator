@@ -37,11 +37,23 @@ test('첫 지역은 브리프의 첫 장이고 정체성의 출신 도시에서 
   expect(check(basis)).toEqual([`${lineOf('근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]')}: 지역 > 셈하는 마을: 첫 지역의 근거에 출신 도시 [identity:하구 목재 시장]가 없다`])
 })
 
-test('근거 없는 설정은 창작으로 구분하면 통과하고, 인용도 창작 표시도 없으면 거부한다', () => {
-  const line = '근거: [brief:같은 자리의 사람] 창작: 맞수가 무리를 이끈다는 설정'
-  expect(check(replaceOnce(world, line, '근거: 창작: 맞수가 무리를 이끈다는 설정'))).toEqual([])
+// #87: 요소마다 인용을 요구하지 않는다. 지어낸 지역·세력은 근거 없이 쓰고, 근거를 쓰면 브리프나 정체성을 인용한다.
+test('지어낸 지역과 세력은 근거 없이 통과하고, 인용 없는 근거는 거부한다', () => {
+  const line = '근거: [brief:같은 자리의 사람]'
+  expect(check(replaceOnce(world, `${line}\n`, ''))).toEqual([])
+  expect(check(replaceOnce(world, '근거: [brief:청년] [brief:연인·배우자]\n', ''))).toEqual([])
   expect(check(replaceOnce(world, line, '근거: 맞수가 무리를 이끈다는 설정'))).toEqual([
-    `${lineOf(line)}: 세력 > 같은 재주의 맞수 무리: 근거에 [brief:<항목>]이나 [identity:<항목>] 인용이 없다 (근거 없는 설정은 '창작:'으로 시작한다)`,
+    `${lineOf(line)}: 세력 > 같은 재주의 맞수 무리: 근거에 [brief:<항목>]이나 [identity:<항목>] 인용이 없다 (지어낸 설정이면 근거 줄을 쓰지 않는다)`,
+  ])
+})
+
+test('첫 지역과 서사 갈등의 근거는 빠뜨릴 수 없다', () => {
+  const first = '근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]'
+  expect(check(replaceOnce(world, `${first}\n`, ''))).toEqual([`${lineOf('### 셈하는 마을')}: 지역 > 셈하는 마을: 근거 필드가 없다`])
+  const conflict = '근거: [brief:반복되는 실패] [brief:다시 나눠 지는 짐]'
+  expect(check(replaceOnce(world, `${conflict}\n`, ''))).toEqual([
+    `${lineOf('### 혼자 정한 터')}: 서사 갈등 > 혼자 정한 터: 근거 필드가 없다`,
+    `${lineOf('## 서사 갈등')}: 서사 갈등: 근거 어디에도 [brief:반복되는 실패]이 없다`,
   ])
 })
 
