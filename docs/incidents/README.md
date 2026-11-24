@@ -22,3 +22,4 @@
 - [방어문구 검토 대상 식별자 오류와 불필요한 범위 확대](2026-11-13-defensive-review-target-contract.md) — 미해결, 제출 계약 안내와 형식 오류의 재시도 정책 검토
 - [일생 해석의 관계 인물 '있음' 수렴 이슈](2026-11-21-life-relationship-presence-convergence.md) — 진단 기록, 해결 방향 미정
 - [실행 상태 SQLite를 아티팩트 루트에 둔 설계 오류](2026-11-21-artifact-root-sqlite-design.md) — 해결, SQLite 코드 제거 완료
+- [Claude 흐름의 전투 방식 근접 격투 수렴](2026-11-24-claude-combat-style-convergence.md) — 진단 기록, 해결 방향 미정
