@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { chartNameErrors } from './chart-names.ts'
 import { CAST } from './check-life-document.ts'
 import { companionCandidates } from './companion-candidates.ts'
-import { readLifeItems } from './life-document.ts'
+import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
@@ -55,7 +55,8 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
 
   const lifeItems = readLifeItems(life)
   const itemNames = new Set(lifeItems.map(({ name }) => name))
-  const talents = new Set(lifeItems.filter(({ section }) => section === '재능과 생업').map(({ name }) => name))
+  // 생업 항목은 능력의 출처가 아니다. 생업을 전투 능력으로 직역하지 않는다(#85).
+  const talents = new Set(lifeItems.filter(({ section, name }) => section === '재능과 생업' && !isLivelihood(name)).map(({ name }) => name))
   const candidates = companionCandidates(life)
 
   const sections = parse(brief, report)
@@ -143,7 +144,8 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     const source = fieldsOf(where, item, ['출처', '다루는 것', '약점']).get('출처')
     requireLife(where, source)
     for (const target of lifeTargets(source?.value ?? '')) {
-      if (!talents.has(target)) report(source!.line, `${where}: 출처 [life:${target}]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`)
+      if (isLivelihood(target)) report(source!.line, `${where}: 출처 [life:${target}]는 생업 항목이다 (생업은 능력의 출처가 아니다)`)
+      else if (!talents.has(target)) report(source!.line, `${where}: 출처 [life:${target}]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`)
     }
   }
 

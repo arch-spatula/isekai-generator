@@ -150,3 +150,9 @@ test('동료로 고른 인물을 능력의 출처로 쓰면 거부한다', () =>
   const changed = replaceOnce(brief, '출처: [life:보조 재능]', '출처: [life:연인·배우자]')
   expect(check({ brief: changed })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:연인·배우자]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`])
 })
+
+// #85: 생업 항목은 능력의 출처가 아니다. 생업을 전투 능력으로 직역하지 않는다.
+test('생업 항목을 능력의 출처로 쓰면 거부한다', () => {
+  const changed = replaceOnce(brief, '출처: [life:보조 재능]', '출처: [life:생업: 목수]')
+  expect(check({ brief: changed })).toEqual([`${lineOf('출처: [life:보조 재능]')}: 주인공 능력 > 고칠 곳을 짚는 눈: 출처 [life:생업: 목수]는 생업 항목이다 (생업은 능력의 출처가 아니다)`])
+})

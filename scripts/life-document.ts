@@ -19,6 +19,22 @@ export interface LifeSection {
   itemFields?: Record<string, string[]>
   /** 생애 단계 이름을 하나 이상 포함해야 하는 필드 */
   stageFields?: string[]
+  /** `생업: <이름>` 항목을 하나 이상 둔다. 생업 항목은 fields 대신 LIVELIHOOD_FIELDS를 쓴다(#85). timeline이면 시기에 생애 단계를 쓴다 */
+  livelihood?: { timeline: boolean }
+}
+
+export const LIVELIHOOD_PREFIX = '생업: '
+export const LIVELIHOOD_FIELDS = ['내용', '시기', '쓰인 재능', '근거']
+/** 생업 이름에 쓰지 않는 말: 이세계에 없는 현대 제도·기술에 기대는 이름(#85) */
+export const MODERN_LIVELIHOOD_WORDS = ['회사', '직장', '공무원', '기업', '대학', '프로그래머', '개발자', '엔지니어', '회계사', '세무사', '변호사', '디자이너', '유튜버']
+export const isLivelihood = (name: string) => name.startsWith(LIVELIHOOD_PREFIX)
+
+/** 항목에 적용할 필드와 생애 단계 필드. 생업 항목은 섹션의 기본 필드 대신 생업 필드를 쓴다. */
+function itemSpec(section: LifeSection, name: string): { fields: string[]; stageFields: string[] } {
+  if (section.livelihood != null && isLivelihood(name)) {
+    return { fields: LIVELIHOOD_FIELDS, stageFields: section.livelihood.timeline ? ['시기'] : [] }
+  }
+  return { fields: [...section.fields, ...(section.itemFields?.[name] ?? [])], stageFields: section.stageFields ?? [] }
 }
 
 export interface LifeSpec {
@@ -119,8 +135,7 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
     if (match == null) return report(line, `${where}: '키: 값' 필드가 아닌 줄이다`)
     const [, key, value] = match
     const sectionSpec = spec.sections.find(({ name }) => name === section)
-    const allowedFields = [...(sectionSpec?.fields ?? []), ...(sectionSpec?.itemFields?.[(item as Item).name] ?? [])]
-    if (sectionSpec != null && !allowedFields.includes(key)) return report(line, `${where}: 알 수 없는 필드 '${key}'`)
+    if (sectionSpec != null && !itemSpec(sectionSpec, (item as Item).name).fields.includes(key)) return report(line, `${where}: 알 수 없는 필드 '${key}'`)
     const fields = (item as Item).fields
     fields.set(key, [...(fields.get(key) ?? []), { value: value.trim(), line }])
   })
@@ -146,10 +161,15 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
     } else if (names.join() !== sectionSpec.items.join()) {
       report(null, `${sectionSpec.name}: 항목은 ${sectionSpec.items.join(', ')} 순서여야 한다 (실제: ${names.join(', ')})`)
     }
+    if (sectionSpec.livelihood != null && !names.some(isLivelihood)) {
+      report(null, `${sectionSpec.name}: '${LIVELIHOOD_PREFIX}<이름>' 생업 항목이 하나 이상 있어야 한다`)
+    }
+    const talents = names.filter((name) => !isLivelihood(name))
 
     for (const { name, fields } of items) {
       const where = `${sectionSpec.name} > ${name}`
-      for (const key of [...sectionSpec.fields, ...(sectionSpec.itemFields?.[name] ?? [])]) {
+      const { fields: required, stageFields } = itemSpec(sectionSpec, name)
+      for (const key of required) {
         const entries = fields.get(key) ?? []
         if (entries.length === 0) report(null, `${where}: ${key} 필드가 없다`)
         for (const entry of entries.slice(1)) report(entry.line, `${where}: ${key} 필드가 두 번 이상 있다`)
@@ -172,7 +192,18 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
         }
       }
 
-      for (const key of sectionSpec.stageFields ?? []) {
+      if (sectionSpec.livelihood != null && isLivelihood(name)) {
+        const modern = MODERN_LIVELIHOOD_WORDS.filter((word) => name.includes(word))
+        if (modern.length > 0) report(null, `${where}: 생업 이름에 현대 제도·기술의 말(${modern.join(', ')})을 쓰지 않는다 — 이세계에서도 성립하는 일의 이름으로 쓴다`)
+        const used = field('쓰인 재능')
+        if (used != null && used.value !== '') {
+          for (const talent of used.value.split(',').map((part) => part.trim())) {
+            if (!talents.includes(talent)) report(used.line, `${where}: 같은 섹션에 없는 재능 '${talent}'`)
+          }
+        }
+      }
+
+      for (const key of stageFields) {
         const entry = field(key)
         if (entry != null && entry.value !== '' && !STAGE_NAMES.some((stage) => entry.value.includes(stage))) {
           report(entry.line, `${where}: ${key}에 생애 단계 이름이 없다`)
