@@ -135,7 +135,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     }
   }
 
-  // 주인공 능력: 출처는 재능 항목이거나 고른 동료다.
+  // 주인공 능력: 출처는 재능 항목이다. 관계는 능력의 출처가 아니다(#71).
   const abilities = section('주인공 능력')
   if (abilities != null && abilities.items.length === 0) report(abilities.line, '주인공 능력: 능력 항목이 없다')
   for (const item of abilities?.items ?? []) {
@@ -143,7 +143,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     const source = fieldsOf(where, item, ['출처', '다루는 것', '약점']).get('출처')
     requireLife(where, source)
     for (const target of lifeTargets(source?.value ?? '')) {
-      if (!talents.has(target) && !chosen.has(target)) report(source!.line, `${where}: 출처 [life:${target}]는 재능 항목이나 동료가 아니다`)
+      if (!talents.has(target)) report(source!.line, `${where}: 출처 [life:${target}]는 재능 항목이 아니다 (관계는 능력의 출처가 아니다)`)
     }
   }
 

@@ -1,5 +1,5 @@
 /**
- * 전투 설계(`combat.md`)의 후보 비교, 출처, 동료 기술, 인용, 차트 명칭과 제외 메커니즘을 검사한다.
+ * 전투 설계(`combat.md`)의 후보 비교, 출처, 동료의 행동, 인용, 차트 명칭과 제외 메커니즘을 검사한다.
  * 계약: docs/spec/claude-game-design-flow.md 4·5.2·6절, 축과 차이 기준: docs/ADR/2026-11-03-personalized-combat-archetype-selection.md 2.1·2.2
  */
 import { readFileSync } from 'node:fs'
@@ -9,7 +9,7 @@ import {
 } from './game-document.ts'
 
 const TITLE = '# 전투 설계'
-const SECTIONS = ['후보', '전투 방식', '동료 기술']
+const SECTIONS = ['후보', '전투 방식', '동료의 행동']
 /** 게임플레이 성향 축과 허용값 */
 export const AXES: Record<string, string[]> = {
   '전투 거리': ['밀착', '중거리', '원거리'],
@@ -86,18 +86,18 @@ export function checkCombat({ combat, brief }: CombatTexts): string[] {
     }
   }
 
-  // 동료 기술: 브리프의 동료마다 하나, 근거는 그 동료
-  const skills = section('동료 기술')
+  // 동료의 행동: 브리프의 동료마다 하나, 근거는 그 동료. 동료는 스스로 움직이며 플레이어의 기술이 아니다(#71).
+  const skills = section('동료의 행동')
   if (skills != null) {
     const written = skills.items.map(({ name }) => name)
-    for (const name of companions) if (!written.includes(name)) report(skills.line, `동료 기술: 브리프의 동료 '${name}'의 기술이 없다`)
+    for (const name of companions) if (!written.includes(name)) report(skills.line, `동료의 행동: 브리프의 동료 '${name}'의 행동이 없다`)
     for (const item of skills.items) {
-      const where = `동료 기술 > ${item.name}`
+      const where = `동료의 행동 > ${item.name}`
       if (!companions.includes(item.name)) report(item.line, `${where}: 브리프의 동료가 아니다`)
-      const basis = fieldsOf(where, item, ['기술', '근거'], report).get('근거')
+      const basis = fieldsOf(where, item, ['행동', '근거'], report).get('근거')
       if (basis != null && basis.value !== '' && !targetsOf(basis.value, 'brief').includes(item.name)) report(basis.line, `${where}: 근거에 [brief:${item.name}]이 없다`)
     }
-    for (const field of skills.fields) report(field.line, `동료 기술: 허용하지 않는 필드 '${field.key}'`)
+    for (const field of skills.fields) report(field.line, `동료의 행동: 허용하지 않는 필드 '${field.key}'`)
   }
 
   checkCitationsAndNames(combat, { brief: itemNames(brief) }, report, true)
