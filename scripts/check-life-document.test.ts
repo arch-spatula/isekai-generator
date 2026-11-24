@@ -51,7 +51,7 @@ test('requires every stage and cast member in order, and the required talents fi
   // 재능은 필수 두 항목 뒤에 자유 항목을 더할 수 있다.
   const extra = '### 생활 기술\n내용: 낡은 도구를 고쳐 쓴다\n다루는 것: 낡은 도구\n꽃피는 시기: 노년에 손이 느려진 뒤에도 남는다\n막히는 조건: 도구가 없을 때\n근거: [facts:통근]\n\n## 상처와 회복'
   expect(check(mutate('## 상처와 회복', extra))).toEqual([])
-  expect(check(mutate('### 주 재능', '### 큰 재능'))).toContain('재능과 생업: 항목은 주 재능, 보조 재능으로 시작해야 한다 (실제: 큰 재능, 보조 재능)')
+  expect(check(mutate('### 주 재능', '### 큰 재능'))).toContain('재능과 생업: 항목은 주 재능, 보조 재능으로 시작해야 한다 (실제: 큰 재능, 보조 재능, 생업: 목수, 생업: 공방 선생)')
 })
 
 test('requires each field once with a value and rejects other lines', () => {
@@ -266,4 +266,40 @@ test('natal: every first-pass judgment section must be cited', () => {
 test('재능 항목에 다루는 것이 없으면 거부한다', () => {
   const line = '다루는 것: 나무와 쇠 같은 재료, 그것을 다듬는 도구'
   expect(check(mutate(`${line}\n`, ''))).toContain('재능과 생업 > 주 재능: 다루는 것 필드가 없다')
+})
+
+// #85: 재능과 생업에 생업 항목을 하나 이상 둔다. 생업은 이세계에서도 성립하는 일의 이름으로 쓰고, 쓰인 재능은 같은 섹션의 재능 항목이다.
+const livelihoods = '### 생업: 목수\n내용: 마을의 집과 수레를 짓고 고치며 살림을 꾸린다\n시기: 청년부터 장년까지\n쓰인 재능: 주 재능\n근거: [facts:투출] [judgment:격국]\n'
+  + '### 생업: 공방 선생\n내용: 공방을 열어 젊은 손들에게 연장 쓰는 법을 가르친다\n시기: 장년 이후\n쓰인 재능: 주 재능, 보조 재능\n근거: [facts:십신 분포] [judgment:희신]\n'
+
+test('생업 항목이 없으면 거부한다', () => {
+  expect(check(mutate(livelihoods, ''))).toEqual(["재능과 생업: '생업: <이름>' 생업 항목이 하나 이상 있어야 한다"])
+})
+
+test('생업 항목은 재능 필드 대신 내용·시기·쓰인 재능·근거를 쓴다', () => {
+  expect(check(mutate('시기: 청년부터 장년까지\n', ''))).toEqual(['재능과 생업 > 생업: 목수: 시기 필드가 없다'])
+  expect(check(mutate('시기: 청년부터 장년까지\n', '시기: 청년부터 장년까지\n다루는 것: 나무\n')))
+    .toEqual([`${lineOf('쓰인 재능: 주 재능')}: 재능과 생업 > 생업: 목수: 알 수 없는 필드 '다루는 것'`])
+  expect(check(mutate('시기: 청년부터 장년까지', '시기: 젊을 때부터')))
+    .toEqual([`${lineOf('시기: 청년부터 장년까지')}: 재능과 생업 > 생업: 목수: 시기에 생애 단계 이름이 없다`])
+})
+
+test('쓰인 재능이 같은 섹션의 재능 항목이 아니면 거부한다', () => {
+  expect(check(mutate('쓰인 재능: 주 재능\n', '쓰인 재능: 손재주\n')))
+    .toEqual([`${lineOf('쓰인 재능: 주 재능')}: 재능과 생업 > 생업: 목수: 같은 섹션에 없는 재능 '손재주'`])
+  // 다른 생업 항목은 재능이 아니다.
+  expect(check(mutate('쓰인 재능: 주 재능\n', '쓰인 재능: 생업: 공방 선생\n')))
+    .toEqual([`${lineOf('쓰인 재능: 주 재능')}: 재능과 생업 > 생업: 목수: 같은 섹션에 없는 재능 '생업: 공방 선생'`])
+})
+
+test('생업 이름에 현대 제도·기술의 말을 쓰면 거부한다', () => {
+  expect(check(mutate('### 생업: 목수', '### 생업: 건설 회사 직원')))
+    .toEqual(['재능과 생업 > 생업: 건설 회사 직원: 생업 이름에 현대 제도·기술의 말(회사)을 쓰지 않는다 — 이세계에서도 성립하는 일의 이름으로 쓴다'])
+  // 이세계에서도 성립하는 일의 이름은 받아들인다.
+  for (const name of ['대장장이', '행상', '서기', '치유사']) expect(check(mutate('### 생업: 목수', `### 생업: ${name}`))).toEqual([])
+})
+
+test('natal: 생업의 시기는 생애 단계 대신 조건으로 쓴다', () => {
+  expect(checkNatal(natalValid)).toEqual([])
+  expect(checkNatal(mutateNatal('### 생업: 기록관\n', ''))).toContain("재능과 생업: '생업: <이름>' 생업 항목이 하나 이상 있어야 한다")
 })

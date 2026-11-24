@@ -167,3 +167,12 @@ test('일상어와 겹치는 말은 해석 용어로 잡지 않는다', () => {
   const ordeal = '시련: 남의 말을 듣지 않고 자리를 자주 옮기다 큰 실수를 하고 가장 가까운 동료를 잃는다'
   expect(check(mutate(ordeal, '시련: 평이한 날들 끝에 비겁하다는 말을 듣고, 그 일에 대한 소문 속에 가장 가까운 동료를 잃는다'))).toEqual([])
 })
+
+// #85: 통합 문서도 생업 항목을 하나 이상 두고, 시기에 생애 단계를 쓴다.
+test('통합 문서에 생업 항목이 없으면 거부한다', () => {
+  const start = valid.indexOf('### 생업: 목수')
+  const end = valid.indexOf('\n## 상처와 회복')
+  expect(check(valid.slice(0, start) + valid.slice(end + 1))).toEqual(["재능과 생업: '생업: <이름>' 생업 항목이 하나 이상 있어야 한다"])
+  expect(check(mutate('근거: [saju:생업: 목수] [ziwei:생업: 마을 관리인]', '근거: [saju:생업: 목수] [ziwei:생업: 대장장이]')))
+    .toEqual([`${lineOf('근거: [saju:생업: 목수] [ziwei:생업: 마을 관리인]')}: 재능과 생업 > 생업: 목수: ziwei-life.md에 없는 항목 [ziwei:생업: 대장장이]`])
+})

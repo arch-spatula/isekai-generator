@@ -30,7 +30,7 @@ export const CAST_ITEM_FIELDS = Object.fromEntries(Object.keys(RELATION_ITEMS).m
 function commonSections(timeline: boolean): LifeSection[] {
   return [
     { name: '인물 사전', items: CAST, fields: CAST_FIELDS, itemFields: CAST_ITEM_FIELDS, stageFields: timeline ? ['관계의 변화'] : [] },
-    { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '다루는 것', '꽃피는 시기', '막히는 조건', '근거'], stageFields: timeline ? ['꽃피는 시기'] : [] },
+    { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '다루는 것', '꽃피는 시기', '막히는 조건', '근거'], stageFields: timeline ? ['꽃피는 시기'] : [], livelihood: { timeline } },
     { name: '상처와 회복', items: ['반복되는 실패', '상실', '회복'], fields: ['내용', '발현 조건', '근거'] },
   ]
 }

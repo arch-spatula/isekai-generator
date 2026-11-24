@@ -23,7 +23,8 @@ test('lays out sections and items: timeline and cast side by side, talents and w
   expect(headings).toEqual([
     '## 생애 연표', ...['유년', '소년', '청년', '장년', '노년'].map((stage) => `### ${stage}`),
     '## 인물 사전', ...['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자'].map((name) => `### ${name}`),
-    '## 재능과 생업', ...perSystem(['주 재능', '보조 재능']),
+    '## 재능과 생업', ...['saju 주 재능', 'saju 보조 재능', 'saju 생업: 목수', 'saju 생업: 공방 선생', 'ziwei 주 재능', 'ziwei 보조 재능', 'ziwei 생업: 마을 관리인',
+      'natal 주 재능', 'natal 보조 재능', 'natal 생업: 기록관'].map((item) => `### ${item}`),
     '## 상처와 회복', ...perSystem(['반복되는 실패', '상실', '회복']),
   ])
 })
