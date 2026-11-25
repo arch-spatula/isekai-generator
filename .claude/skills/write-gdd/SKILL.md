@@ -20,7 +20,7 @@ allowed-tools: Bash(bun scripts/check-gdd.ts:*)
 
 - 사용자가 준 차트 디렉터리, 또는 같은 대화에서 chart-report가 저장한 `chartDir`를 쓴다. 둘 다 없으면 묻는다.
   `artifacts/`를 탐색하거나 최신 버전을 추측하지 않는다.
-- `test -e <디렉터리>/gdd.md`가 성공하면 덮어쓰지 않고 멈춘 뒤 알린다.
+- `test -e <디렉터리>/gdd.md`가 성공하면 덮어쓰지 않고 멈춘 뒤 알린다. 멈추거나 실패해도 새 버전 폴더를 만들어 처음부터 다시 생성하지 않는다.
 - `translation-brief.md`, `identity.md`, `combat.md`, `world.md`를 `test -e`로 확인한다. 없으면 무엇이 없는지와 만드는 방법(`/translate-life`,
   `/design-identity`, `/design-combat`, `/design-world` + `<디렉터리>`)을 알리고 멈춘다. 대신 실행하지 않는다.
 
@@ -90,7 +90,7 @@ bun scripts/check-gdd.ts <디렉터리>
 ```
 
 - 출력이 없고 exit 0이면 끝이다.
-- 위반 줄이 나오면 그 부분만 고쳐 다시 실행한다. 3번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
+- 위반이 나오면 출력된 위반을 모두 한 번에 고쳐 다시 실행한다. 2번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
 - 검증을 통과시키려고 앞 단계의 결정을 바꾸지 않는다. 인용과 절 구성을 고친다.
 
 ## 5. 보고

@@ -1,6 +1,6 @@
 ---
 name: game-step-reviewer
-description: 게임 설계 단계(identity·combat·world)의 산출물을 작성자와 다른 눈으로 검토해 통과 또는 되돌림을 판정하고 <단계>-review-<n>.md로 남긴다. /design-identity·/design-combat·/design-world 스킬이 검증기 통과 뒤에 부른다.
+description: 게임 설계 단계(identity·combat·world)의 산출물을 작성자와 다른 눈으로 검토해 통과 또는 되돌림을 판정하고 <단계>-review-1.md로 남긴다. /design-identity·/design-combat·/design-world 스킬이 검증기 통과 뒤에 부른다.
 tools: Read, Write, Bash
 ---
 
@@ -47,7 +47,7 @@ tools: Read, Write, Bash
 
 ## 3. 작성
 
-`<디렉터리>/<단계>-review-<n>.md`에 쓴다. `<n>`은 같은 단계의 검토 문서 수에 1을 더한 값이다(`ls <디렉터리>/<단계>-review-*.md`로 센다. 내용은 읽지 않는다).
+`<디렉터리>/<단계>-review-1.md`에 쓴다. 검토는 단계마다 한 번이다. `test -e <디렉터리>/<단계>-review-1.md`가 성공하면 검토하지 않고 "이미 검토했다"고만 돌려준다.
 
 ```markdown
 # 검토
@@ -66,7 +66,8 @@ tools: Read, Write, Bash
 ```
 
 - 고칠 방향에 구체적인 사물·이름을 주지 않는다. 검토자의 단어가 그대로 결과물에 새어 나온다.
-- 쓴 뒤 `bun scripts/check-review.ts <디렉터리>/<단계>-review-<n>.md`를 실행한다. 위반이 나오면 형식만 고쳐 다시 실행한다. 판정은 바꾸지 않는다.
+- 쓴 뒤 `bun scripts/check-review.ts <디렉터리>/<단계>-review-1.md`를 실행한다. 위반이 나오면 형식만 한 번에 모두 고쳐 다시 실행한다. 판정은 바꾸지 않는다.
+  2번 고쳐도 통과하지 못하면 더 고치지 않고 남은 위반을 그대로 돌려준다.
 
 ## 4. 보고
 

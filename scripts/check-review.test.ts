@@ -48,6 +48,13 @@ test('지적의 위치가 대상 문서의 제목이 아니거나 기준이 목�
   ])
 })
 
+// 검토는 단계마다 한 번이다. 두 번째 검토 문서는 지침만으로 막지 못해(실제 run에서 지적 없는 통과 뒤 두 번 더 부름) 검증기가 거부한다(#100).
+test('두 번째 검토 문서는 거부한다', () => {
+  expect(checkReview({ review, stage: 'identity', target: identity, number: 1 })).toEqual([])
+  expect(checkReview({ review, stage: 'identity', target: identity, number: 2 }))
+    .toEqual(['검토는 단계마다 한 번이다 — identity-review-1.md만 둔다 (실제: identity-review-2.md)'])
+})
+
 test('지적에 고칠 방향이 없으면 거부한다', () => {
   const changed = replaceOnce(review, '고칠 방향: 그 시기 누가 땅을 나누고 무엇이 모자랐는지 같은 시대의 조건을 쓴다\n', '')
   expect(check(changed)).toEqual([`${lineOf('### 시대가 아니라 국면')}: 지적 > 시대가 아니라 국면: 고칠 방향 필드가 없다`])

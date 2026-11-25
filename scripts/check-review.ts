@@ -17,11 +17,13 @@ export const REQUIRED_CRITERIA = ['모순', '직역']
 /** 위치에 항목 대신 쓸 수 있는 말 */
 const WHOLE = '문서 전체'
 
-export interface ReviewTexts { review: string; stage: ReviewedStage; target: string }
+/** number는 파일 이름의 <n>. 검토는 단계마다 한 번이라 1만 허용한다(#100) */
+export interface ReviewTexts { review: string; stage: ReviewedStage; target: string; number?: number }
 
-export function checkReview({ review, stage, target }: ReviewTexts): string[] {
+export function checkReview({ review, stage, target, number }: ReviewTexts): string[] {
   const errors: string[] = []
   const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
+  if (number != null && number !== 1) report(null, `검토는 단계마다 한 번이다 — ${stage}-review-1.md만 둔다 (실제: ${stage}-review-${number}.md)`)
   const sections = parseGameDocument(review, '# 검토', report)
   checkSectionOrder(sections, ['판정', '지적'], report)
 
@@ -64,7 +66,7 @@ export function checkReview({ review, stage, target }: ReviewTexts): string[] {
 
 if (import.meta.main) {
   const [path] = process.argv.slice(2)
-  const match = path == null ? null : basename(path).match(/^(identity|combat|world)-review-\d+\.md$/)
+  const match = path == null ? null : basename(path).match(/^(identity|combat|world)-review-(\d+)\.md$/)
   if (path == null || match == null) {
     console.error('usage: bun scripts/check-review.ts <차트 디렉터리>/<identity|combat|world>-review-<n>.md')
     process.exit(1)
@@ -78,7 +80,7 @@ if (import.meta.main) {
       process.exit(1)
     }
   }
-  const errors = checkReview({ review: read(path), stage, target: read(join(dirname(path), REVIEWED[stage])) })
+  const errors = checkReview({ review: read(path), stage, target: read(join(dirname(path), REVIEWED[stage])), number: Number(match[2]) })
   for (const error of errors) console.log(error)
   process.exit(errors.length > 0 ? 1 : 0)
 }

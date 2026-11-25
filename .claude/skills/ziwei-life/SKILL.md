@@ -12,7 +12,7 @@ allowed-tools: Read, Write, Bash(test -e:*), Bash(bun scripts/check-life-documen
 
 - 사용자가 준 차트 디렉터리, 또는 같은 대화에서 chart-report가 저장한 `chartDir`를 쓴다. 둘 다 없으면 묻는다.
   `artifacts/`를 탐색하거나 최신 버전을 추측하지 않는다.
-- `test -e <디렉터리>/ziwei-life.md`가 성공하면 덮어쓰지 않고 멈춘 뒤 알린다.
+- `test -e <디렉터리>/ziwei-life.md`가 성공하면 덮어쓰지 않고 멈춘 뒤 알린다. 멈추거나 실패해도 새 버전 폴더를 만들어 처음부터 다시 생성하지 않는다.
 - `ziwei-judgment.md`와 `ziwei-derived-facts.md`를 `test -e`로 확인한다. 없으면 무엇이 없는지와 만드는 방법
   (`/ziwei-judgment <디렉터리>`, `bun scripts/derive-judgment-facts.ts ziwei <디렉터리>`)을 알리고 멈춘다. 대신 실행하지 않는다.
 - `ziwei-facts.md`에 `생애 단계별 大限` 항목이 없으면 이 사실 층이 생기기 전에 만든 폴더다. 차트를 새로 뽑아야
@@ -189,7 +189,7 @@ bun scripts/check-life-document.ts ziwei <디렉터리>
 ```
 
 - 출력이 없고 exit 0이면 끝이다.
-- 위반 줄이 나오면 그 줄만 고쳐 다시 실행한다. 3번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
+- 위반이 나오면 출력된 위반을 모두 한 번에 고쳐 다시 실행한다. 2번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
 - 검증을 통과시키려고 해석 내용을 바꾸지 않는다. `운`은 사실 파일 줄을 다시 복사하고, 인용 이름·형식을 고친다.
 
 ## 5. 보고

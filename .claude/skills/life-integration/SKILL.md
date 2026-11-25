@@ -12,7 +12,7 @@ allowed-tools: Read, Write, Bash(test -e:*), Bash(bun scripts/check-life-integra
 
 - 사용자가 준 차트 디렉터리, 또는 같은 대화에서 chart-report가 저장한 `chartDir`를 쓴다. 둘 다 없으면 묻는다.
   `artifacts/`를 탐색하거나 최신 버전을 추측하지 않는다.
-- `test -e <디렉터리>/life.md`가 성공하면 덮어쓰지 않고 멈춘 뒤 알린다.
+- `test -e <디렉터리>/life.md`가 성공하면 덮어쓰지 않고 멈춘 뒤 알린다. 멈추거나 실패해도 새 버전 폴더를 만들어 처음부터 다시 생성하지 않는다.
 - `life-material.md`를 `test -e`로 확인한다. 없으면 만드는 방법(`bun scripts/assemble-life-material.ts <디렉터리>`)을
   알리고 멈춘다. 대신 실행하지 않는다. 그 스크립트는 세 체계의 일생 해석(`/saju-life`, `/ziwei-life`, `/natal-life`)이
   모두 있고 검증을 통과해야 재료표를 만든다.
@@ -189,7 +189,7 @@ bun scripts/check-life-integration.ts <디렉터리>
 ```
 
 - 출력이 없고 exit 0이면 끝이다.
-- 위반 줄이 나오면 그 줄만 고쳐 다시 실행한다. 3번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
+- 위반이 나오면 출력된 위반을 모두 한 번에 고쳐 다시 실행한다. 2번 고쳐도 통과하지 못하면 멈추고 남은 위반을 그대로 알린다.
 - 검증을 통과시키려고 통합 판단을 바꾸지 않는다. 인용 이름·형식을 고치고, 빠진 같은 이름 항목은 그 재료를 실제로
   반영한 자리(본선 또는 갈림길)에 인용한다.
 
