@@ -104,6 +104,11 @@ end
 - 문서를 바꾼 뒤 `bun run check:docs`를 실행하고 `--review` 후보는 의미를 검토하세요.
 - 자세한 기준은 `docs/spec/local-artifact-document-boundary.md`를 따르세요.
 
+## 7-1. 생성 흐름의 재료 지도
+
+- 스킬·명세·검증기의 필드나 입력을 바꾸면 `scripts/pipeline-map.ts`의 지도를 함께 고치고 `bun run check:pipeline`을 통과시키세요.
+- 새 요구는 그 필드의 재료를 지도에 먼저 적어 보고, 적을 수 없으면 구현 전에 알리세요. 자세한 기준은 `docs/spec/pipeline-map.md`를 따르세요.
+
 ## 8. 개발용 다중 에이전트 스킬은 명시적으로 요청할 때만 실행
 
 - 일반 코드 수정은 단일 에이전트가 처리하세요.
