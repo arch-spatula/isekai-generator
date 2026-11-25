@@ -21,14 +21,15 @@ export const AXES: Record<string, string[]> = {
   '숙련의 핵심': ['타이밍', '조준', '자원 조합', '배치', '명령', '형태 전환', '해석', '정밀 조작'],
   '위험 구조': ['체력', '과열', '집중 붕괴', '소환체 손실', '지형 붕괴', '재료 소모', '오작동'],
 }
-const CANDIDATE_COUNT = 4
+/** 클래스가 능력 두세 개만 쓰므로(#99) 후보는 세 개다 */
+const CANDIDATE_COUNT = 3
 /** 후보 쌍마다 달라야 하는 축의 최소 수 */
 const MIN_DIFFERENT_AXES = 3
 const STYLE_FIELDS = ['채택', '핵심 행동', '약점', '적', '런 한 번', '런 중 보상', '런 밖 성장']
 
-export interface CombatTexts { combat: string; brief: string; identity: string }
+export interface CombatTexts { combat: string; brief: string; identity: string; world: string }
 
-export function checkCombat({ combat, brief, identity }: CombatTexts): string[] {
+export function checkCombat({ combat, brief, identity, world }: CombatTexts): string[] {
   const errors: string[] = []
   const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
   const sections = parseGameDocument(combat, TITLE, report)
@@ -39,7 +40,7 @@ export function checkCombat({ combat, brief, identity }: CombatTexts): string[] 
   // 후보는 정체성 단계가 고른 클래스 안에서 만든다. 출처는 클래스의 재료인 능력이다(#86).
   const klass = classAbilities(identity, brief)
 
-  // 후보: 네 개, 출처는 브리프의 주인공 능력, 축 값은 허용값, 후보 쌍마다 세 축 이상 다름, 채택은 하나
+  // 후보: 세 개, 출처는 브리프의 주인공 능력, 축 값은 허용값, 후보 쌍마다 세 축 이상 다름, 채택은 하나
   const candidates = section('후보')?.items ?? []
   if (section('후보') != null && candidates.length !== CANDIDATE_COUNT) report(section('후보')!.line, `후보: 후보는 ${CANDIDATE_COUNT}개여야 한다 (실제: ${candidates.length})`)
   const axes = new Map<string, Record<string, string>>()
@@ -95,6 +96,10 @@ export function checkCombat({ combat, brief, identity }: CombatTexts): string[] 
     const fields = fieldsOf('전투 방식', style, STYLE_FIELDS, report)
     const chosen = fields.get('채택')
     if (chosen != null && chosen.value !== '' && adopted.length === 1 && chosen.value !== adopted[0]) report(chosen.line, `전투 방식: 채택 '${chosen.value}' — 후보에서 채택한 것은 '${adopted[0]}'`)
+    // 적은 세계 단계가 정한 세력에서 나온다. 세계가 전투보다 먼저 만들어진다.
+    const enemy = fields.get('적')
+    const factions = sectionItemNames(world, '세력')
+    if (enemy != null && enemy.value !== '' && !targetsOf(enemy.value, 'world').some((target) => factions.includes(target))) report(enemy.line, `전투 방식: 적에 [world:<세력>] 인용이 없다`)
     for (const key of ['약점', '런 밖 성장']) {
       const field = fields.get(key)
       if (field != null && field.value !== '' && !targetsOf(field.value, 'brief').some((target) => abilities.has(target))) report(field.line, `전투 방식: ${key}에 [brief:<주인공 능력>] 인용이 없다`)
@@ -115,7 +120,7 @@ export function checkCombat({ combat, brief, identity }: CombatTexts): string[] 
     for (const field of skills.fields) report(field.line, `동료의 행동: 허용하지 않는 필드 '${field.key}'`)
   }
 
-  checkCitationsAndNames(combat, { brief: itemNames(brief), identity: itemNames(identity) }, report, true)
+  checkCitationsAndNames(combat, { brief: itemNames(brief), identity: itemNames(identity), world: itemNames(world) }, report, true)
   return errors
 }
 
@@ -133,7 +138,7 @@ if (import.meta.main) {
       process.exit(1)
     }
   }
-  const errors = checkCombat({ combat: read('combat.md'), brief: read('translation-brief.md'), identity: read('identity.md') })
+  const errors = checkCombat({ combat: read('combat.md'), brief: read('translation-brief.md'), identity: read('identity.md'), world: read('world.md') })
   for (const error of errors) console.log(error)
   process.exit(errors.length > 0 ? 1 : 0)
 }

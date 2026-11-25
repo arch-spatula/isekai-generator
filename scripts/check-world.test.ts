@@ -7,7 +7,6 @@ import { checkWorld } from './check-world.ts'
 // 기대 위반은 docs/spec/claude-game-design-flow.md 4.2·5.3·6절에서 정했다.
 const fixtures = join(import.meta.dir, 'fixtures')
 const brief = readFileSync(join(fixtures, 'translation-brief/translation-brief.md'), 'utf8')
-const combat = readFileSync(join(fixtures, 'combat/combat.md'), 'utf8')
 const world = readFileSync(join(fixtures, 'world/world.md'), 'utf8')
 const identity = readFileSync(join(fixtures, 'identity/identity.md'), 'utf8')
 
@@ -15,7 +14,7 @@ function replaceOnce(text: string, from: string, to: string): string {
   expect(text.split(from)).toHaveLength(2)
   return text.replace(from, to)
 }
-const check = (changed = world) => checkWorld({ world: changed, brief, combat, identity })
+const check = (changed = world) => checkWorld({ world: changed, brief, identity })
 const lineOf = (text: string) => world.split('\n').indexOf(text) + 1
 
 test('정상 세계 설계는 통과한다', () => {
@@ -67,10 +66,13 @@ test('서사 갈등이 축이나 반복되는 실패를 인용하지 않으면 �
   expect(check(changed)).toEqual([`${lineOf('## 서사 갈등')}: 서사 갈등: 근거 어디에도 [brief:축]이 없다`])
 })
 
-test('전장이 전투 설계를 인용하지 않으면 거부한다', () => {
-  const line = '전장: 쌓아 둔 재료와 짓다 만 구조물 사이에서 마을 밖 약탈자가 재료를 노리고 들어온다 [combat:전투 방식]'
-  const changed = replaceOnce(world, line, '전장: 쌓아 둔 재료 사이')
-  expect(check(changed)).toEqual([`${lineOf(line)}: 지역 > 셈하는 마을: 전장에 [combat:<항목>] 인용이 없다`])
+// 세계는 전투보다 먼저 만든다. 전장에는 그곳에서 맞서는 이 세계의 세력을 쓰고, 전투가 그 세력에서 적을 정한다(재료 부족 정리).
+test('전장에 이 세계의 세력 이름이 없으면 거부하고, 전투 설계는 인용할 수 없다', () => {
+  const line = '전장: 쌓아 둔 재료와 짓다 만 구조물 사이에서 셈하는 사람들의 셈꾼들이 몫을 걷으러 재료 더미를 막아선다'
+  expect(check(replaceOnce(world, line, '전장: 쌓아 둔 재료 사이에서 약탈자가 들어온다')))
+    .toEqual([`${lineOf(line)}: 지역 > 셈하는 마을: 전장에 맞서는 세력의 이름(셈하는 사람들, 같은 재주의 맞수 무리)이 없다`])
+  expect(check(replaceOnce(world, line, `${line} [combat:전투 방식]`)))
+    .toEqual([`${lineOf(line)}: [combat:전투 방식] — 이 문서는 [brief:]·[identity:]만 인용한다`])
 })
 
 test('기호를 직역한 지역 이름과 없는 인용 대상을 거부한다', () => {

@@ -5,15 +5,15 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  checkCitationsAndNames, checkSectionOrder, fieldsOf, headingNames, itemNames, parseGameDocument, sectionItemNames, targetsOf, type Field, type Report,
+  checkCitationsAndNames, checkSectionOrder, fieldsOf, itemNames, parseGameDocument, sectionItemNames, targetsOf, type Field, type Report,
 } from './game-document.ts'
 
 const TITLE = '# 세계 설계'
 const SECTIONS = ['지역', '세력', '서사 갈등']
 
-export interface WorldTexts { world: string; brief: string; combat: string; identity: string }
+export interface WorldTexts { world: string; brief: string; identity: string }
 
-export function checkWorld({ world, brief, combat, identity }: WorldTexts): string[] {
+export function checkWorld({ world, brief, identity }: WorldTexts): string[] {
   const errors: string[] = []
   const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
   const sections = parseGameDocument(world, TITLE, report)
@@ -37,6 +37,7 @@ export function checkWorld({ world, brief, combat, identity }: WorldTexts): stri
   }
 
   // 지역: 브리프의 장마다 하나 이상. 첫 지역은 정체성의 출신 도시에서 시작한다. 전장은 전투 설계를 인용한다.
+  const factionNames = sectionItemNames(world, '세력')
   const regions = requireItems('지역')
   const covered = new Set<string>()
   for (const [index, item] of regions.entries()) {
@@ -50,7 +51,8 @@ export function checkWorld({ world, brief, combat, identity }: WorldTexts): stri
       if (index === 0 && chapter.value !== chapters[0]) report(chapter.line, `${where}: 첫 지역의 장은 브리프의 첫 장 '${chapters[0]}'이다`)
     }
     const field = fields.get('전장')
-    if (field != null && field.value !== '' && targetsOf(field.value, 'combat').length === 0) report(field.line, `${where}: 전장에 [combat:<항목>] 인용이 없다`)
+    // 세계는 전투보다 먼저 만든다. 전장에는 그곳에서 맞서는 이 세계의 세력을 쓴다(전투가 이 세력에서 적을 정한다).
+    if (field != null && field.value !== '' && !factionNames.some((name) => field.value.includes(name))) report(field.line, `${where}: 전장에 맞서는 세력의 이름(${factionNames.join(', ')})이 없다`)
     const basis = fields.get('근거')
     requireBasis(where, basis)
     if (index === 0 && basis != null && !targetsOf(basis.value, 'identity').some((target) => cities.includes(target))) {
@@ -77,7 +79,7 @@ export function checkWorld({ world, brief, combat, identity }: WorldTexts): stri
     for (const name of ['축', '반복되는 실패']) if (!cited.has(name)) report(section('서사 갈등')!.line, `서사 갈등: 근거 어디에도 [brief:${name}]이 없다`)
   }
 
-  checkCitationsAndNames(world, { brief: itemNames(brief), combat: headingNames(combat), identity: itemNames(identity) }, report)
+  checkCitationsAndNames(world, { brief: itemNames(brief), identity: itemNames(identity) }, report)
   return errors
 }
 
@@ -95,7 +97,7 @@ if (import.meta.main) {
       process.exit(1)
     }
   }
-  const errors = checkWorld({ world: read('world.md'), brief: read('translation-brief.md'), combat: read('combat.md'), identity: read('identity.md') })
+  const errors = checkWorld({ world: read('world.md'), brief: read('translation-brief.md'), identity: read('identity.md') })
   for (const error of errors) console.log(error)
   process.exit(errors.length > 0 ? 1 : 0)
 }

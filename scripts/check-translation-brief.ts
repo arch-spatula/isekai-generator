@@ -133,7 +133,8 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
       const candidate = candidates.find(({ name }) => name === item.name)
       if (candidate == null) report(item.line, `${where}: 동료 후보가 아니다 (후보: ${expected})`)
       else chosen.add(item.name)
-      const fields = fieldsOf(where, item, ['동행하는 장', '함께 하는 일', '근거'])
+      // 재주는 life.md 인물 사전의 다루는 것이다. 전투 단계가 동료의 행동을 만드는 재료다.
+      const fields = fieldsOf(where, item, ['동행하는 장', '재주', '함께 하는 일', '근거'])
       const stages = fields.get('동행하는 장')
       for (const stage of stages?.value.split(',').map((part) => part.trim()).filter(Boolean) ?? []) {
         if (!STAGE_NAMES.includes(stage)) report(stages!.line, `${where}: '${stage}'는 생애 단계 이름이 아니다`)

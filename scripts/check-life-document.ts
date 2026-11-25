@@ -33,7 +33,8 @@ export const BACKGROUND: LifeSection = {
 }
 export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
 /** 인물 사전 필드. 상태는 RELATION_ITEMS 칸에만 있다 (docs/spec/life-shape-and-relationship-status.md 5.2·5.4) */
-export const CAST_FIELDS = ['성향', '주인공과의 관계', '관계의 변화', ...WEIGHT_FIELDS, '근거']
+/** 인물이 다루는 재주(`다루는 것`)는 그 인물이 동료가 됐을 때 싸움에서 스스로 하는 행동의 재료다 */
+export const CAST_FIELDS = ['성향', '다루는 것', '주인공과의 관계', '관계의 변화', ...WEIGHT_FIELDS, '근거']
 export const CAST_ITEM_FIELDS = Object.fromEntries(Object.keys(RELATION_ITEMS).map((name) => [name, ['상태']]))
 
 /**

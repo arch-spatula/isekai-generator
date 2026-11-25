@@ -9,22 +9,29 @@ const fixtures = join(import.meta.dir, 'fixtures')
 const brief = readFileSync(join(fixtures, 'translation-brief/translation-brief.md'), 'utf8')
 const combat = readFileSync(join(fixtures, 'combat/combat.md'), 'utf8')
 const identity = readFileSync(join(fixtures, 'identity/identity.md'), 'utf8')
+const world = readFileSync(join(fixtures, 'world/world.md'), 'utf8')
 
 function replaceOnce(text: string, from: string, to: string): string {
   expect(text.split(from)).toHaveLength(2)
   return text.replace(from, to)
 }
 const check = (changes: { combat?: string; brief?: string; identity?: string } = {}) =>
-  checkCombat({ combat: changes.combat ?? combat, brief: changes.brief ?? brief, identity: changes.identity ?? identity })
+  checkCombat({ combat: changes.combat ?? combat, brief: changes.brief ?? brief, identity: changes.identity ?? identity, world })
 const lineOf = (text: string) => combat.split('\n').indexOf(text) + 1
 
 test('정상 전투 설계는 통과한다', () => {
   expect(check()).toEqual([])
 })
 
-test('후보가 네 개가 아니면 거부한다', () => {
-  const three = combat.replace(/### 성질을 바꾸는 손\n[^#]*/, '')
-  expect(check({ combat: three })).toEqual([`${lineOf('## 후보')}: 후보: 후보는 4개여야 한다 (실제: 3)`])
+test('후보가 세 개가 아니면 거부한다', () => {
+  const two = combat.replace(/### 틈을 짚는 일격\n[^#]*/, '')
+  expect(check({ combat: two })).toContain(`${lineOf('## 후보')}: 후보: 후보는 3개여야 한다 (실제: 2)`)
+})
+
+// 적은 세계의 세력에서 정한다. 세계가 전투보다 먼저 만들어진다(재료 부족 정리).
+test('적이 세계의 세력을 인용하지 않으면 거부한다', () => {
+  const enemy = combat.split('\n').find((line) => line.startsWith('적:'))!
+  expect(check({ combat: replaceOnce(combat, enemy, '적: 구조를 부수는 적') })).toEqual([`${lineOf(enemy)}: 전투 방식: 적에 [world:<세력>] 인용이 없다`])
 })
 
 test('이름만 다르고 축이 거의 같은 후보를 거부한다', () => {
@@ -49,8 +56,8 @@ test('채택이 하나가 아니거나 전투 방식의 채택과 다르면 거�
   expect(check({ combat: two })).toContain(`${lineOf('## 후보')}: 후보: 채택한 후보는 하나여야 한다 (실제: 2)`)
   const other = replaceOnce(combat, '채택: 빚어 세우는 손', '채택: 틈을 짚는 일격')
   expect(check({ combat: other })).toEqual([`${lineOf('채택: 빚어 세우는 손')}: 전투 방식: 채택 '틈을 짚는 일격' — 후보에서 채택한 것은 '빚어 세우는 손'`])
-  const noReason = replaceOnce(combat, '판단: 제외 — 지형을 넓히는 일이 중심이 되어 재료를 골라 빚는 주 재능이 조작에서 가려진다', '판단: 제외')
-  expect(check({ combat: noReason })).toEqual([`${lineOf('판단: 제외 — 지형을 넓히는 일이 중심이 되어 재료를 골라 빚는 주 재능이 조작에서 가려진다')}: 후보 > 함께 지키는 터: 판단은 '채택' 또는 '제외 — <이유>'이다`])
+  const reason = '판단: 제외 — 만든 것을 남기는 재능이 쓰고 사라지는 힘으로 바뀐다'
+  expect(check({ combat: replaceOnce(combat, reason, '판단: 제외') })).toEqual([`${lineOf(reason)}: 후보 > 성질을 바꾸는 손: 판단은 '채택' 또는 '제외 — <이유>'이다`])
 })
 
 test('런 밖 성장이 브리프의 능력을 인용하지 않으면 거부한다', () => {
@@ -82,7 +89,7 @@ test('제외 메커니즘의 용어, 차트 명칭, 다른 문서 인용을 거�
   const name = replaceOnce(combat, line, '런 중 보상: 칠살의 힘을 고른다')
   expect(check({ combat: name })).toEqual([`${lineOf(line)}: 차트 명칭 '칠살'`])
   const life = replaceOnce(combat, '출처: [brief:고칠 곳을 짚는 눈]', '출처: [brief:고칠 곳을 짚는 눈] [life:보조 재능]')
-  expect(check({ combat: life })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: [life:보조 재능] — 이 문서는 [brief:]·[identity:]만 인용한다`])
+  expect(check({ combat: life })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: [life:보조 재능] — 이 문서는 [brief:]·[identity:]·[world:]만 인용한다`])
 })
 
 test('2026-11-24 개정으로 더한 축 값을 받아들인다', () => {

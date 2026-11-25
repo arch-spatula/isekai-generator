@@ -66,7 +66,9 @@ test('document keys skip citations, lists and the preamble, and name prose 본�
 test('the report lists invented fields, known gaps and fields nobody downstream uses', () => {
   const report = pipelineReport(STAGES)
   expect(report).toContain('## 지어내는 필드')
-  expect(report).toContain('- combat 전투 방식 > 적:')
+  expect(report).toContain('- combat 후보 > 전투 거리:')
+  // 세계가 전투보다 먼저 만들어져 적의 재료 부족은 지도에서 사라졌다.
+  expect(report).not.toContain('- combat 전투 방식 > 적:')
   // 같은 단계 안에서 쓰이는 필드는 쓰이지 않는 필드로 잡지 않는다.
   expect(report).not.toContain('- combat 후보 > 플레이')
   expect(report).toContain('- life 재능과 생업 > 꽃피는 시기')

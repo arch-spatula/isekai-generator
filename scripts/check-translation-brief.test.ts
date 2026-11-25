@@ -197,3 +197,9 @@ test('주인공 능력은 하는 일을 옮겨야 한다', () => {
   const doing = '하는 일: 남의 표정과 서툰 솜씨를 읽고 고칠 곳과 다툼의 씨앗을 미리 짚어 준다\n'
   expect(check({ brief: replaceOnce(brief, doing, '') })).toEqual([`${lineOf('### 고칠 곳을 짚는 눈')}: 주인공 능력 > 고칠 곳을 짚는 눈: 하는 일 필드가 없다`])
 })
+
+// 동료의 재주는 life.md 인물 사전의 다루는 것이다. 전투 단계가 동료의 행동을 만드는 재료라 비울 수 없다(재료 부족 정리).
+test('동료 항목에는 재주가 있어야 한다', () => {
+  const skill = '재주: 재료와 도구, 글과 셈\n'
+  expect(check({ brief: replaceOnce(brief, skill, '') })).toEqual([`${lineOf('### 스승·후원자')}: 동료 > 스승·후원자: 재주 필드가 없다`])
+})

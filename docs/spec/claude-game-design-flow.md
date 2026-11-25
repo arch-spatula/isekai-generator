@@ -48,11 +48,12 @@ Codex 흐름에서는 두 실패만 참고해 구조로 막는다.
 | 6 | `/life-integration` | `life.md` | 재료표 | `check-life-integration` |
 | 7 | `/translate-life` | `translation-brief.md` | `life.md`, 동료 후보 계산 결과 | `check-translation-brief` |
 | 8 | `/design-identity` | `identity.md` | 번역 브리프 | `check-identity`, 검토(4.7) |
-| 9 | `/design-combat` | `combat.md` | 번역 브리프, `identity.md` | `check-combat`, 검토(4.7) |
-| 10 | `/design-world` | `world.md` | 번역 브리프, `identity.md`, `combat.md` | `check-world`, 검토(4.7) |
+| 9 | `/design-world` | `world.md` | 번역 브리프, `identity.md` | `check-world`, 검토(4.7) |
+| 10 | `/design-combat` | `combat.md` | 번역 브리프, `identity.md`, `world.md` | `check-combat`, 검토(4.7) |
 | 11 | `/write-gdd` | `gdd.md` | 번역 브리프, `identity.md`, `combat.md`, `world.md` | `check-gdd` |
 
 1~6은 이미 있다. 7·9~11은 2026-11-23에, 8(이세계 정체성)은 2026-11-24에 더했다(#86, [ADR](../ADR/2026-11-24-isekai-identity-design.md)).
+2026-11-25에 세계를 전투보다 앞으로 옮겼다. 전투가 세계보다 먼저 적을 정해 어느 세계에나 붙일 수 있는 적이 나왔기 때문이다([재료 부족 정리 ADR](../ADR/2026-11-25-material-gaps.md)).
 
 ## 3. 입력 격리
 
