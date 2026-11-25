@@ -23,3 +23,4 @@
 - [일생 해석의 관계 인물 '있음' 수렴 이슈](2026-11-21-life-relationship-presence-convergence.md) — 진단 기록, 해결 방향 미정
 - [실행 상태 SQLite를 아티팩트 루트에 둔 설계 오류](2026-11-21-artifact-root-sqlite-design.md) — 해결, SQLite 코드 제거 완료
 - [Claude 흐름의 전투 방식 근접 격투 수렴](2026-11-24-claude-combat-style-convergence.md) — 진단 기록, 해결 방향 미정
+- [게임 설계 단계 검토의 반복 되돌림과 상한 위반](2026-11-24-design-review-retry-loop.md) — 구조 원인 #100에서 해결, #92·#96 기준 문제 남음

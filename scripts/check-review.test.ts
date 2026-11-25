@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { checkReview } from './check-review.ts'
 
-// fixture: identity/identity.md(합성 정체성)를 대상으로 쓴 검토 문서. 기대 위반은 docs/spec/claude-game-design-flow.md 4.7절에서 정했다.
+// fixture: identity/identity.md(합성 정체성)를 대상으로 쓴 검토 문서. 필수(모순) 지적 하나와 권고(이세계다움) 지적 하나가 있다.
+// 기대 위반은 docs/spec/claude-game-design-flow.md 4.7절에서 정했다.
 const fixtures = join(import.meta.dir, 'fixtures')
 const identity = readFileSync(join(fixtures, 'identity/identity.md'), 'utf8')
 const review = readFileSync(join(fixtures, 'review/identity-review-1.md'), 'utf8')
@@ -14,7 +15,9 @@ function replaceOnce(text: string, from: string, to: string): string {
 }
 const check = (changed = review) => checkReview({ review: changed, stage: 'identity', target: identity })
 const lineOf = (text: string) => review.split('\n').indexOf(text) + 1
-const passed = review.slice(0, review.indexOf('### 시대가 아니라 국면')).replace('판정: 되돌림', '판정: 통과')
+const passed = review.slice(0, review.indexOf('### 소년의 길이 막혀 있음')).replace('판정: 되돌림', '판정: 통과')
+const required = review.slice(review.indexOf('### 소년의 길이 막혀 있음'), review.indexOf('### 시대가 아니라 국면'))
+const advisoryOnly = review.replace(required, '')
 
 test('되돌림 검토와 지적 없는 통과 검토는 통과한다', () => {
   expect(check()).toEqual([])
@@ -26,8 +29,13 @@ test('판정 값과 대상이 맞지 않으면 거부한다', () => {
   expect(check(replaceOnce(review, '대상: identity.md', '대상: world.md'))).toEqual([`${lineOf('대상: identity.md')}: 판정: 대상은 identity.md이다 (실제: world.md)`])
 })
 
-test('되돌림인데 지적이 없으면 거부한다', () => {
-  expect(check(passed.replace('판정: 통과', '판정: 되돌림'))).toEqual([`${lineOf('## 지적')}: 지적: 되돌림이면 지적이 하나 이상 있어야 한다`])
+// 판정은 필수 기준(모순·직역) 지적의 유무로 정한다. 권고(재해석·투영·이세계다움·비교)만 있으면 통과다(#100).
+test('되돌림은 모순·직역 지적이 있을 때만이고, 권고만 있으면 통과다', () => {
+  expect(check(passed.replace('판정: 통과', '판정: 되돌림'))).toEqual([`${lineOf('## 지적')}: 지적: 되돌림이면 모순·직역 지적이 하나 이상 있어야 한다`])
+  expect(check(advisoryOnly)).toEqual([`${lineOf('## 지적')}: 지적: 되돌림이면 모순·직역 지적이 하나 이상 있어야 한다`])
+  expect(check(advisoryOnly.replace('판정: 되돌림', '판정: 통과'))).toEqual([])
+  expect(check(replaceOnce(review, '판정: 되돌림', '판정: 통과'))).toEqual([`${lineOf('## 지적')}: 지적: 모순·직역 지적이 있으면 판정은 되돌림이다`])
+  expect(check(replaceOnce(review, '기준: 모순', '기준: 직역'))).toEqual([])
 })
 
 test('지적의 위치가 대상 문서의 제목이 아니거나 기준이 목록 밖이면 거부한다', () => {

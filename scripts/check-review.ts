@@ -1,6 +1,6 @@
 /**
  * 게임 단계 검토 문서(`<단계>-review-<n>.md`)의 형식과 지적 위치를 검사한다. 판정의 타당성은 보지 않는다.
- * 계약: docs/spec/claude-game-design-flow.md 4.7절, docs/ADR/2026-11-24-isekai-identity-design.md 5번
+ * 계약: docs/spec/claude-game-design-flow.md 4.7절, docs/ADR/2026-11-25-single-pass-review.md
  */
 import { readFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
@@ -12,6 +12,8 @@ export type ReviewedStage = keyof typeof REVIEWED
 export const VERDICTS = ['통과', '되돌림']
 /** 지적의 기준. 정체성·세계의 목표와 경계, 전투의 비교에서 나온다 */
 export const CRITERIA = ['재해석', '투영', '이세계다움', '모순', '직역', '비교']
+/** 반드시 고쳐야 하는 기준. 브리프 사실과의 모순과 기호 직역은 판단의 정도가 아니라 있고 없음이라 판정을 가른다(#100). 나머지는 권고다 */
+export const REQUIRED_CRITERIA = ['모순', '직역']
 /** 위치에 항목 대신 쓸 수 있는 말 */
 const WHOLE = '문서 전체'
 
@@ -40,8 +42,8 @@ export function checkReview({ review, stage, target }: ReviewTexts): string[] {
   const findings = sections.find(({ name }) => name === '지적')
   if (findings != null) {
     for (const field of findings.fields) report(field.line, `지적: 허용하지 않는 필드 '${field.key}'`)
-    if (verdict === '되돌림' && findings.items.length === 0) report(findings.line, '지적: 되돌림이면 지적이 하나 이상 있어야 한다')
     const names = headingNames(target)
+    let required = 0
     for (const item of findings.items) {
       const where = `지적 > ${item.name}`
       const fields = fieldsOf(where, item, ['위치', '기준', '내용', '고칠 방향'], report)
@@ -51,7 +53,11 @@ export function checkReview({ review, stage, target }: ReviewTexts): string[] {
       }
       const criterion = fields.get('기준')
       if (criterion != null && criterion.value !== '' && !CRITERIA.includes(criterion.value)) report(criterion.line, `${where}: 기준은 ${CRITERIA.join(' · ')} 중 하나다`)
+      if (criterion != null && REQUIRED_CRITERIA.includes(criterion.value)) required += 1
     }
+    // 판정은 필수 기준의 지적이 있는지로 정한다. 권고만 있으면 통과다.
+    if (verdict === '되돌림' && required === 0) report(findings.line, `지적: 되돌림이면 ${REQUIRED_CRITERIA.join('·')} 지적이 하나 이상 있어야 한다`)
+    if (verdict === '통과' && required > 0) report(findings.line, `지적: ${REQUIRED_CRITERIA.join('·')} 지적이 있으면 판정은 되돌림이다`)
   }
   return errors
 }
