@@ -191,3 +191,9 @@ test('출신지·성장 환경·떠남의 계기는 생활 기반·준 것·막�
   const family = '근거: [life:부모] [life:형제·또래]'
   expect(check({ brief: replaceOnce(brief, family, `생활 기반: 장사\n${family}`) })).toEqual([`${lineOf(family)}: 배경 > 가족 구조: 허용하지 않는 필드 '생활 기반'`])
 })
+
+// 능력은 재능의 다루는 것과 하는 일을 함께 옮긴다. 다루는 것만 남으면 무엇을 하는 능력인지가 사라진다(#99).
+test('주인공 능력은 하는 일을 옮겨야 한다', () => {
+  const doing = '하는 일: 남의 표정과 서툰 솜씨를 읽고 고칠 곳과 다툼의 씨앗을 미리 짚어 준다\n'
+  expect(check({ brief: replaceOnce(brief, doing, '') })).toEqual([`${lineOf('### 고칠 곳을 짚는 눈')}: 주인공 능력 > 고칠 곳을 짚는 눈: 하는 일 필드가 없다`])
+})

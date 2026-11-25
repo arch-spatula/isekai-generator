@@ -36,11 +36,17 @@ export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀', 
 export const CAST_FIELDS = ['성향', '주인공과의 관계', '관계의 변화', ...WEIGHT_FIELDS, '근거']
 export const CAST_ITEM_FIELDS = Object.fromEntries(Object.keys(RELATION_ITEMS).map((name) => [name, ['상태']]))
 
+/**
+ * 재능 항목의 필드. `기르는 기질`은 그 재능을 키우거나 막는 성정이다. 기질을 따로 쓸 자리가 없으면 기질이 재능 항목이 된다(#99).
+ * 계약: docs/spec/life-narrative-interpretation.md 3절
+ */
+export const TALENT_FIELDS = ['내용', '다루는 것', '기르는 기질', '꽃피는 시기', '막히는 조건', '근거']
+
 /** 생애 연표가 있는 체계는 관계의 변화·꽃피는 시기에 생애 단계를 쓴다. */
 function commonSections(timeline: boolean): LifeSection[] {
   return [
     { name: '인물 사전', items: CAST, fields: CAST_FIELDS, itemFields: CAST_ITEM_FIELDS, stageFields: timeline ? ['관계의 변화'] : [] },
-    { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: ['내용', '다루는 것', '꽃피는 시기', '막히는 조건', '근거'], stageFields: timeline ? ['꽃피는 시기'] : [], livelihood: { timeline } },
+    { name: '재능과 생업', items: ['주 재능', '보조 재능'], extraItems: true, fields: TALENT_FIELDS, stageFields: timeline ? ['꽃피는 시기'] : [], livelihood: { timeline } },
     { name: '상처와 회복', items: ['반복되는 실패', '상실', '회복'], fields: ['내용', '발현 조건', '근거'] },
   ]
 }
@@ -93,6 +99,35 @@ function backgroundCitations(life: string, rule: BackgroundRule): string[] {
     const basis = fields.find(([key]) => key === '근거')?.[1] ?? ''
     if (required != null && basis !== '' && !required.some((citation) => basis.includes(citation))) {
       errors.push(`배경 > ${name}: 근거에 ${required.join(' ')} 중 하나가 없다`)
+    }
+  }
+  return errors
+}
+
+/**
+ * 재능의 근거로 쓰지 않는 판단과, 그것만으로는 재능이 되지 않는 관계 자리(#99).
+ * 관계 판단(짝·자식·제자)과 기질 판단(네이탈 우세 원소)이 재능 항목이 되는 실수를 막는다.
+ */
+const RELATION_JUDGMENTS = ['[judgment:짝]', '[judgment:자식]', '[judgment:제자]']
+const TALENT_RULES: Record<'saju' | 'ziwei' | 'natal', { forbidden: string[]; relationOnly?: string[] }> = {
+  saju: { forbidden: RELATION_JUDGMENTS },
+  // 관계 궁의 별도 재능이 될 수 있지만(交友의 文昌 등), 근거가 관계 궁뿐이면 관계를 재능으로 쓴 것이다.
+  ziwei: { forbidden: RELATION_JUDGMENTS, relationOnly: ['[chart:父母]', '[chart:兄弟]', '[chart:夫妻]', '[chart:子女]', '[chart:交友]'] },
+  natal: { forbidden: [...RELATION_JUDGMENTS, '[judgment:우세 원소]'] },
+}
+
+/** 재능 항목(생업 제외)의 근거가 관계·기질 판단에 기대지 않는지 */
+function talentCitations(life: string, rule: { forbidden: string[]; relationOnly?: string[] }): string[] {
+  const errors: string[] = []
+  for (const { section, name, fields } of readLifeItems(life)) {
+    if (section !== '재능과 생업' || name.startsWith('생업: ')) continue
+    const basis = fields.find(([key]) => key === '근거')?.[1] ?? ''
+    const citations = basis.match(/\[[a-z]+:[^\]]*\]/g) ?? []
+    for (const citation of new Set(citations.filter((c) => rule.forbidden.includes(c)))) {
+      errors.push(`재능과 생업 > ${name}: ${citation}는 관계·기질 판단이라 재능의 근거로 쓰지 않는다 — 성정은 기르는 기질에 쓴다`)
+    }
+    if (rule.relationOnly != null && citations.length > 0 && citations.every((c) => rule.relationOnly!.includes(c))) {
+      errors.push(`재능과 생업 > ${name}: 근거가 관계 궁뿐이다 — 관계를 재능으로 쓰지 않는다`)
     }
   }
   return errors
@@ -165,6 +200,7 @@ export function checkLifeDocument(system: LifeSystem, texts: LifeTexts): string[
     ...checkRelations(texts.life, { expectedStatus: expectedStatus(texts.judgment), timeline: system !== 'natal' }),
     ...(system === 'saju' ? luckToneCitations(texts.life) : []),
     ...backgroundCitations(texts.life, BACKGROUND_RULES[system]),
+    ...talentCitations(texts.life, TALENT_RULES[system]),
   ]
 }
 

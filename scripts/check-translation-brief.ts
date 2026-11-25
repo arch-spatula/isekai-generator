@@ -150,7 +150,8 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
   if (abilities != null && abilities.items.length === 0) report(abilities.line, '주인공 능력: 능력 항목이 없다')
   for (const item of abilities?.items ?? []) {
     const where = `주인공 능력 > ${item.name}`
-    const source = fieldsOf(where, item, ['출처', '다루는 것', '약점']).get('출처')
+    // 하는 일은 재능의 내용을 줄이지 않고 옮긴다(#99). 다루는 것만 남으면 무엇을 하는 능력인지가 사라진다.
+    const source = fieldsOf(where, item, ['출처', '다루는 것', '하는 일', '약점']).get('출처')
     requireLife(where, source)
     for (const target of lifeTargets(source?.value ?? '')) {
       if (isLivelihood(target)) report(source!.line, `${where}: 출처 [life:${target}]는 생업 항목이다 (생업은 능력의 출처가 아니다)`)

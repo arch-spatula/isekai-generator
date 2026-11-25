@@ -30,4 +30,5 @@
 - [옮겨 적기 흐름에 생업·이세계 정체성 설계·검토 단계를 둔다](2026-11-24-isekai-identity-design.md)
 - [주인공의 배경은 차트 해석 층이 환경 자리에서 읽는다](2026-11-24-chart-background-interpretation.md)
 - [게임 설계 단계의 검토를 한 번으로 줄이고 재료 없는 요구를 없앤다](2026-11-25-single-pass-review.md)
+- [재능과 기질을 나누고 기질이 능력이 되지 않게 한다](2026-11-25-talent-temperament.md)
 - [스토리 영감용 해석의 방어 문구를 생성 지시와 사후 편집에서 제거](2026-11-09-interpretation-defensive-wording-editing.md) — 2026-11-09 결정 기록

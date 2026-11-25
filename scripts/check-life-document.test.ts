@@ -49,7 +49,7 @@ test('requires every stage and cast member in order, and the required talents fi
   expect(check(mutate('### 스승·후원자', '### 스승'))).toContain(
     '인물 사전: 항목은 부모, 형제·또래, 연인·배우자, 자녀, 제자, 벗·동료, 스승·후원자, 경쟁자·적대자 순서여야 한다 (실제: 부모, 형제·또래, 연인·배우자, 자녀, 제자, 벗·동료, 스승, 경쟁자·적대자)')
   // 재능은 필수 두 항목 뒤에 자유 항목을 더할 수 있다.
-  const extra = '### 생활 기술\n내용: 낡은 도구를 고쳐 쓴다\n다루는 것: 낡은 도구\n꽃피는 시기: 노년에 손이 느려진 뒤에도 남는다\n막히는 조건: 도구가 없을 때\n근거: [facts:통근]\n\n## 상처와 회복'
+  const extra = '### 생활 기술\n내용: 낡은 도구를 고쳐 쓴다\n다루는 것: 낡은 도구\n기르는 기질: 없음\n꽃피는 시기: 노년에 손이 느려진 뒤에도 남는다\n막히는 조건: 도구가 없을 때\n근거: [facts:통근]\n\n## 상처와 회복'
   expect(check(mutate('## 상처와 회복', extra))).toEqual([])
   expect(check(mutate('### 주 재능', '### 큰 재능'))).toContain('재능과 생업: 항목은 주 재능, 보조 재능으로 시작해야 한다 (실제: 큰 재능, 보조 재능, 생업: 목수, 생업: 공방 선생)')
 })
@@ -258,8 +258,8 @@ test('natal: chart citations accept planets and angles only, and derived citatio
 })
 
 test('natal: every first-pass judgment section must be cited', () => {
-  // 우세 원소는 보조 재능에서만 인용된다.
-  expect(checkNatal(mutateNatal('[judgment:우세 원소] ', ''))).toEqual(['1차 판단 섹션을 인용하지 않았다: 우세 원소'])
+  // 우세 원소는 보조 재능의 기르는 기질에서만 인용된다.
+  expect(checkNatal(mutateNatal(' [judgment:우세 원소]', ''))).toEqual(['1차 판단 섹션을 인용하지 않았다: 우세 원소'])
 })
 
 // #70: 재능은 다루는 대상·매체를 남긴다.
@@ -363,4 +363,21 @@ test('background: positions of the protagonist own talent and work are rejected'
     .toEqual(['배경 > 자란 집: [chart:官祿]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
   expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성] [chart:MC]', '근거: [chart:MC] [judgment:우세 원소]')))
     .toEqual(['배경 > 자란 집: [judgment:우세 원소]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
+})
+
+// 재능은 다루는 대상에서 읽는다. 관계 판단(짝·자식·제자)과 기질 판단(네이탈 우세 원소)은 재능의 근거가 아니고, 성정은 기르는 기질에 쓴다(#99).
+test('talents: relationship and temperament judgments are not talent evidence', () => {
+  const natalBasis = '근거: [chart:Mercury] [facts:원소 분포]'
+  expect(checkNatal(mutateNatal(natalBasis, '근거: [chart:Mercury] [judgment:우세 원소]')))
+    .toEqual([`재능과 생업 > 보조 재능: [judgment:우세 원소]는 관계·기질 판단이라 재능의 근거로 쓰지 않는다 — 성정은 기르는 기질에 쓴다`])
+  const basis = '막히는 조건: 남의 말을 듣지 않고 자기 방식만 고집할 때\n근거: [facts:투출] [judgment:격국]'
+  expect(check(mutate(basis, `${basis} [judgment:제자]`)))
+    .toEqual([`재능과 생업 > 주 재능: [judgment:제자]는 관계·기질 판단이라 재능의 근거로 쓰지 않는다 — 성정은 기르는 기질에 쓴다`])
+  expect(check(mutate('기르는 기질: 한 가지를 오래 붙드는 끈기가 손을 더디게도, 깊게도 만든다\n', ''))).toContain('재능과 생업 > 주 재능: 기르는 기질 필드가 없다')
+})
+
+test('talents: a ziwei talent resting only on relationship palaces is rejected', () => {
+  const talent = ziweiValid.slice(ziweiValid.indexOf('### 보조 재능'), ziweiValid.indexOf('### 생업'))
+  const basis = talent.split('\n').find((line) => line.startsWith('근거:'))!
+  expect(checkZiwei(mutateZiwei(basis, '근거: [chart:子女] [chart:交友]'))).toContain('재능과 생업 > 보조 재능: 근거가 관계 궁뿐이다 — 관계를 재능으로 쓰지 않는다')
 })
