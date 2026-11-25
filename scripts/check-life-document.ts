@@ -21,11 +21,15 @@ export const TIMELINE: LifeSection = {
   items: LIFE_STAGES.map((stage) => stage.name),
   fields: ['운', '주제', '전환점', '인연', '시련', '얻는 것', '잃는 것', '성격 변화', '근거'],
 }
-/** 주인공이 자란 환경. 인물이 아니라 조건(생활 기반·지원·기대·제약)이다. 계약: docs/spec/life-narrative-interpretation.md 3절 */
+/**
+ * 주인공이 자란 환경. 인물이 아니라 조건(생활 기반·지원·기대·제약)이다. 뿌리와 자란 집은 집안이 무엇을 다루며 먹고살았는지(생활 기반)를 쓴다.
+ * 계약: docs/spec/life-narrative-interpretation.md 3절
+ */
 export const BACKGROUND: LifeSection = {
   name: '배경',
   items: ['뿌리', '자란 집', '떠남의 조건'],
   fields: ['모습', '준 것', '막은 것', '근거'],
+  itemFields: { 뿌리: ['생활 기반'], '자란 집': ['생활 기반'] },
 }
 export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
 /** 인물 사전 필드. 상태는 RELATION_ITEMS 칸에만 있다 (docs/spec/life-shape-and-relationship-status.md 5.2·5.4) */
@@ -43,7 +47,7 @@ function commonSections(timeline: boolean): LifeSection[] {
 
 /**
  * 배경 항목마다 근거에 있어야 하는 자리(하나 이상)와 배경 절에서 쓰지 않는 본인 자리.
- * 본인을 가리키는 자리에서 읽은 성향을 환경으로 쓰는 실수를 막는다(#97). 계약: docs/spec/life-narrative-interpretation.md 3절
+ * 본인 자리에서 읽은 성향·재능·생업을 환경으로 쓰는 실수를 막는다(#97). 계약: docs/spec/life-narrative-interpretation.md 3절
  */
 interface BackgroundRule { items: Record<string, string[]>; forbidden: string[] }
 
@@ -56,11 +60,13 @@ const BACKGROUND_RULES: Record<'saju' | 'ziwei' | 'natal', BackgroundRule> = {
       '자란 집': MONTH,
       '떠남의 조건': [...YEAR, ...MONTH, '[chart:八字關係]', '[facts:생애 단계별 大運]', '[derived:생애 단계별 운 기조]'],
     },
-    forbidden: ['[chart:日干]', '[chart:日柱]', '[judgment:일간 강약]'],
+    // 日柱는 본인과 배우자, 時柱는 자녀와 늦은 시기의 자리다. 재능이 드러나는 자리라 배경의 근거로 쓰면 재능이 집안 내력으로 들어간다.
+    forbidden: ['[chart:日干]', '[chart:日支]', '[chart:日柱]', '[chart:時干]', '[chart:時支]', '[chart:時柱]', '[judgment:일간 강약]'],
   },
   ziwei: {
     items: { 뿌리: ['[chart:父母]', '[chart:福德]'], '자란 집': ['[chart:田宅]', '[chart:父母]'], '떠남의 조건': ['[chart:遷移]'] },
-    forbidden: ['[chart:命宮]', '[facts:명궁 주성]', '[facts:명궁 삼방사정]', '[facts:삼방사정 보조성 수]', '[judgment:명궁 역량]', '[judgment:격국]'],
+    // 官祿·財帛은 본인의 일과 재물 자리다.
+    forbidden: ['[chart:命宮]', '[chart:官祿]', '[chart:財帛]', '[facts:명궁 주성]', '[facts:명궁 삼방사정]', '[facts:삼방사정 보조성 수]', '[judgment:명궁 역량]', '[judgment:격국]'],
   },
   // 하우스는 하나씩 인용할 이름이 없어 하우스 표나 하우스별 사실 한 항목으로 인용된다. 어느 하우스를 읽었는지는 스킬 지침과 의미 검토가 맡는다.
   natal: {
@@ -69,7 +75,8 @@ const BACKGROUND_RULES: Record<'saju' | 'ziwei' | 'natal', BackgroundRule> = {
       '자란 집': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]', '[chart:MC]'],
       '떠남의 조건': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]'],
     },
-    forbidden: ['[chart:ASC]', '[facts:ASC]', '[facts:차트 룰러]', '[judgment:차트 룰러 상태]'],
+    // 주요 행성·우세 원소는 본인의 재능·기질을 읽는 판단이다.
+    forbidden: ['[chart:ASC]', '[facts:ASC]', '[facts:차트 룰러]', '[judgment:차트 룰러 상태]', '[judgment:주요 행성]', '[judgment:우세 원소]'],
   },
 }
 

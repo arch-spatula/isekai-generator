@@ -341,10 +341,26 @@ test('background: natal cites the houses and rejects the ascendant and chart rul
   expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성] [chart:MC]', '근거: [chart:MC]'))).toEqual([])
   expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성] [chart:MC]', '근거: [facts:차트 룰러] [chart:MC]')))
     .toEqual(['배경 > 자란 집: [facts:차트 룰러]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
-  expect(checkNatal(mutateNatal('모습: 집안의 내력이 멀리 있는 사람들과 맺은 인연과 약속에 기대 있다\n준 것: 먼 곳에도 찾아갈 사람이 있다는 든든함\n막은 것: 집안의 중심이 늘 바깥 인연에 쏠려 집 안이 비어 있다\n근거: [facts:하우스별 룰러와 행성]',
-    '모습: 집안의 내력이 멀리 있는 사람들과 맺은 인연과 약속에 기대 있다\n준 것: 먼 곳에도 찾아갈 사람이 있다는 든든함\n막은 것: 집안의 중심이 늘 바깥 인연에 쏠려 집 안이 비어 있다\n근거: [chart:ASC]')))
+  expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성]\n### 자란 집', '근거: [chart:ASC]\n### 자란 집')))
     .toEqual([
       '배경 > 뿌리: [chart:ASC]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다',
       '배경 > 뿌리: 근거에 [facts:하우스별 룰러와 행성] [chart:Houses] 중 하나가 없다',
     ])
+})
+
+// 뿌리와 자란 집은 집안의 생활 기반을 쓴다. 비워 두면 뒤 단계가 그 자리를 주인공의 재능으로 채운다(#97 재생성 관찰).
+test('background: 뿌리 and 자란 집 require 생활 기반, 떠남의 조건 does not', () => {
+  expect(check(mutate('생활 기반: 장마다 짐수레를 끌고 다니며 곡식과 소금을 떼어다 파는 장사\n', ''))).toContain('배경 > 뿌리: 생활 기반 필드가 없다')
+  const leaving = '모습: 장사로 일어선 윗대의 방식과 배움을 앞세우는 부모의 방식이 집안에서 늘 어긋난다\n'
+  expect(check(mutate(leaving, `${leaving}생활 기반: 장사\n`))).toContain(`${lineOf(leaving.trim()) + 1}: 배경 > 떠남의 조건: 알 수 없는 필드 '생활 기반'`)
+})
+
+// 본인의 재능·생업이 드러나는 자리(사주 日柱·時柱, 자미두수 官祿·財帛, 네이탈 주요 행성·우세 원소)는 배경의 근거가 아니다.
+test('background: positions of the protagonist own talent and work are rejected', () => {
+  expect(check(mutate('근거: [chart:年柱] [facts:육친]', '근거: [chart:年柱] [chart:時支]')))
+    .toEqual(['배경 > 뿌리: [chart:時支]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
+  expect(checkZiwei(mutateZiwei('근거: [chart:田宅]', '근거: [chart:田宅] [chart:官祿]')))
+    .toEqual(['배경 > 자란 집: [chart:官祿]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
+  expect(checkNatal(mutateNatal('근거: [facts:하우스별 룰러와 행성] [chart:MC]', '근거: [chart:MC] [judgment:우세 원소]')))
+    .toEqual(['배경 > 자란 집: [judgment:우세 원소]는 본인을 가리키는 자리라 배경의 근거로 쓰지 않는다'])
 })

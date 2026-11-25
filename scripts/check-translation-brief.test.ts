@@ -86,7 +86,7 @@ test('배경 항목이 빠지거나 경로가 두 단계가 아니면 거부한�
   expect(check({ brief: threeSteps })).toEqual([`${lineOf('### 가족 구조') + 1}: 배경 > 가족 구조: 경로는 '→'로 이은 두 단계(삶의 사실 → 반복되는 행동·감정)여야 한다`])
   const originPath = '경로: 장사로 일어섰지만 멀리 맺은 약속이 자주 흐지부지되는 집안에서 태어남 → 말로 한 약속보다 손에 쥔 것을 믿는 습관\n'
   const place = replaceOnce(brief, originPath, `${originPath}장소의 사정: 결과만 믿는 마을\n`)
-  expect(check({ brief: place })).toEqual([`${lineOf('### 출신지') + 2}: 배경 > 출신지: 허용하지 않는 필드 '장소의 사정'`])
+  expect(check({ brief: place })).toEqual([`${lineOf(originPath.trim()) + 1}: 배경 > 출신지: 허용하지 않는 필드 '장소의 사정'`])
 })
 
 test('짧지만 완결된 값은 길이를 이유로 거부하지 않는다', () => {
@@ -110,7 +110,7 @@ test('life.md에 없는 항목과 다른 체계 인용을 거부한다', () => {
 
 test('차트 명칭을 거부한다', () => {
   const changed = replaceOnce(brief, '말로 한 약속보다 손에 쥔 것을 믿는 습관', '무곡을 닮은 셈 습관')
-  expect(check({ brief: changed })).toEqual([`${lineOf('### 출신지') + 1}: 차트 명칭 '무곡'`])
+  expect(check({ brief: changed })).toEqual([`${brief.split('\n').findIndex((line) => line.includes('말로 한 약속보다 손에 쥔 것을 믿는 습관')) + 1}: 차트 명칭 '무곡'`])
 })
 
 test('필드 줄이 아닌 문장과 빈 필드를 거부한다', () => {
@@ -179,4 +179,15 @@ test('출신지·성장 환경·떠남의 계기는 life.md 배경 항목을 인
     .toEqual([`${lineOf(leaving)}: 배경 > 떠남의 계기: 근거에 life.md 배경의 [life:떠남의 조건] 중 하나가 없다`])
   // 가족 구조는 인물 사전에서 읽으므로 배경 항목을 요구하지 않는다.
   expect(check({ brief: replaceOnce(brief, '근거: [life:부모] [life:형제·또래]', '근거: [life:부모]') })).toEqual([])
+})
+
+// 환경 항목은 life.md 배경의 필드를 한 줄로 줄이지 않고 옮긴다. 한 줄 경로만 두면 한 체계의 재료만 남는다(#97 재생성 관찰).
+test('출신지·성장 환경·떠남의 계기는 생활 기반·준 것·막은 것(떠남은 모습)을 필드로 옮긴다', () => {
+  const livelihood = '생활 기반: 밭의 소작료와 창고 세를 받고, 어머니가 이웃 아이들에게 글을 가르치며 사례를 받는다\n'
+  expect(check({ brief: replaceOnce(brief, livelihood, '') })).toEqual([`${lineOf('### 성장 환경')}: 배경 > 성장 환경: 생활 기반 필드가 없다`])
+  const leaving = '막은 것: 떠난 뒤 돌아올 자리를 스스로 만들어야 한다\n'
+  expect(check({ brief: replaceOnce(brief, leaving, '') })).toEqual([`${lineOf('### 떠남의 계기')}: 배경 > 떠남의 계기: 막은 것 필드가 없다`])
+  // 가족 구조는 인물 사전에서 읽으므로 경로와 근거만 둔다.
+  const family = '근거: [life:부모] [life:형제·또래]'
+  expect(check({ brief: replaceOnce(brief, family, `생활 기반: 장사\n${family}`) })).toEqual([`${lineOf(family)}: 배경 > 가족 구조: 허용하지 않는 필드 '생활 기반'`])
 })

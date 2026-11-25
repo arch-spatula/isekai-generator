@@ -17,6 +17,13 @@ const PROTAGONIST = ['축', '반복되는 실패']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
 /** 환경을 옮기는 배경 항목과 근거에 있어야 하는 life.md 배경 항목(하나 이상). 가족 구조는 인물 사전에서 읽는다(#97). */
 const BACKGROUND_SOURCES: Record<string, string[]> = { 출신지: ['뿌리', '자란 집'], '성장 환경': ['자란 집'], '떠남의 계기': ['떠남의 조건'] }
+/** 배경 항목의 필드. 환경 항목은 life.md 배경의 필드를 한 줄로 줄이지 않고 옮긴다(#97). */
+const BACKGROUND_FIELDS: Record<string, string[]> = {
+  출신지: ['생활 기반', '준 것', '막은 것', '경로', '근거'],
+  '성장 환경': ['생활 기반', '준 것', '막은 것', '경로', '근거'],
+  '가족 구조': ['경로', '근거'],
+  '떠남의 계기': ['모습', '준 것', '막은 것', '경로', '근거'],
+}
 const STAGE_NAMES = LIFE_STAGES.map((stage) => stage.name)
 const CITATION = /\[([^\]:]+):([^\]]*)\]/g
 
@@ -167,7 +174,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     if (names.join() !== BACKGROUND.join()) report(background.line, `배경: 항목은 ${BACKGROUND.join(', ')} 순서여야 한다 (실제: ${names.join(', ')})`)
     for (const item of background.items) {
       const where = `배경 > ${item.name}`
-      const fields = fieldsOf(where, item, ['경로', '근거'])
+      const fields = fieldsOf(where, item, BACKGROUND_FIELDS[item.name] ?? ['경로', '근거'])
       const path = fields.get('경로')
       if (path != null && path.value !== '') {
         const steps = path.value.split('→').map((step) => step.trim())
