@@ -10,7 +10,7 @@ import { checkSectionOrder, fieldsOf, headingNames, parseGameDocument, type Repo
 export const REVIEWED = { identity: 'identity.md', combat: 'combat.md', world: 'world.md' } as const
 export type ReviewedStage = keyof typeof REVIEWED
 export const VERDICTS = ['통과', '되돌림']
-/** 지적의 기준. 정체성·세계의 목표와 경계, 전투의 비교에서 나온다 */
+/** 지적의 기준. 정체성·세계의 목표와 경계, 정체성·전투의 비교에서 나온다 */
 export const CRITERIA = ['재해석', '투영', '이세계다움', '모순', '직역', '비교']
 /** 반드시 고쳐야 하는 기준. 브리프 사실과의 모순과 기호 직역은 판단의 정도가 아니라 있고 없음이라 판정을 가른다(#100). 나머지는 권고다 */
 export const REQUIRED_CRITERIA = ['모순', '직역']

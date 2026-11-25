@@ -14,7 +14,12 @@ function replaceOnce(text: string, from: string, to: string): string {
   return text.replace(from, to)
 }
 const check = (changed = identity) => checkIdentity({ identity: changed, brief })
-const lineOf = (text: string) => identity.split('\n').indexOf(text) + 1
+const lineOf = (text: string, from = 0) => identity.split('\n').indexOf(text, from) + 1
+/** 클래스 후보와 클래스가 같은 이름·재료를 쓰므로, 클래스 절 안에서만 바꾸고 찾는다 */
+const classStart = identity.indexOf('\n## 클래스\n')
+const classLine = identity.slice(0, classStart).split('\n').length + 1
+const replaceInClass = (from: string, to: string) => identity.slice(0, classStart) + replaceOnce(identity.slice(classStart), from, to)
+const candidates = (from: string, to: string) => replaceOnce(identity.slice(0, classStart), from, to) + identity.slice(classStart)
 
 test('정상 정체성은 통과한다', () => {
   expect(check()).toEqual([])
@@ -26,19 +31,43 @@ test('클래스의 재료로 고른 주인공 능력을 읽는다', () => {
 
 test('섹션이 빠지거나 클래스가 둘이면 거부한다', () => {
   const start = identity.indexOf('## 부직업'), end = identity.indexOf('## 출신 도시')
-  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스, 부직업, 출신 도시, 장별 세계 순서여야 한다 (실제: 클래스, 출신 도시, 장별 세계)'])
+  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신 도시, 장별 세계 순서여야 한다 (실제: 클래스 후보, 클래스, 출신 도시, 장별 세계)'])
   const two = replaceOnce(identity, '\n## 부직업', '### 두 번째 클래스\n재료: [brief:고칠 곳을 짚는 눈]\n하는 일: 틈을 짚는다\n판단: 비교용\n\n## 부직업')
-  expect(check(two)).toEqual([`${lineOf('## 클래스')}: 클래스: 항목은 하나다 (실제: 2개)`])
+  expect(check(two)).toEqual([`${classLine}: 클래스: 항목은 하나다 (실제: 2개)`])
+})
+
+test('클래스 후보가 세 개가 아니거나 채택이 하나가 아니면 거부한다', () => {
+  const start = identity.indexOf('### 빚어 깨우는 자')
+  const two = identity.slice(0, start) + identity.slice(classStart + 1)
+  expect(check(two)).toEqual([`${lineOf('## 클래스 후보')}: 클래스 후보: 후보는 3개여야 한다 (실제: 2)`])
+  const none = candidates('판단: 채택', '판단: 제외 — 비교용')
+  expect(check(none)).toEqual([`${lineOf('## 클래스 후보')}: 클래스 후보: 채택한 후보는 하나여야 한다 (실제: 0)`])
+})
+
+test('후보의 재료에 능력이 없거나 이세계의 힘·판단 형식이 어긋나면 거부한다', () => {
+  const material = candidates('재료: [brief:고칠 곳을 짚는 눈]\n영역: 약한 곳을 찾아내는 일', '재료: [brief:목수]\n영역: 약한 곳을 찾아내는 일')
+  expect(check(material)).toEqual([`${lineOf('재료: [brief:고칠 곳을 짚는 눈]')}: 클래스 후보 > 숨은 금 사냥꾼: 재료에 [brief:<주인공 능력>]이 없다`])
+  const power = candidates('이세계의 힘: 빚은 형상에 숨을 불어 스스로 걷고 싸우게 한다\n', '')
+  expect(check(power)).toEqual([`${lineOf('### 빚어 깨우는 자')}: 클래스 후보 > 빚어 깨우는 자: 이세계의 힘 필드가 없다`])
+  const verdict = candidates('판단: 제외 — 형상을', '판단: 보류 — 형상을')
+  const verdictLine = identity.split('\n').findIndex((line) => line.startsWith('판단: 제외 — 형상을')) + 1
+  expect(check(verdict)).toEqual([`${verdictLine}: 클래스 후보 > 빚어 깨우는 자: 판단은 '채택' 또는 '제외 — <이유>'이다`])
+})
+
+test('클래스가 채택한 후보와 다르면 거부한다', () => {
+  const changed = replaceInClass('### 결 새김꾼', '### 결 읽는 장인')
+  expect(check(changed)).toEqual([`${classLine + 1}: 클래스 > 결 읽는 장인: 클래스는 후보에서 채택한 '결 새김꾼'이다`])
 })
 
 test('클래스의 재료에 주인공 능력이 없으면 거부한다', () => {
-  const changed = replaceOnce(identity, '재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈]', '재료: [brief:목수]')
-  expect(check(changed)).toEqual([`${lineOf('재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈]')}: 클래스 > 결 새김꾼: 재료에 [brief:<주인공 능력>]이 없다`])
+  const changed = replaceInClass('재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈]', '재료: [brief:목수]')
+  expect(check(changed)).toEqual([`${classLine + 2}: 클래스 > 결 새김꾼: 재료에 [brief:<주인공 능력>]이 없다`])
 })
 
 test('생업 이름을 그대로 클래스로 쓰면 거부한다', () => {
-  const changed = replaceOnce(identity, '### 결 새김꾼', '### 목수')
-  expect(check(changed)).toEqual([`${lineOf('### 결 새김꾼')}: 클래스 > 목수: 생업 이름을 그대로 클래스로 쓰지 않는다`])
+  // 채택한 후보와 클래스를 함께 바꿔도 생업 이름은 거부한다
+  const changed = identity.replaceAll('### 결 새김꾼', '### 목수')
+  expect(check(changed)).toEqual([`${classLine + 1}: 클래스 > 목수: 생업 이름을 그대로 클래스로 쓰지 않는다`])
 })
 
 test('부직업의 재료에 생업이나 능력이 없으면 거부한다', () => {

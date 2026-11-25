@@ -104,8 +104,12 @@ export const STAGES: StageSpec[] = [
   {
     id: 'identity', by: '/design-identity', reads: ['translation-brief.md'], readsStages: ['brief'], fixture: 'scripts/fixtures/identity/identity.md',
     fields: [
-      { key: '클래스 > 하는 일', from: ['brief:주인공 능력 > 다루는 것', 'brief:주인공 능력 > 하는 일'] },
-      { key: '클래스 > 판단', from: ['brief:주인공 능력 > 다루는 것'] },
+      { key: '클래스 후보 > 영역', from: ['brief:주인공 능력 > 다루는 것'] },
+      { key: '클래스 후보 > 이세계의 힘', from: ['클래스 후보 > 영역', 'brief:주인공 능력 > 하는 일'],
+        invented: '다루는 것의 현실 동작이 아니라 그 영역이 이세계에서 쓰는 힘을 지어낸다' },
+      { key: '클래스 후보 > 판단', from: ['클래스 후보 > 이세계의 힘', 'brief:주인공 능력 > 다루는 것'] },
+      { key: '클래스 > 하는 일', from: ['클래스 후보 > 이세계의 힘', 'brief:주인공 능력 > 다루는 것', 'brief:주인공 능력 > 하는 일'] },
+      { key: '클래스 > 판단', from: ['클래스 후보 > 판단', 'brief:주인공 능력 > 다루는 것'] },
       { key: '부직업 > 하는 일', from: ['brief:생업 > 내용', 'brief:주인공 능력 > 하는 일'] },
       { key: '출신 도시 > 산업', from: ['brief:배경 > 생활 기반'] },
       { key: '출신 도시 > 권력', from: ['brief:배경 > 생활 기반', 'brief:배경 > 준 것', 'brief:배경 > 막은 것'] },
