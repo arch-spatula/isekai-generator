@@ -31,9 +31,9 @@ test('브리프의 장에 지역이 없거나 브리프에 없는 장을 쓰면 
   ])
 })
 
-test('첫 지역은 브리프의 첫 장이고 정체성의 출신 도시에서 시작한다', () => {
+test('첫 지역은 브리프의 첫 장이고 정체성의 출신지에서 시작한다', () => {
   const basis = replaceOnce(world, '근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]', '근거: [brief:출신지] [brief:소년]')
-  expect(check(basis)).toEqual([`${lineOf('근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]')}: 지역 > 셈하는 마을: 첫 지역의 근거에 출신 도시 [identity:하구 목재 시장]가 없다`])
+  expect(check(basis)).toEqual([`${lineOf('근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]')}: 지역 > 셈하는 마을: 첫 지역의 근거에 출신지 [identity:하구 목재 시장]가 없다`])
 })
 
 // #87: 요소마다 인용을 요구하지 않는다. 지어낸 지역·세력은 근거 없이 쓰고, 근거를 쓰면 브리프나 정체성을 인용한다.
@@ -66,11 +66,11 @@ test('서사 갈등이 축이나 반복되는 실패를 인용하지 않으면 �
   expect(check(changed)).toEqual([`${lineOf('## 서사 갈등')}: 서사 갈등: 근거 어디에도 [brief:축]이 없다`])
 })
 
-// 세계는 전투보다 먼저 만든다. 전장에는 그곳에서 맞서는 이 세계의 세력을 쓰고, 전투가 그 세력에서 적을 정한다(재료 부족 정리).
-test('전장에 이 세계의 세력 이름이 없으면 거부하고, 전투 설계는 인용할 수 없다', () => {
+// #121: 전장은 지역마다 강제하지 않고 장마다 하나 이상 둔다. 적은 세력이 아니라 장르의 적이어도 된다. 전투 설계는 인용할 수 없다.
+test('장에 전장이 있는 지역이 없으면 거부하고, 세력 없는 전장과 전장 없는 지역은 허용한다', () => {
   const line = '전장: 쌓아 둔 재료와 짓다 만 구조물 사이에서 셈하는 사람들의 셈꾼들이 몫을 걷으러 재료 더미를 막아선다'
-  expect(check(replaceOnce(world, line, '전장: 쌓아 둔 재료 사이에서 약탈자가 들어온다')))
-    .toEqual([`${lineOf(line)}: 지역 > 셈하는 마을: 전장에 맞서는 세력의 이름(셈하는 사람들, 같은 재주의 맞수 무리)이 없다`])
+  expect(check(replaceOnce(world, `${line}\n`, ''))).toEqual([`${lineOf('## 지역')}: 지역: 브리프의 장 '소년'에 전장이 있는 지역이 없다`])
+  expect(world.split('\n').filter((text) => text.startsWith('전장:'))).toHaveLength(3)
   expect(check(replaceOnce(world, line, `${line} [combat:전투 방식]`)))
     .toEqual([`${lineOf(line)}: [combat:전투 방식] — 이 문서는 [brief:]·[identity:]만 인용한다`])
 })

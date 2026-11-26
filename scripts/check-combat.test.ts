@@ -28,10 +28,11 @@ test('후보가 세 개가 아니면 거부한다', () => {
   expect(check({ combat: two })).toContain(`${lineOf('## 후보')}: 후보: 후보는 3개여야 한다 (실제: 2)`)
 })
 
-// 적은 세계의 세력에서 정한다. 세계가 전투보다 먼저 만들어진다(재료 부족 정리).
-test('적이 세계의 세력을 인용하지 않으면 거부한다', () => {
+// 적은 세계에서 정한다. 세계가 전투보다 먼저 만들어진다(재료 부족 정리). 장르의 적이면 세력 대신 그 지역을 인용한다(#121).
+test('적이 세계의 세력이나 지역을 인용하지 않으면 거부한다', () => {
   const enemy = combat.split('\n').find((line) => line.startsWith('적:'))!
-  expect(check({ combat: replaceOnce(combat, enemy, '적: 구조를 부수는 적') })).toEqual([`${lineOf(enemy)}: 전투 방식: 적에 [world:<세력>] 인용이 없다`])
+  expect(check({ combat: replaceOnce(combat, enemy, '적: 구조를 부수는 적') })).toEqual([`${lineOf(enemy)}: 전투 방식: 적에 [world:<세력>]이나 [world:<지역>] 인용이 없다`])
+  expect(check({ combat: replaceOnce(combat, enemy, '적: 열린 땅으로 넘어오는 짐승 떼와 약탈자 [world:새 터전]') })).toEqual([])
 })
 
 test('이름만 다르고 축이 거의 같은 후보를 거부한다', () => {

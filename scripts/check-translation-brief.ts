@@ -175,7 +175,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     }
   }
 
-  // 생업: life.md의 생업 항목을 옮긴다. 정체성 단계가 클래스·부직업·출신 도시의 재료로 쓴다(#86).
+  // 생업: life.md의 생업 항목을 옮긴다. 정체성 단계가 클래스·부직업·출신지의 재료로 쓴다(#86).
   const livelihoods = section('생업')
   if (livelihoods != null && livelihoods.items.length === 0) report(livelihoods.line, '생업: 생업 항목이 없다')
   for (const item of livelihoods?.items ?? []) {

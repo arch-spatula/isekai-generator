@@ -1,6 +1,6 @@
 /**
  * 세계 설계(`world.md`)의 지역·세력·서사 갈등, 인용, 차트 명칭을 검사한다.
- * 계약: docs/spec/claude-game-design-flow.md 4·5.3·6절
+ * 계약: docs/spec/claude-game-design-flow.md 4·5.3·6절, docs/ADR/2026-11-26-open-origin.md
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -20,8 +20,8 @@ export function checkWorld({ world, brief, identity }: WorldTexts): string[] {
   checkSectionOrder(sections, SECTIONS, report)
   const section = (name: string) => sections.find((candidate) => candidate.name === name)
   const chapters = sectionItemNames(brief, '장')
-  // 첫 지역은 정체성 단계가 만든 출신 도시에서 시작한다(#86).
-  const cities = sectionItemNames(identity, '출신 도시')
+  // 첫 지역은 정체성 단계가 만든 출신지에서 시작한다(#86).
+  const origins = sectionItemNames(identity, '출신지')
 
   /** 근거는 일생의 사실에서 왔다고 주장하는 요소에만 쓰고, 쓰면 브리프나 정체성을 인용한다. 지어낸 요소에는 근거를 쓰지 않는다(#87). */
   const requireBasis = (where: string, field: Field | undefined) => {
@@ -36,30 +36,34 @@ export function checkWorld({ world, brief, identity }: WorldTexts): string[] {
     return found?.items ?? []
   }
 
-  // 지역: 브리프의 장마다 하나 이상. 첫 지역은 정체성의 출신 도시에서 시작한다. 전장은 전투 설계를 인용한다.
-  const factionNames = sectionItemNames(world, '세력')
+  // 지역: 브리프의 장마다 하나 이상. 첫 지역은 정체성의 출신지에서 시작한다.
+  // 전장은 지역마다 강제하지 않고 장마다 하나 이상 둔다. 적은 세력이 아니라 장르의 적이어도 된다(#121).
   const regions = requireItems('지역')
-  const covered = new Set<string>()
+  const covered = new Set<string>(), battled = new Set<string>()
   for (const [index, item] of regions.entries()) {
     const where = `지역 > ${item.name}`
-    // 근거는 첫 지역(출신 도시)에만 필수다.
-    const fields = fieldsOf(where, item, index === 0 ? ['장', '성격', '사정', '전장', '근거'] : ['장', '성격', '사정', '전장'], report, ['장', '성격', '사정', '전장', '근거'])
+    // 근거는 첫 지역(출신지)에만 필수다.
+    const fields = fieldsOf(where, item, index === 0 ? ['장', '성격', '사정', '근거'] : ['장', '성격', '사정'], report, ['장', '성격', '사정', '전장', '근거'])
     const chapter = fields.get('장')
     if (chapter != null && chapter.value !== '') {
       if (!chapters.includes(chapter.value)) report(chapter.line, `${where}: 장 '${chapter.value}'는 브리프의 장(${chapters.join(', ')})이 아니다`)
       covered.add(chapter.value)
+      if (fields.has('전장')) battled.add(chapter.value)
       if (index === 0 && chapter.value !== chapters[0]) report(chapter.line, `${where}: 첫 지역의 장은 브리프의 첫 장 '${chapters[0]}'이다`)
     }
-    const field = fields.get('전장')
-    // 세계는 전투보다 먼저 만든다. 전장에는 그곳에서 맞서는 이 세계의 세력을 쓴다(전투가 이 세력에서 적을 정한다).
-    if (field != null && field.value !== '' && !factionNames.some((name) => field.value.includes(name))) report(field.line, `${where}: 전장에 맞서는 세력의 이름(${factionNames.join(', ')})이 없다`)
     const basis = fields.get('근거')
     requireBasis(where, basis)
-    if (index === 0 && basis != null && !targetsOf(basis.value, 'identity').some((target) => cities.includes(target))) {
-      report(basis.line, `${where}: 첫 지역의 근거에 출신 도시 [identity:${cities[0] ?? '<출신 도시>'}]가 없다`)
+    if (index === 0 && basis != null && !targetsOf(basis.value, 'identity').some((target) => origins.includes(target))) {
+      report(basis.line, `${where}: 첫 지역의 근거에 출신지 [identity:${origins[0] ?? '<출신지>'}]가 없다`)
     }
   }
-  if (section('지역') != null) for (const chapter of chapters) if (!covered.has(chapter)) report(section('지역')!.line, `지역: 브리프의 장 '${chapter}'의 지역이 없다`)
+  const regionLine = section('지역')?.line
+  if (regionLine != null) {
+    for (const chapter of chapters) {
+      if (!covered.has(chapter)) report(regionLine, `지역: 브리프의 장 '${chapter}'의 지역이 없다`)
+      else if (!battled.has(chapter)) report(regionLine, `지역: 브리프의 장 '${chapter}'에 전장이 있는 지역이 없다`)
+    }
+  }
 
   // 세력: 자체 목적과 제약, 주인공과의 관계
   for (const item of requireItems('세력')) {

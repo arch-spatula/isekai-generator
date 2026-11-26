@@ -30,8 +30,8 @@ test('클래스의 재료로 고른 주인공 능력을 읽는다', () => {
 })
 
 test('섹션이 빠지거나 클래스가 둘이면 거부한다', () => {
-  const start = identity.indexOf('## 부직업'), end = identity.indexOf('## 출신 도시')
-  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신 도시, 장별 세계 순서여야 한다 (실제: 클래스 후보, 클래스, 출신 도시, 장별 세계)'])
+  const start = identity.indexOf('## 부직업'), end = identity.indexOf('## 출신지')
+  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신지, 장별 세계 순서여야 한다 (실제: 클래스 후보, 클래스, 출신지, 장별 세계)'])
   const two = replaceOnce(identity, '\n## 부직업', '### 두 번째 클래스\n재료: [brief:고칠 곳을 짚는 눈]\n하는 일: 틈을 짚는다\n판단: 비교용\n\n## 부직업')
   expect(check(two)).toEqual([`${classLine}: 클래스: 항목은 하나다 (실제: 2개)`])
 })
@@ -75,14 +75,17 @@ test('부직업의 재료에 생업이나 능력이 없으면 거부한다', () 
   expect(check(changed)).toEqual([`${lineOf('재료: [brief:목수] [brief:성질을 읽고 빚는 손]')}: 부직업 > 수레 고치는 사람: 재료에 [brief:<생업>]이나 [brief:<주인공 능력>]이 없다`])
 })
 
-test('출신 도시에 산업·권력·역사가 없거나 출신지를 인용하지 않으면 거부한다', () => {
-  const noPower = replaceOnce(identity, '권력: 목재 조합이 수량과 몫을 장부로 셈하고, 납기를 어긴 공방에서 일감을 거둔다\n', '')
-  expect(check(noPower)).toEqual([`${lineOf('### 하구 목재 시장')}: 출신 도시 > 하구 목재 시장: 권력 필드가 없다`])
+// #121: 출신지는 형태를 열어 두고 생활만 정한다. 권력·역사는 이 단계에서 정하지 않는다.
+test('출신지에 형태·생활이 없거나 출신지를 인용하지 않으면 거부한다', () => {
+  const noForm = replaceOnce(identity, '형태: 강 하구에 뗏목이 닿는 일꾼 마을\n', '')
+  expect(check(noForm)).toEqual([`${lineOf('### 하구 목재 시장')}: 출신지 > 하구 목재 시장: 형태 필드가 없다`])
+  const power = replaceOnce(identity, '형태: 강 하구에 뗏목이 닿는 일꾼 마을\n', '형태: 강 하구에 뗏목이 닿는 일꾼 마을\n권력: 목재 조합이 다스린다\n')
+  expect(check(power)).toEqual([`${lineOf('생활: 상류에서 떠내려 보낸 목재를 받아 다듬어 바다 건너로 판다')}: 출신지 > 하구 목재 시장: 허용하지 않는 필드 '권력'`])
   const basis = replaceOnce(identity, '근거: [brief:출신지] [brief:가족 구조]', '근거: [brief:소년]')
-  expect(check(basis)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신 도시 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
-  // 가족 구조만으로는 출신 도시의 재료가 되지 않는다. 출신지가 차트의 환경 자리에서 읽은 배경을 옮긴다(#97).
+  expect(check(basis)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신지 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
+  // 가족 구조만으로는 출신지의 재료가 되지 않는다. 출신지가 차트의 환경 자리에서 읽은 배경을 옮긴다(#97).
   const familyOnly = replaceOnce(identity, '근거: [brief:출신지] [brief:가족 구조]', '근거: [brief:가족 구조]')
-  expect(check(familyOnly)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신 도시 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
+  expect(check(familyOnly)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신지 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
 })
 
 test('장별 세계가 브리프의 장과 다르거나 그 장을 인용하지 않으면 거부한다', () => {
@@ -120,7 +123,7 @@ test('클래스에 플레이어용 이름이 없으면 거부한다', () => {
 
 // #120: 생업과 재능에서 나온 부직업은 여러 개 둘 수 있고, 부직업에서 들어오는 의뢰(퀘스트)를 적을 수 있다.
 test('부직업이 없으면 거부하고, 여러 개와 의뢰는 허용한다', () => {
-  const start = identity.indexOf('### 수레 고치는 사람'), end = identity.indexOf('\n## 출신 도시')
+  const start = identity.indexOf('### 수레 고치는 사람'), end = identity.indexOf('\n## 출신지')
   expect(check(identity.slice(0, start) + identity.slice(end + 1))).toEqual([`${lineOf('## 부직업')}: 부직업: 항목이 하나 이상 있어야 한다 (실제: 0개)`])
   expect(identity.split('\n').filter((line) => line.startsWith('의뢰:'))).toHaveLength(1)
 })

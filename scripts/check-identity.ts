@@ -1,7 +1,7 @@
 /**
- * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·부직업·출신 도시·장별 세계, 인용, 차트 명칭을 검사한다.
+ * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·부직업·출신지·장별 세계, 인용, 차트 명칭을 검사한다.
  * 계약: docs/spec/claude-game-design-flow.md 5.5절, docs/ADR/2026-11-24-isekai-identity-design.md 2번, docs/ADR/2026-11-25-class-candidates.md,
- * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md
+ * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md, docs/ADR/2026-11-26-open-origin.md
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,7 +10,7 @@ import {
 } from './game-document.ts'
 
 const TITLE = '# 이세계 정체성'
-const SECTIONS = ['클래스 후보', '클래스', '부직업', '출신 도시', '장별 세계']
+const SECTIONS = ['클래스 후보', '클래스', '부직업', '출신지', '장별 세계']
 /** 제외한 후보의 갈래가 남는 자리 */
 const LEFTOVER = /^(클래스|부직업|동료|퀘스트) — \S/
 /** 다루는 것을 기능 영역으로 올려 이세계의 힘으로 옮긴 후보를 견준다 */
@@ -107,11 +107,12 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
     }
   }
 
-  // 출신 도시: 자체 산업·권력·역사를 가진 곳. 브리프 배경의 출신지(life.md 배경의 뿌리·자란 집을 옮긴 환경)에 기댄다(#97).
-  const city = single(section('출신 도시'))
-  if (city != null) {
-    const where = `출신 도시 > ${city.name}`
-    const basis = fieldsOf(where, city, ['산업', '권력', '역사', '주인공의 자리', '근거'], report).get('근거')
+  // 출신지: 형태(도시·마을·배·유목 무리 등)와 생활만 정한다. 권력·역사는 이 단계에서 정하지 않는다(#121).
+  // 브리프 배경의 출신지(life.md 배경의 뿌리·자란 집을 옮긴 환경)에 기댄다(#97).
+  const origin = single(section('출신지'))
+  if (origin != null) {
+    const where = `출신지 > ${origin.name}`
+    const basis = fieldsOf(where, origin, ['형태', '생활', '주인공의 자리', '근거'], report).get('근거')
     if (basis != null && !targetsOf(basis.value, 'brief').includes('출신지')) {
       report(basis.line, `${where}: 근거에 [brief:출신지]가 없다`)
     }

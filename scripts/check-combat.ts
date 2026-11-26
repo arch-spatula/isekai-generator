@@ -98,10 +98,10 @@ export function checkCombat({ combat, brief, identity, world }: CombatTexts): st
     const fields = fieldsOf('전투 방식', style, STYLE_FIELDS, report)
     const chosen = fields.get('채택')
     if (chosen != null && chosen.value !== '' && adopted.length === 1 && chosen.value !== adopted[0]) report(chosen.line, `전투 방식: 채택 '${chosen.value}' — 후보에서 채택한 것은 '${adopted[0]}'`)
-    // 적은 세계 단계가 정한 세력에서 나온다. 세계가 전투보다 먼저 만들어진다.
+    // 적은 세계 단계가 정한 세력이나 지역에서 나온다. 세계가 전투보다 먼저 만들어진다. 장르의 적이면 그 지역을 인용한다(#121).
     const enemy = fields.get('적')
-    const factions = sectionItemNames(world, '세력')
-    if (enemy != null && enemy.value !== '' && !targetsOf(enemy.value, 'world').some((target) => factions.includes(target))) report(enemy.line, `전투 방식: 적에 [world:<세력>] 인용이 없다`)
+    const sources = [...sectionItemNames(world, '세력'), ...sectionItemNames(world, '지역')]
+    if (enemy != null && enemy.value !== '' && !targetsOf(enemy.value, 'world').some((target) => sources.includes(target))) report(enemy.line, `전투 방식: 적에 [world:<세력>]이나 [world:<지역>] 인용이 없다`)
     for (const key of ['약점', '런 밖 성장']) {
       const field = fields.get(key)
       if (field != null && field.value !== '' && !targetsOf(field.value, 'brief').some((target) => abilities.has(target))) report(field.line, `전투 방식: ${key}에 [brief:<주인공 능력>] 인용이 없다`)
