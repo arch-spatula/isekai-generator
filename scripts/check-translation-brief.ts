@@ -11,7 +11,7 @@ import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
-const SECTIONS = ['주인공', '주인공 능력', '생업', '동료', '배경', '장', '동기와 퀘스트', '옮기지 않은 인물']
+const SECTIONS = ['주인공', '주인공 능력', '생업', '동료', '배경', '장', '갈림길', '동기와 퀘스트', '옮기지 않은 인물']
 /** 주인공 절의 항목과 각각 인용해야 하는 life.md 항목 */
 const PROTAGONIST = ['축', '반복되는 실패']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
@@ -98,7 +98,7 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     }
   }
 
-  // 장: 모험이 걸친 생애 단계를 연표 순서로. 근거는 그 단계다.
+  // 장: 모험이 걸친 생애 단계를 연표 순서로. 근거는 그 단계다. 사건과 함께 그 시기의 고민·시련을 넘긴다(#109).
   const chapters = section('장')
   const chapterNames = chapters?.items.map(({ name }) => name) ?? []
   if (chapters != null) {
@@ -110,9 +110,24 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     for (const item of chapters.items) {
       const where = `장 > ${item.name}`
       if (!STAGE_NAMES.includes(item.name)) report(item.line, `${where}: 생애 단계 이름이 아니다`)
-      const basis = fieldsOf(where, item, ['사건', '근거']).get('근거')
+      const basis = fieldsOf(where, item, ['사건', '고민', '시련', '근거']).get('근거')
       if (basis != null && basis.value !== '' && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `${where}: 근거에 [life:${item.name}]이 없다`)
     }
+  }
+
+  // 갈림길: life.md의 갈림길을 모두 옮긴다. 근거는 같은 이름의 갈림길이다(#109).
+  const lifeForks = lifeItems.filter(({ section }) => section === '갈림길').map(({ name }) => name)
+  const forks = section('갈림길')
+  if (forks != null) {
+    for (const item of forks.items) {
+      const where = `갈림길 > ${item.name}`
+      const known = lifeForks.includes(item.name)
+      if (!known) report(item.line, `${where}: life.md의 갈림길이 아니다`)
+      const basis = fieldsOf(where, item, ['본선', '다른 길', '갈리는 조건', '근거']).get('근거')
+      if (known && basis != null && basis.value !== '' && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `${where}: 근거에 [life:${item.name}]이 없다`)
+    }
+    const written = new Set(forks.items.map(({ name }) => name))
+    for (const fork of lifeForks) if (!written.has(fork)) report(forks.line, `갈림길: life.md의 갈림길 '${fork}'이 없다`)
   }
 
   // 동료: 후보 줄은 계산 결과와 같고, 동료는 후보 안에서만, 동행하는 장은 곁에 있던 시기와 브리프의 장 안에서만 고른다.

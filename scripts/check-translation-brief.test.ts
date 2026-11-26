@@ -203,3 +203,42 @@ test('동료 항목에는 재주가 있어야 한다', () => {
   const skill = '재주: 재료와 도구, 글과 셈\n'
   expect(check({ brief: replaceOnce(brief, skill, '') })).toEqual([`${lineOf('### 스승·후원자')}: 동료 > 스승·후원자: 재주 필드가 없다`])
 })
+
+// #109: 장은 그 시기의 사건만이 아니라 고민(생애 연표의 주제)과 시련을 넘긴다. 사건 한 줄만 두면 장마다 다른 고민이 사라지고
+// 반복되는 실패 하나가 모든 장을 대표한다.
+test('장 항목에는 고민과 시련이 있어야 한다', () => {
+  const worry = '고민: 넘치는 힘과 채워지지 않는 허기 사이에서 머물 곳을 찾는다\n'
+  expect(check({ brief: replaceOnce(brief, worry, '') })).toEqual([`${lineOf('### 청년')}: 장 > 청년: 고민 필드가 없다`])
+  const trial = '시련: 이끄는 자리에 오르자 오래 믿은 기반이 흔들리고 함께한 벗과 뜻이 갈린다\n'
+  expect(check({ brief: replaceOnce(brief, trial, '') })).toEqual([`${lineOf('### 장년')}: 장 > 장년: 시련 필드가 없다`])
+})
+
+// #109: life.md의 갈림길은 모두 브리프의 갈림길로 넘어간다. 퀘스트 재료로만 쓰면 일부만 남고 GDD에서 사라졌다(v0.5.16 관찰).
+// 플레이어 선택으로 바꾸는 일은 #113이 맡으므로 여기서는 본선·다른 길·갈리는 조건을 옮기는 것만 본다.
+test('life.md의 갈림길이 브리프에 없으면 거부한다', () => {
+  const forks = brief.slice(brief.indexOf('## 갈림길'), brief.indexOf('## 동기와 퀘스트'))
+  expect(check({ brief: brief.replace(forks, '## 갈림길\n\n') })).toEqual([`${lineOf('## 갈림길')}: 갈림길: life.md의 갈림길 '노년의 길'이 없다`])
+})
+
+test('life.md에 없는 갈림길과 다른 갈림길을 인용한 근거를 거부한다', () => {
+  const renamed = replaceOnce(brief, '### 노년의 길\n본선:', '### 먼 길\n본선:')
+  expect(check({ brief: renamed })).toEqual([
+    `${lineOf('### 노년의 길')}: 갈림길 > 먼 길: life.md의 갈림길이 아니다`,
+    `${lineOf('## 갈림길')}: 갈림길: life.md의 갈림길 '노년의 길'이 없다`,
+  ])
+  const basis = '근거: [life:노년의 길]'
+  expect(check({ brief: replaceOnce(brief, basis, '근거: [life:노년]') })).toEqual([`${lineOf(basis)}: 갈림길 > 노년의 길: 근거에 [life:노년의 길]이 없다`])
+})
+
+test('갈림길 항목에는 본선·다른 길·갈리는 조건이 있어야 한다', () => {
+  const condition = '갈리는 조건: 등을 돌렸던 동료가 먼저 찾아오는가, 주인공이 먼저 길을 나서는가\n'
+  expect(check({ brief: replaceOnce(brief, condition, '') })).toEqual([`${lineOf('### 노년의 길')}: 갈림길 > 노년의 길: 갈리는 조건 필드가 없다`])
+})
+
+// life.md는 갈림길을 0개 이상 둔다(docs/spec/life-integration.md 8.1). 갈림길이 없으면 브리프의 갈림길 절도 비어 있어도 된다.
+test('life.md에 갈림길이 없으면 빈 갈림길 절이 통과한다', () => {
+  const noForks = life.slice(0, life.indexOf('\n### 노년의 길')) + '\n'
+  const forks = brief.slice(brief.indexOf('## 갈림길'), brief.indexOf('## 동기와 퀘스트'))
+  const changed = brief.replace(forks, '## 갈림길\n\n').replace('재료: [life:경쟁자·적대자] [life:노년의 길]', '재료: [life:경쟁자·적대자] [life:노년]')
+  expect(check({ brief: changed, life: noForks })).toEqual([])
+})
