@@ -22,14 +22,20 @@ export const TIMELINE: LifeSection = {
   fields: ['운', '주제', '전환점', '인연', '시련', '얻는 것', '잃는 것', '성격 변화', '근거'],
 }
 /**
- * 주인공이 자란 환경. 인물이 아니라 조건(생활 기반·지원·기대·제약)이다. 뿌리와 자란 집은 집안이 무엇을 다루며 먹고살았는지(생활 기반)를 쓴다.
+ * 뿌리와 자란 집의 조건 값. 집안의 생업을 쓰지 않는다. 별의 뜻을 생업으로 쓰면 같은 별에서 나온 재능과 거울이 된다(#122).
+ * 구체적인 터전과 일은 정체성 단계가 이 조건에 맞게 지어낸다.
+ */
+export const BACKGROUND_CONDITIONS: Record<string, string[]> = { 터전: ['머묾', '오감'], 가세: ['넉넉함', '보통', '궁핍', '기복'] }
+/**
+ * 주인공이 자란 환경. 인물이 아니라 조건(터전·가세·지원·기대·제약)이다.
  * 계약: docs/spec/life-narrative-interpretation.md 3절
  */
 export const BACKGROUND: LifeSection = {
   name: '배경',
   items: ['뿌리', '자란 집', '떠남의 조건'],
   fields: ['모습', '준 것', '막은 것', '근거'],
-  itemFields: { 뿌리: ['생활 기반'], '자란 집': ['생활 기반'] },
+  itemFields: { 뿌리: Object.keys(BACKGROUND_CONDITIONS), '자란 집': Object.keys(BACKGROUND_CONDITIONS) },
+  values: BACKGROUND_CONDITIONS,
 }
 export const CAST = ['부모', '형제·또래', '연인·배우자', '자녀', '제자', '벗·동료', '스승·후원자', '경쟁자·적대자']
 /** 인물 사전 필드. 상태는 RELATION_ITEMS 칸에만 있다 (docs/spec/life-shape-and-relationship-status.md 5.2·5.4) */
@@ -56,7 +62,7 @@ function commonSections(timeline: boolean): LifeSection[] {
  * 배경 항목마다 근거에 있어야 하는 자리(하나 이상)와 배경 절에서 쓰지 않는 본인 자리.
  * 본인 자리에서 읽은 성향·재능·생업을 환경으로 쓰는 실수를 막는다(#97). 계약: docs/spec/life-narrative-interpretation.md 3절
  */
-interface BackgroundRule { items: Record<string, string[]>; forbidden: string[] }
+interface BackgroundRule { items: Record<string, string[]>; forbidden: string[]; talentForbidden: string[] }
 
 const YEAR = ['[chart:年柱]', '[chart:年干]', '[chart:年支]']
 const MONTH = ['[chart:月柱]', '[chart:月干]', '[chart:月支]']
@@ -69,21 +75,26 @@ const BACKGROUND_RULES: Record<'saju' | 'ziwei' | 'natal', BackgroundRule> = {
     },
     // 日柱는 본인과 배우자, 時柱는 자녀와 늦은 시기의 자리다. 재능이 드러나는 자리라 배경의 근거로 쓰면 재능이 집안 내력으로 들어간다.
     forbidden: ['[chart:日干]', '[chart:日支]', '[chart:日柱]', '[chart:時干]', '[chart:時支]', '[chart:時柱]', '[judgment:일간 강약]'],
+    // 年柱·月柱는 배경을 읽는 자리라 재능의 근거로 쓰지 않는다(#122). 月支가 정하는 격국은 판단을 거쳐 재능에 들어간다.
+    talentForbidden: [...YEAR, ...MONTH],
   },
   ziwei: {
-    items: { 뿌리: ['[chart:父母]', '[chart:福德]'], '자란 집': ['[chart:田宅]', '[chart:父母]'], '떠남의 조건': ['[chart:遷移]'] },
-    // 官祿·財帛은 본인의 일과 재물 자리다.
-    forbidden: ['[chart:命宮]', '[chart:官祿]', '[chart:財帛]', '[facts:명궁 주성]', '[facts:명궁 삼방사정]', '[facts:삼방사정 보조성 수]', '[judgment:명궁 역량]', '[judgment:격국]'],
+    items: { 뿌리: ['[chart:父母]'], '자란 집': ['[chart:田宅]', '[chart:父母]'], '떠남의 조건': ['[chart:遷移]'] },
+    // 官祿·財帛은 본인의 일과 재물 자리다. 福德은 본인의 내면과 복을 보는 자리이고 身宮과 겹치기도 해 배경에서 뺀다(#122).
+    forbidden: ['[chart:命宮]', '[chart:官祿]', '[chart:財帛]', '[chart:福德]', '[facts:명궁 주성]', '[facts:명궁 삼방사정]', '[facts:삼방사정 보조성 수]', '[judgment:명궁 역량]', '[judgment:격국]'],
+    talentForbidden: ['[chart:父母]', '[chart:田宅]', '[chart:遷移]'],
   },
   // 하우스는 하나씩 인용할 이름이 없어 하우스 표나 하우스별 사실 한 항목으로 인용된다. 어느 하우스를 읽었는지는 스킬 지침과 의미 검토가 맡는다.
   natal: {
     items: {
       뿌리: ['[facts:하우스별 룰러와 행성]', '[chart:Houses]'],
-      '자란 집': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]', '[chart:MC]'],
+      '자란 집': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]'],
       '떠남의 조건': ['[facts:하우스별 룰러와 행성]', '[chart:Houses]'],
     },
-    // 주요 행성·우세 원소는 본인의 재능·기질을 읽는 판단이다.
-    forbidden: ['[chart:ASC]', '[facts:ASC]', '[facts:차트 룰러]', '[judgment:차트 룰러 상태]', '[judgment:주요 행성]', '[judgment:우세 원소]'],
+    // 주요 행성·우세 원소는 본인의 재능·기질을 읽는 판단이다. MC는 본인의 일과 평판이라 배경에서 뺀다(#122).
+    // 하우스는 표 단위로 인용돼 재능과 겹치는지 기계로 가를 수 없다. 그 겹침은 스킬 지침이 막는다.
+    forbidden: ['[chart:ASC]', '[facts:ASC]', '[chart:MC]', '[facts:차트 룰러]', '[judgment:차트 룰러 상태]', '[judgment:주요 행성]', '[judgment:우세 원소]'],
+    talentForbidden: [],
   },
 }
 
@@ -118,7 +129,7 @@ const TALENT_RULES: Record<'saju' | 'ziwei' | 'natal', { forbidden: string[]; re
 }
 
 /** 재능 항목(생업 제외)의 근거가 관계·기질 판단에 기대지 않는지 */
-function talentCitations(life: string, rule: { forbidden: string[]; relationOnly?: string[] }): string[] {
+function talentCitations(life: string, rule: { forbidden: string[]; relationOnly?: string[] }, background: string[]): string[] {
   const errors: string[] = []
   for (const { section, name, fields } of readLifeItems(life)) {
     if (section !== '재능과 생업' || name.startsWith('생업: ')) continue
@@ -126,6 +137,9 @@ function talentCitations(life: string, rule: { forbidden: string[]; relationOnly
     const citations = basis.match(/\[[a-z]+:[^\]]*\]/g) ?? []
     for (const citation of new Set(citations.filter((c) => rule.forbidden.includes(c)))) {
       errors.push(`재능과 생업 > ${name}: ${citation}는 관계·기질 판단이라 재능의 근거로 쓰지 않는다 — 성정은 기르는 기질에 쓴다`)
+    }
+    for (const citation of new Set(citations.filter((c) => background.includes(c)))) {
+      errors.push(`재능과 생업 > ${name}: ${citation}는 배경을 읽는 자리라 재능의 근거로 쓰지 않는다`)
     }
     if (rule.relationOnly != null && citations.length > 0 && citations.every((c) => rule.relationOnly!.includes(c))) {
       errors.push(`재능과 생업 > ${name}: 근거가 관계 궁뿐이다 — 관계를 재능으로 쓰지 않는다`)
@@ -201,7 +215,7 @@ export function checkLifeDocument(system: LifeSystem, texts: LifeTexts): string[
     ...checkRelations(texts.life, { expectedStatus: expectedStatus(texts.judgment), timeline: system !== 'natal' }),
     ...(system === 'saju' ? luckToneCitations(texts.life) : []),
     ...backgroundCitations(texts.life, BACKGROUND_RULES[system]),
-    ...talentCitations(texts.life, TALENT_RULES[system]),
+    ...talentCitations(texts.life, TALENT_RULES[system], BACKGROUND_RULES[system].talentForbidden),
   ]
 }
 

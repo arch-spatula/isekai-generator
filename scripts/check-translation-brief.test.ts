@@ -182,14 +182,21 @@ test('출신지·성장 환경·떠남의 계기는 life.md 배경 항목을 인
 })
 
 // 환경 항목은 life.md 배경의 필드를 한 줄로 줄이지 않고 옮긴다. 한 줄 경로만 두면 한 체계의 재료만 남는다(#97 재생성 관찰).
-test('출신지·성장 환경·떠남의 계기는 생활 기반·준 것·막은 것(떠남은 모습)을 필드로 옮긴다', () => {
-  const livelihood = '생활 기반: 밭의 소작료와 창고 세를 받고, 어머니가 이웃 아이들에게 글을 가르치며 사례를 받는다\n'
-  expect(check({ brief: replaceOnce(brief, livelihood, '') })).toEqual([`${lineOf('### 성장 환경')}: 배경 > 성장 환경: 생활 기반 필드가 없다`])
+test('출신지·성장 환경·떠남의 계기는 터전·가세·준 것·막은 것(떠남은 모습)을 필드로 옮긴다', () => {
+  const wealth = '가세: 넉넉함\n'
+  expect(check({ brief: replaceOnce(brief, wealth, '') })).toEqual([`${lineOf('### 성장 환경')}: 배경 > 성장 환경: 가세 필드가 없다`])
   const leaving = '막은 것: 떠난 뒤 돌아올 자리를 스스로 만들어야 한다\n'
   expect(check({ brief: replaceOnce(brief, leaving, '') })).toEqual([`${lineOf('### 떠남의 계기')}: 배경 > 떠남의 계기: 막은 것 필드가 없다`])
   // 가족 구조는 인물 사전에서 읽으므로 경로와 근거만 둔다.
   const family = '근거: [life:부모] [life:형제·또래]'
-  expect(check({ brief: replaceOnce(brief, family, `생활 기반: 장사\n${family}`) })).toEqual([`${lineOf(family)}: 배경 > 가족 구조: 허용하지 않는 필드 '생활 기반'`])
+  expect(check({ brief: replaceOnce(brief, family, `가세: 보통\n${family}`) })).toEqual([`${lineOf(family)}: 배경 > 가족 구조: 허용하지 않는 필드 '가세'`])
+})
+
+// 터전·가세는 정해진 값만 쓴다. 집안의 생업을 쓰면 같은 별에서 나온 재능과 거울이 된다(#122).
+test('터전·가세가 정해진 값이 아니면 거부한다', () => {
+  const place = '터전: 오감'
+  expect(check({ brief: replaceOnce(brief, place, '터전: 장마다 곡식과 소금을 떼어다 판다') }))
+    .toEqual([`${lineOf(place)}: 배경 > 출신지: 터전은 머묾, 오감 중 하나다 (실제: 장마다 곡식과 소금을 떼어다 판다)`])
 })
 
 // 능력은 재능의 다루는 것과 하는 일을 함께 옮긴다. 다루는 것만 남으면 무엇을 하는 능력인지가 사라진다(#99).

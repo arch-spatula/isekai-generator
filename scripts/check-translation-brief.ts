@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { chartNameErrors } from './chart-names.ts'
-import { CAST } from './check-life-document.ts'
+import { BACKGROUND_CONDITIONS, CAST } from './check-life-document.ts'
 import { companionCandidates } from './companion-candidates.ts'
 import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
@@ -17,10 +17,10 @@ const PROTAGONIST = ['축', '반복되는 실패']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
 /** 환경을 옮기는 배경 항목과 근거에 있어야 하는 life.md 배경 항목(하나 이상). 가족 구조는 인물 사전에서 읽는다(#97). */
 const BACKGROUND_SOURCES: Record<string, string[]> = { 출신지: ['뿌리', '자란 집'], '성장 환경': ['자란 집'], '떠남의 계기': ['떠남의 조건'] }
-/** 배경 항목의 필드. 환경 항목은 life.md 배경의 필드를 한 줄로 줄이지 않고 옮긴다(#97). */
+/** 배경 항목의 필드. 환경 항목은 life.md 배경의 필드를 한 줄로 줄이지 않고 옮긴다(#97). 터전·가세는 정해진 값이다(#122). */
 const BACKGROUND_FIELDS: Record<string, string[]> = {
-  출신지: ['생활 기반', '준 것', '막은 것', '경로', '근거'],
-  '성장 환경': ['생활 기반', '준 것', '막은 것', '경로', '근거'],
+  출신지: ['터전', '가세', '준 것', '막은 것', '경로', '근거'],
+  '성장 환경': ['터전', '가세', '준 것', '막은 것', '경로', '근거'],
   '가족 구조': ['경로', '근거'],
   '떠남의 계기': ['모습', '준 것', '막은 것', '경로', '근거'],
 }
@@ -192,6 +192,12 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     for (const item of background.items) {
       const where = `배경 > ${item.name}`
       const fields = fieldsOf(where, item, BACKGROUND_FIELDS[item.name] ?? ['경로', '근거'])
+      for (const [key, allowed] of Object.entries(BACKGROUND_CONDITIONS)) {
+        const condition = fields.get(key)
+        if (condition != null && condition.value !== '' && !allowed.includes(condition.value)) {
+          report(condition.line, `${where}: ${key}은 ${allowed.join(', ')} 중 하나다 (실제: ${condition.value})`)
+        }
+      }
       const path = fields.get('경로')
       if (path != null && path.value !== '') {
         const steps = path.value.split('→').map((step) => step.trim())
