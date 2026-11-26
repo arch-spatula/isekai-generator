@@ -10,6 +10,8 @@ import {
 
 const TITLE = '# 이세계 정체성'
 const SECTIONS = ['클래스 후보', '클래스', '부직업', '출신 도시', '장별 세계']
+/** 제외한 후보의 갈래가 남는 자리 */
+const LEFTOVER = /^(클래스|부직업|동료|퀘스트) — \S/
 /** 다루는 것을 기능 영역으로 올려 이세계의 힘으로 옮긴 후보를 견준다 */
 const CANDIDATE_COUNT = 3
 
@@ -56,7 +58,13 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
     if (candidates.items.length !== CANDIDATE_COUNT) report(candidates.line, `클래스 후보: 후보는 ${CANDIDATE_COUNT}개여야 한다 (실제: ${candidates.items.length})`)
     for (const item of candidates.items) {
       const where = `클래스 후보 > ${item.name}`
-      const fields = fieldsOf(where, item, ['재료', '영역', '이세계의 힘', '판단'], report)
+      // 제외한 후보는 그 갈래가 어디에 남는지 적는다(#110). 채택한 후보는 클래스가 되므로 쓰지 않는다.
+      const verdictValue = item.fields.find((field) => field.key === '판단')?.value ?? ''
+      const base = ['재료', '영역', '이세계의 힘', '판단']
+      const required = verdictValue.startsWith('제외') ? [...base, '남는 곳'] : base
+      const fields = fieldsOf(where, item, required, report, verdictValue === '채택' ? base : [...base, '남는 곳'])
+      const leftover = fields.get('남는 곳')
+      if (leftover != null && leftover.value !== '' && !LEFTOVER.test(leftover.value)) report(leftover.line, `${where}: 남는 곳은 '<클래스 | 부직업 | 동료 | 퀘스트> — <어떻게>'이다`)
       const material = fields.get('재료')
       if (material != null && !targetsOf(material.value, 'brief').some((target) => abilities.includes(target))) {
         report(material.line, `${where}: 재료에 [brief:<주인공 능력>]이 없다`)

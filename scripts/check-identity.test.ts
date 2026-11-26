@@ -40,7 +40,7 @@ test('클래스 후보가 세 개가 아니거나 채택이 하나가 아니면 
   const start = identity.indexOf('### 빚어 깨우는 자')
   const two = identity.slice(0, start) + identity.slice(classStart + 1)
   expect(check(two)).toEqual([`${lineOf('## 클래스 후보')}: 클래스 후보: 후보는 3개여야 한다 (실제: 2)`])
-  const none = candidates('판단: 채택', '판단: 제외 — 비교용')
+  const none = candidates('판단: 채택', '판단: 제외 — 비교용\n남는 곳: 부직업 — 비교용')
   expect(check(none)).toEqual([`${lineOf('## 클래스 후보')}: 클래스 후보: 채택한 후보는 하나여야 한다 (실제: 0)`])
 })
 
@@ -97,4 +97,17 @@ test('브리프 밖 인용과 차트 명칭을 거부한다', () => {
   expect(check(life)).toEqual([`${lineOf('근거: [brief:소년]')}: [life:유년] — 이 문서는 [brief:]만 인용한다`])
   const name = replaceOnce(identity, '### 하구 목재 시장', '### 무곡의 장부 도시')
   expect(check(name)).toEqual([`${lineOf('### 하구 목재 시장')}: 차트 명칭 '무곡'`])
+})
+
+// #110: 제외한 후보의 갈래가 조용히 사라지지 않도록 어디에 남는지 적는다. 값이 실제로 그 자리에 쓰였는지는 검토가 본다.
+test('제외한 후보에 남는 곳이 없거나 형식이 어긋나면 거부한다', () => {
+  const leftover = '남는 곳: 동료 — 약한 곳을 짚는 일은 동료가 맡는다\n'
+  expect(check(candidates(leftover, ''))).toEqual([`${lineOf('### 숨은 금 사냥꾼')}: 클래스 후보 > 숨은 금 사냥꾼: 남는 곳 필드가 없다`])
+  const wrong = candidates('남는 곳: 동료 — ', '남는 곳: 세계 — ')
+  expect(check(wrong)).toEqual([`${lineOf(leftover.trim())}: 클래스 후보 > 숨은 금 사냥꾼: 남는 곳은 '<클래스 | 부직업 | 동료 | 퀘스트> — <어떻게>'이다`])
+})
+
+test('채택한 후보에는 남는 곳을 쓰지 않는다', () => {
+  const adopted = candidates('판단: 채택\n', '판단: 채택\n남는 곳: 클래스 — 그대로\n')
+  expect(check(adopted)).toEqual([`${lineOf('판단: 채택') + 1}: 클래스 후보 > 결 새김꾼: 허용하지 않는 필드 '남는 곳'`])
 })
