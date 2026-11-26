@@ -23,12 +23,12 @@ test('정상 GDD는 통과한다', () => {
 
 test('절이 빠지거나 순서가 다르면 거부한다', () => {
   const start = gdd.indexOf('## 대표 장면')
-  expect(check({ gdd: gdd.slice(0, start) })).toEqual(['섹션은 게임 개요, 주인공, 동료, 세계와 장, 전투, 런과 성장, 서사의 변화, 대표 장면 순서여야 한다 (실제: 게임 개요, 주인공, 동료, 세계와 장, 전투, 런과 성장, 서사의 변화)'])
+  expect(check({ gdd: gdd.slice(0, start) })).toEqual(['섹션은 게임 개요, 주인공, 동료, 세계와 장, 전투, 런과 성장, 서사의 변화, 대표 장면, 크레딧 순서여야 한다 (실제: 게임 개요, 주인공, 동료, 세계와 장, 전투, 런과 성장, 서사의 변화)'])
 })
 
 test('인용이 없는 절을 거부한다', () => {
-  const scene = gdd.slice(gdd.indexOf('## 대표 장면'))
-  const changed = gdd.replace(scene, '## 대표 장면\n주인공이 새 터전에서 첫 런을 치른다.\n')
+  const scene = gdd.slice(gdd.indexOf('## 대표 장면'), gdd.indexOf('## 크레딧'))
+  const changed = gdd.replace(scene, '## 대표 장면\n주인공이 새 터전에서 첫 런을 치른다.\n\n')
   expect(check({ gdd: changed })).toEqual([`${lineOf('## 대표 장면')}: 대표 장면: [brief:]·[identity:]·[combat:]·[world:] 인용이 없다`])
 })
 
@@ -85,4 +85,28 @@ test('제외 메커니즘, 차트 명칭, life 인용, 없는 인용 대상을 �
 test('주인공 절이 클래스나 부직업을 인용하지 않으면 거부한다', () => {
   const changed = replaceOnce(gdd, ' [identity:수레 고치는 사람]', '')
   expect(check({ gdd: changed })).toEqual([`${lineOf('## 주인공')}: 주인공: 부직업 [identity:수레 고치는 사람]를 인용하지 않았다`])
+})
+
+// #112·#114: 끌림 시스템은 런과 성장에 나오고, 크레딧은 플레이어용 이름마다 설계용 이름과 출처를 밝힌다.
+test('런과 성장이 끌림을 인용하지 않으면 거부한다', () => {
+  const changed = replaceOnce(gdd, ' [combat:혼자 정하는 손] [combat:장별 끌림]', ' [combat:장별 끌림]')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 런과 성장')}: 런과 성장: 끌림 [combat:혼자 정하는 손] 인용이 없다`])
+})
+
+test('크레딧에 플레이어용 이름 항목이 없거나 설계 항목을 인용하지 않으면 거부한다', () => {
+  const start = gdd.indexOf('### 외길')
+  expect(check({ gdd: gdd.slice(0, start) })).toEqual([`${lineOf('## 크레딧')}: 크레딧: 끌림의 플레이어용 이름 '외길' 항목이 없다`])
+  const cite = '한 동작으로 묶었다 [identity:결 새김꾼]'
+  expect(check({ gdd: replaceOnce(gdd, cite, '한 동작으로 묶었다 [brief:성질을 읽고 빚는 손]') })).toEqual([`${lineOf('### 각인술사')}: 크레딧 > 각인술사: [identity:결 새김꾼]을 인용하지 않았다`])
+})
+
+// #120: 부직업이 여러 개면 주인공 절이 모두 잇고, 의뢰가 있는 부직업은 세계와 장이나 런과 성장에서 쓰인다.
+test('주인공 절이 부직업 하나라도 빠뜨리면 거부한다', () => {
+  const changed = replaceOnce(gdd, ' [identity:공방 선생]. 비어', '. 비어')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 주인공')}: 주인공: 부직업 [identity:공방 선생]를 인용하지 않았다`])
+})
+
+test('의뢰가 있는 부직업을 세계와 장이나 런과 성장에서 인용하지 않으면 거부한다', () => {
+  const changed = replaceOnce(gdd, '목적지가 된다 [identity:공방 선생]', '목적지가 된다')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 세계와 장')}: 세계와 장: 의뢰가 있는 부직업 [identity:공방 선생]을 세계와 장이나 런과 성장에서 인용하지 않았다`])
 })

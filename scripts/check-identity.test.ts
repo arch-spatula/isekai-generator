@@ -111,3 +111,21 @@ test('채택한 후보에는 남는 곳을 쓰지 않는다', () => {
   const adopted = candidates('판단: 채택\n', '판단: 채택\n남는 곳: 클래스 — 그대로\n')
   expect(check(adopted)).toEqual([`${lineOf('판단: 채택') + 1}: 클래스 후보 > 결 새김꾼: 허용하지 않는 필드 '남는 곳'`])
 })
+
+// #114: 플레이어에게 보이는 이름은 설계용 이름(### 제목, 인용에 쓰임)과 따로 둔다. 심리 용어·현실 동작이 그대로 이름이 되지 않게 한다.
+test('클래스에 플레이어용 이름이 없으면 거부한다', () => {
+  const name = '플레이어용 이름: 각인술사\n'
+  expect(check(replaceInClass(name, ''))).toEqual([`${lineOf('### 결 새김꾼', classLine)}: 클래스 > 결 새김꾼: 플레이어용 이름 필드가 없다`])
+})
+
+// #120: 생업과 재능에서 나온 부직업은 여러 개 둘 수 있고, 부직업에서 들어오는 의뢰(퀘스트)를 적을 수 있다.
+test('부직업이 없으면 거부하고, 여러 개와 의뢰는 허용한다', () => {
+  const start = identity.indexOf('### 수레 고치는 사람'), end = identity.indexOf('\n## 출신 도시')
+  expect(check(identity.slice(0, start) + identity.slice(end + 1))).toEqual([`${lineOf('## 부직업')}: 부직업: 항목이 하나 이상 있어야 한다 (실제: 0개)`])
+  expect(identity.split('\n').filter((line) => line.startsWith('의뢰:'))).toHaveLength(1)
+})
+
+test('부직업의 의뢰 값이 비면 거부한다', () => {
+  const changed = replaceOnce(identity, '의뢰: 연장을 배우러 온 젊은 손들이 고향의 무너진 작업장을 고쳐 달라는 일을 가져온다', '의뢰:')
+  expect(check(changed)).toEqual([`${lineOf('의뢰: 연장을 배우러 온 젊은 손들이 고향의 무너진 작업장을 고쳐 달라는 일을 가져온다')}: 부직업 > 공방 선생: 의뢰 값이 비었다`])
+})

@@ -4,9 +4,9 @@
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { checkCitationsAndNames, citationsIn, headingNames, itemNames, sectionItemNames, type Report } from './game-document.ts'
+import { checkCitationsAndNames, citationsIn, headingNames, itemNames, parseGameDocument, sectionItemNames, type Report } from './game-document.ts'
 
-const SECTIONS = ['게임 개요', '주인공', '동료', '세계와 장', '전투', '런과 성장', '서사의 변화', '대표 장면']
+const SECTIONS = ['게임 개요', '주인공', '동료', '세계와 장', '전투', '런과 성장', '서사의 변화', '대표 장면', '크레딧']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
 
 interface Block { name: string; line: number; text: string; items: { name: string; line: number; text: string }[] }
@@ -41,6 +41,19 @@ function regionChapters(world: string): Map<string, string> {
   return result
 }
 
+/** 문서 한 절의 첫 항목 이름과 그 플레이어용 이름 */
+function namedItem(text: string, section: string): { name: string; player: string } | null {
+  const item = parseGameDocument(text, '', () => {}).find((candidate) => candidate.name === section)?.items[0]
+  const player = item?.fields.find((field) => field.key === '플레이어용 이름')?.value
+  return item == null || player == null || player === '' ? null : { name: item.name, player }
+}
+
+/** 정체성에서 의뢰 필드가 있는 부직업 이름 */
+function subJobsWithRequests(identity: string): string[] {
+  const items = parseGameDocument(identity, '', () => {}).find((candidate) => candidate.name === '부직업')?.items ?? []
+  return items.filter((item) => item.fields.some((field) => field.key === '의뢰' && field.value !== '')).map(({ name }) => name)
+}
+
 export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): string[] {
   const errors: string[] = []
   const report: Report = (line, message) => errors.push(line == null ? message : `${line}: ${message}`)
@@ -63,10 +76,17 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
     const cited = cites(protagonist.text, 'brief')
     for (const name of BACKGROUND) if (!cited.includes(name)) report(protagonist.line, `주인공: [brief:${name}]을 인용하지 않았다`)
     const role = cites(protagonist.text, 'identity')
-    for (const section of ['클래스', '부직업']) {
-      const names = sectionItemNames(identity, section)
-      if (!names.some((name) => role.includes(name))) report(protagonist.line, `주인공: ${section} [identity:${names[0] ?? `<${section}>`}]를 인용하지 않았다`)
-    }
+    const classes = sectionItemNames(identity, '클래스')
+    if (!classes.some((name) => role.includes(name))) report(protagonist.line, `주인공: 클래스 [identity:${classes[0] ?? '<클래스>'}]를 인용하지 않았다`)
+    // 부직업은 여러 개일 수 있고, 그 조합이 이 사람다움이므로 모두 잇는다(#120).
+    for (const name of sectionItemNames(identity, '부직업')) if (!role.includes(name)) report(protagonist.line, `주인공: 부직업 [identity:${name}]를 인용하지 않았다`)
+  }
+
+  // 의뢰가 있는 부직업은 퀘스트를 주는 자리다. 세계와 장이나 런과 성장에서 그 부직업을 인용한다(#120).
+  const questBlocks = ['세계와 장', '런과 성장'].map(block).filter((found) => found != null)
+  const questCited = questBlocks.flatMap((found) => cites(found.text, 'identity'))
+  for (const name of subJobsWithRequests(identity)) {
+    if (!questCited.includes(name)) report(block('세계와 장')?.line ?? null, `세계와 장: 의뢰가 있는 부직업 [identity:${name}]을 세계와 장이나 런과 성장에서 인용하지 않았다`)
   }
 
   // 동료: 브리프의 동료마다 항목 하나. 동료가 없으면 항목 없이 혼자인 이유를 쓴다.
@@ -106,6 +126,19 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
   const story = block('서사의 변화')
   if (story != null && !cites(story.text, 'brief').some((target) => quests.includes(target)) && !cites(story.text, 'world').some((target) => conflicts.includes(target))) {
     report(story.line, '서사의 변화: [brief:<퀘스트>]나 [world:<서사 갈등>] 인용이 없다')
+  }
+
+  // 끌림 시스템은 런과 성장에 나온다(#112). 크레딧은 플레이어용 이름마다 설계 항목을 인용해 출처를 밝힌다(#114).
+  const klass = namedItem(identity, '클래스'), draw = namedItem(combat, '끌림')
+  if (run != null && draw != null && !cites(run.text, 'combat').includes(draw.name)) report(run.line, `런과 성장: 끌림 [combat:${draw.name}] 인용이 없다`)
+  const credits = block('크레딧')
+  if (credits != null) {
+    for (const [label, named, tag] of [['클래스', klass, 'identity'], ['끌림', draw, 'combat']] as const) {
+      if (named == null) continue
+      const item = credits.items.find(({ name }) => name === named.player)
+      if (item == null) report(credits.line, `크레딧: ${label}의 플레이어용 이름 '${named.player}' 항목이 없다`)
+      else if (!cites(item.text, tag).includes(named.name)) report(item.line, `크레딧 > ${named.player}: [${tag}:${named.name}]을 인용하지 않았다`)
+    }
   }
 
   checkCitationsAndNames(gdd, { brief: itemNames(brief), identity: itemNames(identity), combat: headingNames(combat), world: headingNames(world) }, report, true)

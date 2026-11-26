@@ -1,6 +1,7 @@
 /**
  * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·부직업·출신 도시·장별 세계, 인용, 차트 명칭을 검사한다.
- * 계약: docs/spec/claude-game-design-flow.md 5.5절, docs/ADR/2026-11-24-isekai-identity-design.md 2번, docs/ADR/2026-11-25-class-candidates.md
+ * 계약: docs/spec/claude-game-design-flow.md 5.5절, docs/ADR/2026-11-24-isekai-identity-design.md 2번, docs/ADR/2026-11-25-class-candidates.md,
+ * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -82,7 +83,8 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
   const klass = single(section('클래스'))
   if (klass != null) {
     const where = `클래스 > ${klass.name}`
-    const material = fieldsOf(where, klass, ['재료', '하는 일', '판단'], report).get('재료')
+    // 플레이어용 이름은 장르 어휘로 짓는다. 설계용 이름(### 제목)은 인용과 크레딧에 남는다(#114).
+    const material = fieldsOf(where, klass, ['재료', '플레이어용 이름', '하는 일', '판단'], report).get('재료')
     if (material != null && !targetsOf(material.value, 'brief').some((target) => abilities.includes(target))) {
       report(material.line, `${where}: 재료에 [brief:<주인공 능력>]이 없다`)
     }
@@ -90,13 +92,18 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
     if (adopted.length === 1 && klass.name !== adopted[0]) report(klass.line, `${where}: 클래스는 후보에서 채택한 '${adopted[0]}'이다`)
   }
 
-  // 부직업: 싸움 밖에서 하는 일. 브리프의 생업이나 능력을 재료로 한다.
-  const subJob = single(section('부직업'))
-  if (subJob != null) {
-    const where = `부직업 > ${subJob.name}`
-    const material = fieldsOf(where, subJob, ['재료', '하는 일'], report).get('재료')
-    if (material != null && !targetsOf(material.value, 'brief').some((target) => abilities.includes(target) || livelihoods.includes(target))) {
-      report(material.line, `${where}: 재료에 [brief:<생업>]이나 [brief:<주인공 능력>]이 없다`)
+  // 부직업: 싸움 밖에서 하는 일. 브리프의 생업이나 능력을 재료로 하고, 여러 개 둘 수 있다(#120).
+  // 의뢰는 그 일로 들어오는 퀘스트이며 선택이다. GDD가 세계와 장이나 런과 성장에서 쓴다.
+  const subJobs = section('부직업')
+  if (subJobs != null) {
+    for (const field of subJobs.fields) report(field.line, `부직업: 허용하지 않는 필드 '${field.key}'`)
+    if (subJobs.items.length === 0) report(subJobs.line, '부직업: 항목이 하나 이상 있어야 한다 (실제: 0개)')
+    for (const subJob of subJobs.items) {
+      const where = `부직업 > ${subJob.name}`
+      const material = fieldsOf(where, subJob, ['재료', '하는 일'], report, ['재료', '하는 일', '의뢰']).get('재료')
+      if (material != null && !targetsOf(material.value, 'brief').some((target) => abilities.includes(target) || livelihoods.includes(target))) {
+        report(material.line, `${where}: 재료에 [brief:<생업>]이나 [brief:<주인공 능력>]이 없다`)
+      }
     }
   }
 

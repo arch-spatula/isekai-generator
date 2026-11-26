@@ -10,7 +10,9 @@ import {
 } from './game-document.ts'
 
 const TITLE = '# 전투 설계'
-const SECTIONS = ['후보', '전투 방식', '동료의 행동']
+const SECTIONS = ['후보', '전투 방식', '끌림', '장별 끌림', '동료의 행동']
+/** 끌림 시스템의 필드. 반복되는 실패를 위험과 보상의 구조로 옮기고, 게임이 남기는 기록으로 스토리와 잇는다(#112) */
+const DRAW_FIELDS = ['재료', '플레이어용 이름', '쌓는 행동', '보상', '대가', '기록', '극복']
 /** 게임플레이 성향 축과 허용값 */
 export const AXES: Record<string, string[]> = {
   '전투 거리': ['밀착', '중거리', '원거리'],
@@ -103,6 +105,30 @@ export function checkCombat({ combat, brief, identity, world }: CombatTexts): st
     for (const key of ['약점', '런 밖 성장']) {
       const field = fields.get(key)
       if (field != null && field.value !== '' && !targetsOf(field.value, 'brief').some((target) => abilities.has(target))) report(field.line, `전투 방식: ${key}에 [brief:<주인공 능력>] 인용이 없다`)
+    }
+  }
+
+  // 끌림: 브리프의 반복되는 실패를 플레이 시스템으로 옮긴 항목 하나. 서술에만 두면 플레이어가 그 사고방식을 겪지 못한다(#112).
+  const draw = section('끌림')
+  if (draw != null) {
+    for (const field of draw.fields) report(field.line, `끌림: 허용하지 않는 필드 '${field.key}'`)
+    if (draw.items.length !== 1) report(draw.line, `끌림: 항목은 하나다 (실제: ${draw.items.length}개)`)
+    for (const item of draw.items) {
+      const material = fieldsOf(`끌림 > ${item.name}`, item, DRAW_FIELDS, report).get('재료')
+      if (material != null && material.value !== '' && !targetsOf(material.value, 'brief').includes('반복되는 실패')) report(material.line, `끌림 > ${item.name}: 재료에 [brief:반복되는 실패]이 없다`)
+    }
+  }
+
+  // 장별 끌림: 사람은 시기마다 고민이 다르다. 브리프의 장마다 그 시기에 이 끌림이 무엇을 시험하는지 쓴다(#109·#112).
+  const chapters = sectionItemNames(brief, '장')
+  const byChapter = section('장별 끌림')
+  if (byChapter != null) {
+    for (const field of byChapter.fields) report(field.line, `장별 끌림: 허용하지 않는 필드 '${field.key}'`)
+    const written = byChapter.items.map(({ name }) => name)
+    if (written.join() !== chapters.join()) report(byChapter.line, `장별 끌림: 항목은 브리프의 장 ${chapters.join(', ')} 순서여야 한다 (실제: ${written.join(', ')})`)
+    for (const item of byChapter.items) {
+      const basis = fieldsOf(`장별 끌림 > ${item.name}`, item, ['의미', '근거'], report).get('근거')
+      if (basis != null && basis.value !== '' && chapters.includes(item.name) && !targetsOf(basis.value, 'brief').includes(item.name)) report(basis.line, `장별 끌림 > ${item.name}: 근거에 [brief:${item.name}]이 없다`)
     }
   }
 

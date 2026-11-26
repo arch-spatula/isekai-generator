@@ -132,3 +132,26 @@ test('후보의 출처가 클래스의 재료가 아니면 거부한다', () => 
   const narrow = replaceOnce(identity, '재료: [brief:성질을 읽고 빚는 손] [brief:고칠 곳을 짚는 눈]', '재료: [brief:성질을 읽고 빚는 손]')
   expect(check({ identity: narrow })).toEqual([`${lineOf('출처: [brief:고칠 곳을 짚는 눈]')}: 후보 > 틈을 짚는 일격: 출처 [brief:고칠 곳을 짚는 눈]는 클래스 '결 새김꾼'의 재료가 아니다`])
 })
+
+// #112: 주인공이 반복해서 기우는 쪽(브리프의 반복되는 실패)을 서술이 아니라 플레이 시스템으로 옮긴다. 장마다 그 시기의 의미를 둔다.
+test('끌림의 재료가 반복되는 실패가 아니거나 필드가 빠지면 거부한다', () => {
+  const material = '재료: [brief:반복되는 실패] [brief:다시 나눠 지는 짐]'
+  expect(check({ combat: replaceOnce(combat, material, '재료: [brief:다시 나눠 지는 짐]') })).toEqual([`${lineOf(material)}: 끌림 > 혼자 정하는 손: 재료에 [brief:반복되는 실패]이 없다`])
+  const cost = combat.split('\n').find((line) => line.startsWith('대가: '))!
+  expect(check({ combat: replaceOnce(combat, `${cost}\n`, '') })).toEqual([`${lineOf('### 혼자 정하는 손')}: 끌림 > 혼자 정하는 손: 대가 필드가 없다`])
+  const name = '플레이어용 이름: 외길\n'
+  expect(check({ combat: replaceOnce(combat, name, '') })).toEqual([`${lineOf('### 혼자 정하는 손')}: 끌림 > 혼자 정하는 손: 플레이어용 이름 필드가 없다`])
+})
+
+test('끌림이 둘이면 거부한다', () => {
+  const start = combat.indexOf('### 혼자 정하는 손'), end = combat.indexOf('## 장별 끌림')
+  const twice = combat.slice(0, end) + combat.slice(start, end).replace('### 혼자 정하는 손', '### 또 다른 끌림') + combat.slice(end)
+  expect(check({ combat: twice })).toContain(`${lineOf('## 끌림')}: 끌림: 항목은 하나다 (실제: 2개)`)
+})
+
+test('장별 끌림이 브리프의 장과 다르거나 그 장을 인용하지 않으면 거부한다', () => {
+  const missing = combat.replace(/### 장년\n의미:[^#]*/, '')
+  expect(check({ combat: missing })).toEqual([`${lineOf('## 장별 끌림')}: 장별 끌림: 항목은 브리프의 장 소년, 청년, 장년 순서여야 한다 (실제: 소년, 청년)`])
+  const basis = '근거: [brief:청년]'
+  expect(check({ combat: replaceOnce(combat, basis, '근거: [brief:장년]') })).toEqual([`${lineOf(basis)}: 장별 끌림 > 청년: 근거에 [brief:청년]이 없다`])
+})
