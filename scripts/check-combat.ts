@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { classAbilities } from './check-identity.ts'
+import { POWER_PATHS } from './check-translation-brief.ts'
 import {
   checkCitationsAndNames, checkSectionOrder, fieldsOf, itemNames, parseGameDocument, sectionItemNames, targetsOf, type Report,
 } from './game-document.ts'
@@ -27,9 +28,17 @@ export const AXES: Record<string, string[]> = {
 const CANDIDATE_COUNT = 3
 /** 후보 쌍마다 달라야 하는 축의 최소 수 */
 const MIN_DIFFERENT_AXES = 3
-const STYLE_FIELDS = ['채택', '핵심 행동', '속성', '약점', '적', '런 한 번', '런 중 보상', '런 밖 성장']
+const STYLE_FIELDS = ['채택', '핵심 행동', '속성', '약점', '적', '런 한 번', '런 중 보상', '런 밖 성장', '기술 얻기']
+/** 브리프 능력의 얻은 길 → 그 힘에 맞는 기술 획득 방식(#118) */
+const LEARNING: Record<string, string> = { 스승: '스승에게 배움', 축복: '각성', 길러냄: '숙련' }
 
 export interface CombatTexts { combat: string; brief: string; identity: string; world: string }
+
+/** 브리프 주인공 능력의 얻은 길 값 */
+function abilityPath(brief: string, ability: string): string | undefined {
+  const item = parseGameDocument(brief, '', () => {}).find(({ name }) => name === '주인공 능력')?.items.find(({ name }) => name === ability)
+  return item?.fields.find(({ key }) => key === '얻은 길')?.value
+}
 
 export function checkCombat({ combat, brief, identity, world }: CombatTexts): string[] {
   const errors: string[] = []
@@ -103,6 +112,18 @@ export function checkCombat({ combat, brief, identity, world }: CombatTexts): st
     const attributes = sectionItemNames(identity, '속성')
     if (attribute != null && attribute.value !== '' && !targetsOf(attribute.value, 'identity').some((target) => attributes.includes(target))) {
       report(attribute.line, `전투 방식: 속성에 정체성의 속성 [identity:${attributes[0] ?? '<속성>'}] 인용이 없다`)
+    }
+    // 기술 얻기: 클래스 능력의 얻은 길에 맞는 방식으로 기술을 얻는다. 인용한 능력의 얻은 길과 방식이 맞아야 한다(#118).
+    const learning = fields.get('기술 얻기')
+    if (learning != null && learning.value !== '') {
+      const method = Object.values(LEARNING).find((name) => learning.value.startsWith(`${name} — `))
+      const cited = targetsOf(learning.value, 'brief').filter((target) => klass?.abilities.includes(target))
+      if (method == null) report(learning.line, `전투 방식: 기술 얻기는 '<${Object.values(LEARNING).join(' | ')}> — <어떻게>'이다`)
+      else if (cited.length === 0) report(learning.line, '전투 방식: 기술 얻기에 클래스 재료의 [brief:<주인공 능력>] 인용이 없다')
+      else for (const ability of cited) {
+        const path = POWER_PATHS.find((name) => abilityPath(brief, ability)?.startsWith(`${name} — `))
+        if (path != null && LEARNING[path] !== method) report(learning.line, `전투 방식: [brief:${ability}]의 얻은 길은 '${path}'이라 기술 얻기는 '${LEARNING[path]}'이다`)
+      }
     }
     // 적은 세계 단계가 정한 세력이나 지역에서 나온다. 세계가 전투보다 먼저 만들어진다. 장르의 적이면 그 지역을 인용한다(#121).
     const enemy = fields.get('적')

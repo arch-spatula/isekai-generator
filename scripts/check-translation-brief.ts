@@ -11,6 +11,8 @@ import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
+/** 힘을 얻은 길. 스승에게 배움, 받은 축복, 혼자 길러냄(#118) */
+export const POWER_PATHS = ['스승', '축복', '길러냄']
 /** 동료와 갈라지는 모양. 장이 바뀌어도 조용히 사라지지 않게 한다(#117) */
 const PARTINGS = ['떠나보냄', '갈라섬', '잃음', '남겨 둠', '끝까지 함께']
 const SECTIONS = ['주인공', '주인공 능력', '생업', '동료', '배경', '장', '갈림길', '동기와 퀘스트', '옮기지 않은 인물']
@@ -68,6 +70,8 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
   const itemNames = new Set(lifeItems.map(({ name }) => name))
   // 생업 항목은 능력의 출처가 아니다. 생업을 전투 능력으로 직역하지 않는다(#85).
   const talents = new Set(lifeItems.filter(({ section, name }) => section === '재능과 생업' && !isLivelihood(name)).map(({ name }) => name))
+  // 가르친 사람은 실제로 있던 인물이다. 상태가 없음인 칸은 그 사람이 없었다는 판단이다.
+  const people = new Set(lifeItems.filter(({ section, fields }) => section === '인물 사전' && !fields.some(([key, value]) => key === '상태' && value === '없음')).map(({ name }) => name))
   const candidates = companionCandidates(life)
 
   const sections = parse(brief, report)
@@ -179,7 +183,15 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
   for (const item of abilities?.items ?? []) {
     const where = `주인공 능력 > ${item.name}`
     // 하는 일은 재능의 내용을 줄이지 않고 옮긴다(#99). 다루는 것만 남으면 무엇을 하는 능력인지가 사라진다.
-    const source = fieldsOf(where, item, ['출처', '다루는 것', '하는 일', '약점']).get('출처')
+    // 꽃피는 시기와 얻은 길은 힘이 어디서 왔는지 정한다(#118). 스승에게 받은 힘은 가르친 사람을 인물 사전에서 인용한다.
+    const fields = fieldsOf(where, item, ['출처', '다루는 것', '하는 일', '약점', '꽃피는 시기', '얻은 길'])
+    const source = fields.get('출처')
+    const path = fields.get('얻은 길')
+    if (path != null && path.value !== '') {
+      const shape = POWER_PATHS.find((name) => path.value.startsWith(`${name} — `))
+      if (shape == null) report(path.line, `${where}: 얻은 길은 '<${POWER_PATHS.join(' | ')}> — <어떻게>'이다`)
+      else if (shape === '스승' && !lifeTargets(path.value).some((target) => people.has(target))) report(path.line, `${where}: 스승에게 받은 힘은 가르친 사람 [life:<인물 칸>]을 인용한다`)
+    }
     requireLife(where, source)
     for (const target of lifeTargets(source?.value ?? '')) {
       if (isLivelihood(target)) report(source!.line, `${where}: 출처 [life:${target}]는 생업 항목이다 (생업은 능력의 출처가 아니다)`)

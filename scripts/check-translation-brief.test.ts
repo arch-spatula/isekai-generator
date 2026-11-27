@@ -265,3 +265,23 @@ test('끝까지 함께하는 동료는 마지막 장까지 동행한다', () => 
   const together = replaceOnce(brief, parting, '이별: 끝까지 함께 — 엇갈림을 지나 마지막까지 곁에 남는다')
   expect(check({ brief: together })).toEqual([`${lineOf(parting)}: 동료 > 연인·배우자: 끝까지 함께하는 동료는 마지막 장 '장년'까지 동행한다`])
 })
+
+// #118: 힘의 출처를 정한다. 스승에게 받은 힘은 가르친 사람을 인물 사전에서 인용하고, 없던 사람(상태 없음)은 스승이 될 수 없다.
+test('얻은 길이 목록 밖이거나 스승에게 받은 힘이 가르친 사람을 인용하지 않으면 거부한다', () => {
+  const path = '얻은 길: 스승 — 소년에 솜씨를 알아본 어른을 따라다니며 손기술을 배운다 [life:스승·후원자]'
+  expect(check({ brief: replaceOnce(brief, path, '얻은 길: 배움 — 손기술을 배운다') })).toEqual([
+    `${lineOf(path)}: 주인공 능력 > 성질을 읽고 빚는 손: 얻은 길은 '<스승 | 축복 | 길러냄> — <어떻게>'이다`,
+  ])
+  expect(check({ brief: replaceOnce(brief, path, '얻은 길: 스승 — 손기술을 배운다 [life:주 재능]') })).toEqual([
+    `${lineOf(path)}: 주인공 능력 > 성질을 읽고 빚는 손: 스승에게 받은 힘은 가르친 사람 [life:<인물 칸>]을 인용한다`,
+  ])
+  expect(check({ brief: replaceOnce(brief, path, '얻은 길: 스승 — 손기술을 배운다 [life:제자]') })).toEqual([
+    `${lineOf(path)}: 주인공 능력 > 성질을 읽고 빚는 손: 스승에게 받은 힘은 가르친 사람 [life:<인물 칸>]을 인용한다`,
+  ])
+  expect(check({ brief: replaceOnce(brief, path, '얻은 길: 축복 — 소년의 어느 밤 재료의 결이 한꺼번에 보이기 시작한다') })).toEqual([])
+})
+
+test('주인공 능력에 꽃피는 시기가 없으면 거부한다', () => {
+  const bloom = '꽃피는 시기: 유년에 익혀 장년에 제자를 기르며 쓴다\n'
+  expect(check({ brief: replaceOnce(brief, bloom, '') })).toEqual([`${lineOf('### 고칠 곳을 짚는 눈')}: 주인공 능력 > 고칠 곳을 짚는 눈: 꽃피는 시기 필드가 없다`])
+})

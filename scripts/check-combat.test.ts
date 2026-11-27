@@ -179,3 +179,16 @@ test('콘텐츠 모드에 런이 없으면 거부한다', () => {
   const line = '런: 해가 지면 시작해 밤새 몰려오는 무리를 버티고, 동이 틀 때 무너지지 않은 구조의 수로 끝난다\n'
   expect(check({ combat: replaceOnce(combat, line, '') })).toEqual([`${lineOf('### 터 지키기')}: 콘텐츠 모드 > 터 지키기: 런 필드가 없다`])
 })
+
+// #118: 기술은 힘의 출처에 맞게 얻는다. 스승에게 받은 힘은 배우고, 축복은 각성하고, 길러낸 힘은 숙련한다.
+test('기술 얻기가 목록 밖이거나 인용한 능력의 얻은 길과 맞지 않으면 거부한다', () => {
+  const line = '기술 얻기: 스승에게 배움 — 소년의 장에서는 런 사이 공방에서 스승이 새 구조를 하나씩 보여 주고, 다음 런에서 그 구조를 처음부터 빚을 수 있다 [brief:성질을 읽고 빚는 손]'
+  expect(check({ combat: replaceOnce(combat, line, '기술 얻기: 보상 — 런에서 얻는다 [brief:성질을 읽고 빚는 손]') })).toEqual([
+    `${lineOf(line)}: 전투 방식: 기술 얻기는 '<스승에게 배움 | 각성 | 숙련> — <어떻게>'이다`,
+  ])
+  expect(check({ combat: replaceOnce(combat, line, '기술 얻기: 숙련 — 쓴 만큼 는다') })).toEqual([`${lineOf(line)}: 전투 방식: 기술 얻기에 클래스 재료의 [brief:<주인공 능력>] 인용이 없다`])
+  expect(check({ combat: replaceOnce(combat, line, '기술 얻기: 숙련 — 쓴 만큼 는다 [brief:성질을 읽고 빚는 손]') })).toEqual([
+    `${lineOf(line)}: 전투 방식: [brief:성질을 읽고 빚는 손]의 얻은 길은 '스승'이라 기술 얻기는 '스승에게 배움'이다`,
+  ])
+  expect(check({ combat: replaceOnce(combat, line, '기술 얻기: 숙련 — 남의 구조를 볼수록 짚는 틈이 는다 [brief:고칠 곳을 짚는 눈]') })).toEqual([])
+})

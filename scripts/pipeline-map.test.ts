@@ -71,5 +71,7 @@ test('the report lists invented fields, known gaps and fields nobody downstream 
   expect(report).not.toContain('- combat 전투 방식 > 적:')
   // 같은 단계 안에서 쓰이는 필드는 쓰이지 않는 필드로 잡지 않는다.
   expect(report).not.toContain('- combat 후보 > 플레이')
-  expect(report).toContain('- life 재능과 생업 > 꽃피는 시기')
+  expect(report).toContain('- life 재능과 생업 > 쓰인 재능')
+  // 꽃피는 시기는 브리프의 얻은 길과 꽃피는 시기로 넘어간다(#118).
+  expect(report).not.toContain('- life 재능과 생업 > 꽃피는 시기')
 })
