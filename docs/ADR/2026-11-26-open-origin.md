@@ -1,6 +1,6 @@
 # ADR: 출신지를 도시로 못 박지 않고 권력·역사와 지역마다의 전장을 강제하지 않는다
 
-* **Status:** Accepted
+* **Status:** Accepted (3·4번은 [세계와 장의 분리](2026-11-27-world-before-chapters.md)로 대체)
 * **Date:** 2026-11-26
 * **Decision Owners:** Project Owner
 * **관련:** [이세계 정체성 설계](2026-11-24-isekai-identity-design.md) 2번, [장르 이름과 부직업](2026-11-26-genre-names-and-sub-jobs.md),

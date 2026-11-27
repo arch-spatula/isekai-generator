@@ -1,7 +1,7 @@
 /**
- * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·부직업·출신지·장별 세계, 인용, 차트 명칭을 검사한다.
+ * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·부직업·출신지, 인용, 차트 명칭을 검사한다.
  * 계약: docs/spec/claude-game-design-flow.md 5.5절, docs/ADR/2026-11-24-isekai-identity-design.md 2번, docs/ADR/2026-11-25-class-candidates.md,
- * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md, docs/ADR/2026-11-26-open-origin.md
+ * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md, docs/ADR/2026-11-26-open-origin.md, docs/ADR/2026-11-27-world-before-chapters.md
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,7 +10,7 @@ import {
 } from './game-document.ts'
 
 const TITLE = '# 이세계 정체성'
-const SECTIONS = ['클래스 후보', '클래스', '부직업', '출신지', '장별 세계']
+const SECTIONS = ['클래스 후보', '클래스', '부직업', '출신지']
 /** 제외한 후보의 갈래가 남는 자리 */
 const LEFTOVER = /^(클래스|부직업|동료|퀘스트) — \S/
 /** 다루는 것을 기능 영역으로 올려 이세계의 힘으로 옮긴 후보를 견준다 */
@@ -40,7 +40,6 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
   const section = (name: string) => sections.find((candidate) => candidate.name === name)
   const abilities = sectionItemNames(brief, '주인공 능력')
   const livelihoods = sectionItemNames(brief, '생업')
-  const chapters = sectionItemNames(brief, '장')
 
   /** 섹션에 항목이 정확히 하나 있다 */
   const single = (found: Section | undefined) => {
@@ -115,19 +114,6 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
     const basis = fieldsOf(where, origin, ['형태', '생활', '주인공의 자리', '근거'], report).get('근거')
     if (basis != null && !targetsOf(basis.value, 'brief').includes('출신지')) {
       report(basis.line, `${where}: 근거에 [brief:출신지]가 없다`)
-    }
-  }
-
-  // 장별 세계: 브리프의 장마다 순서대로 하나. 그 시기 주인공이 놓인 공동체·시대의 모습이다.
-  const eras = section('장별 세계')
-  if (eras != null) {
-    const names = eras.items.map(({ name }) => name)
-    if (names.join() !== chapters.join()) report(eras.line, `장별 세계: 항목은 브리프의 장 ${chapters.join(', ')} 순서여야 한다 (실제: ${names.join(', ')})`)
-    for (const field of eras.fields) report(field.line, `장별 세계: 허용하지 않는 필드 '${field.key}'`)
-    for (const item of eras.items) {
-      const where = `장별 세계 > ${item.name}`
-      const basis = fieldsOf(where, item, ['세계', '근거'], report).get('근거')
-      if (basis != null && chapters.includes(item.name) && !targetsOf(basis.value, 'brief').includes(item.name)) report(basis.line, `${where}: 근거에 [brief:${item.name}]이 없다`)
     }
   }
 

@@ -29,14 +29,14 @@ function parse(gdd: string): Block[] {
   return blocks
 }
 
-/** 세계 설계의 지역 이름 → 장 */
-function regionChapters(world: string): Map<string, string> {
+/** 세계 설계의 장 → 그 장이 고른 지역(#123) */
+function chapterRegions(world: string): Map<string, string> {
   const result = new Map<string, string>()
-  let section = '', region = ''
+  let section = '', chapter = ''
   for (const line of world.split('\n')) {
     if (line.startsWith('## ')) section = line.slice(3).trim()
-    else if (line.startsWith('### ')) region = line.slice(4).trim()
-    else if (section === '지역' && line.startsWith('장:')) result.set(region, line.slice(2).trim())
+    else if (line.startsWith('### ')) chapter = line.slice(4).trim()
+    else if (section === '장' && line.startsWith('지역:')) result.set(chapter, line.slice(3).trim())
   }
   return result
 }
@@ -103,14 +103,14 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
 
   // 세계와 장: 브리프의 장마다 항목 하나를 순서대로, 그 장의 지역을 인용한다.
   const chapters = sectionItemNames(brief, '장')
-  const regions = regionChapters(world)
+  const regions = chapterRegions(world)
   const worldBlock = block('세계와 장')
   if (worldBlock != null) {
     const written = worldBlock.items.map(({ name }) => name)
     if (written.join() !== chapters.join()) report(worldBlock.line, `세계와 장: 항목은 브리프의 장 ${chapters.join(', ')} 순서여야 한다 (실제: ${written.join(', ')})`)
     for (const item of worldBlock.items) {
       if (!chapters.includes(item.name)) continue
-      if (!cites(item.text, 'world').some((region) => regions.get(region) === item.name)) report(item.line, `세계와 장 > ${item.name}: 이 장의 지역을 [world:<지역>]으로 인용하지 않았다`)
+      if (!cites(item.text, 'world').includes(regions.get(item.name) ?? '')) report(item.line, `세계와 장 > ${item.name}: 이 장의 지역을 [world:<지역>]으로 인용하지 않았다`)
     }
   }
 

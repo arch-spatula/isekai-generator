@@ -31,7 +31,7 @@ test('클래스의 재료로 고른 주인공 능력을 읽는다', () => {
 
 test('섹션이 빠지거나 클래스가 둘이면 거부한다', () => {
   const start = identity.indexOf('## 부직업'), end = identity.indexOf('## 출신지')
-  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신지, 장별 세계 순서여야 한다 (실제: 클래스 후보, 클래스, 출신지, 장별 세계)'])
+  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신지 순서여야 한다 (실제: 클래스 후보, 클래스, 출신지)'])
   const two = replaceOnce(identity, '\n## 부직업', '### 두 번째 클래스\n재료: [brief:고칠 곳을 짚는 눈]\n하는 일: 틈을 짚는다\n판단: 비교용\n\n## 부직업')
   expect(check(two)).toEqual([`${classLine}: 클래스: 항목은 하나다 (실제: 2개)`])
 })
@@ -88,16 +88,16 @@ test('출신지에 형태·생활이 없거나 출신지를 인용하지 않으�
   expect(check(familyOnly)).toEqual([`${lineOf('근거: [brief:출신지] [brief:가족 구조]')}: 출신지 > 하구 목재 시장: 근거에 [brief:출신지]가 없다`])
 })
 
-test('장별 세계가 브리프의 장과 다르거나 그 장을 인용하지 않으면 거부한다', () => {
-  const start = identity.indexOf('### 장년')
-  expect(check(identity.slice(0, start))).toEqual([`${lineOf('## 장별 세계')}: 장별 세계: 항목은 브리프의 장 소년, 청년, 장년 순서여야 한다 (실제: 소년, 청년)`])
-  const basis = replaceOnce(identity, '근거: [brief:청년]', '근거: [brief:연인·배우자]')
-  expect(check(basis)).toEqual([`${lineOf('근거: [brief:청년]')}: 장별 세계 > 청년: 근거에 [brief:청년]이 없다`])
+// #123: 장의 무대는 세계 단계가 정한다. 정체성에는 장별 세계를 두지 않는다.
+test('장별 세계 섹션을 쓰면 거부한다', () => {
+  const eras = `${identity}\n## 장별 세계\n### 소년\n세계: 강가 작업장\n근거: [brief:소년]\n`
+  expect(check(eras)).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신지 순서여야 한다 (실제: 클래스 후보, 클래스, 부직업, 출신지, 장별 세계)'])
 })
 
 test('브리프 밖 인용과 차트 명칭을 거부한다', () => {
-  const life = replaceOnce(identity, '근거: [brief:소년]', '근거: [brief:소년] [life:유년]')
-  expect(check(life)).toEqual([`${lineOf('근거: [brief:소년]')}: [life:유년] — 이 문서는 [brief:]만 인용한다`])
+  const basis = '근거: [brief:출신지] [brief:가족 구조]'
+  const life = replaceOnce(identity, basis, `${basis} [life:유년]`)
+  expect(check(life)).toEqual([`${lineOf(basis)}: [life:유년] — 이 문서는 [brief:]만 인용한다`])
   const name = replaceOnce(identity, '### 하구 목재 시장', '### 무곡의 장부 도시')
   expect(check(name)).toEqual([`${lineOf('### 하구 목재 시장')}: 차트 명칭 '무곡'`])
 })

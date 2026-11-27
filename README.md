@@ -115,9 +115,9 @@ $implement-with-test-review docs/spec/<명세 파일>.md를 구현해줘.
 | [saju-life](.claude/skills/saju-life/SKILL.md) 외 2개 | 체계별 일생 해석 |
 | [life-integration](.claude/skills/life-integration/SKILL.md) | 세 체계 일생 해석을 하나의 일생 통합 해석(`life.md`)으로 합침 |
 | [translate-life](.claude/skills/translate-life/SKILL.md) | `life.md`를 게임 재료로 옮긴 번역 브리프(`translation-brief.md`) |
-| [design-identity](.claude/skills/design-identity/SKILL.md) | 클래스·부직업·출신 도시·장별 세계를 정한 이세계 정체성(`identity.md`) |
+| [design-identity](.claude/skills/design-identity/SKILL.md) | 클래스·부직업·출신지를 정한 이세계 정체성(`identity.md`) |
 | [design-combat](.claude/skills/design-combat/SKILL.md) | 클래스 안에서 후보 네 개를 비교해 고른 전투 설계(`combat.md`) |
-| [design-world](.claude/skills/design-world/SKILL.md) | 출신 도시와 장별 세계에서 출발한 세계 설계(`world.md`) |
+| [design-world](.claude/skills/design-world/SKILL.md) | 출신지에서 출발해 세계를 먼저 세우고 장마다 지역을 고른 세계 설계(`world.md`) |
 | [write-gdd](.claude/skills/write-gdd/SKILL.md) | 앞 네 문서를 잇는 GDD(`gdd.md`) |
 
 `/design-identity`·`/design-combat`·`/design-world`는 검증기를 통과한 뒤 작성자와 다른 검토 에이전트([game-step-reviewer](.claude/agents/game-step-reviewer.md))를 불러 `<단계>-review-<n>.md`를 남깁니다.

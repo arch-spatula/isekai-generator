@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { checkWorld } from './check-world.ts'
 
-// fixture: 합성 번역 브리프와 전투 설계를 입력으로 직접 쓴 세계 설계. 브리프의 장은 소년·청년·장년이다.
+// fixture: 합성 번역 브리프와 정체성을 입력으로 직접 쓴 세계 설계. 브리프의 장은 소년·청년·장년이다.
 // 기대 위반은 docs/spec/claude-game-design-flow.md 4.2·5.3·6절에서 정했다.
 const fixtures = join(import.meta.dir, 'fixtures')
 const brief = readFileSync(join(fixtures, 'translation-brief/translation-brief.md'), 'utf8')
@@ -21,19 +21,29 @@ test('정상 세계 설계는 통과한다', () => {
   expect(check()).toEqual([])
 })
 
-test('브리프의 장에 지역이 없거나 브리프에 없는 장을 쓰면 거부한다', () => {
-  const missing = world.replace(/### 모여든 사람들의 거처\n[^#]*/, '')
-  expect(check(missing)).toEqual([`${lineOf('## 지역')}: 지역: 브리프의 장 '장년'의 지역이 없다`])
-  const unknown = replaceOnce(world, '장: 장년', '장: 노년')
-  expect(check(unknown)).toEqual([
-    `${lineOf('장: 장년')}: 지역 > 모여든 사람들의 거처: 장 '노년'는 브리프의 장(소년, 청년, 장년)이 아니다`,
-    `${lineOf('## 지역')}: 지역: 브리프의 장 '장년'의 지역이 없다`,
-  ])
+// #123: 지역은 장과 따로 세우고, 장은 그 사건이 일어나는 지역을 하나 고른다.
+test('장이 브리프의 장과 다르거나 없는 지역을 고르면 거부한다', () => {
+  const missing = replaceOnce(world, '### 장년\n지역: 모여든 사람들의 거처\n', '')
+  expect(check(missing)).toEqual([`${lineOf('## 장')}: 장: 항목은 브리프의 장 소년, 청년, 장년 순서여야 한다 (실제: 소년, 청년)`])
+  const unknown = replaceOnce(world, '지역: 모여든 사람들의 거처', '지역: 없는 곳')
+  expect(check(unknown)).toEqual([`${lineOf('지역: 모여든 사람들의 거처')}: 장 > 장년: 지역 '없는 곳'는 이 문서의 지역이 아니다`])
 })
 
-test('첫 지역은 브리프의 첫 장이고 정체성의 출신지에서 시작한다', () => {
+test('여러 장이 한 지역을 쓰거나 장이 고르지 않은 지역이 있어도 통과한다', () => {
+  expect(world.includes('### 스승의 작업장')).toBe(true)
+  expect(check(replaceOnce(world, '지역: 모여든 사람들의 거처', '지역: 새 터전'))).toEqual([])
+})
+
+test('지역에 장 필드를 쓰면 거부한다', () => {
+  const line = '성격: 둘이 함께 일구기 시작한 아직 아무것도 정해지지 않은 땅'
+  expect(check(replaceOnce(world, line, `장: 청년\n${line}`))).toEqual([`${lineOf(line)}: 지역 > 새 터전: 허용하지 않는 필드 '장'`])
+})
+
+test('첫 장은 출신지에서 만든 첫 지역에서 시작한다', () => {
   const basis = replaceOnce(world, '근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]', '근거: [brief:출신지] [brief:소년]')
   expect(check(basis)).toEqual([`${lineOf('근거: [identity:하구 목재 시장] [brief:성장 환경] [brief:소년]')}: 지역 > 셈하는 마을: 첫 지역의 근거에 출신지 [identity:하구 목재 시장]가 없다`])
+  const first = replaceOnce(world, '지역: 셈하는 마을', '지역: 스승의 작업장')
+  expect(check(first)).toEqual([`${lineOf('지역: 셈하는 마을')}: 장 > 소년: 첫 장의 지역은 출신지에서 만든 첫 지역 '셈하는 마을'이다`])
 })
 
 // #87: 요소마다 인용을 요구하지 않는다. 지어낸 지역·세력은 근거 없이 쓰고, 근거를 쓰면 브리프나 정체성을 인용한다.
@@ -66,18 +76,20 @@ test('서사 갈등이 축이나 반복되는 실패를 인용하지 않으면 �
   expect(check(changed)).toEqual([`${lineOf('## 서사 갈등')}: 서사 갈등: 근거 어디에도 [brief:축]이 없다`])
 })
 
-// #121: 전장은 지역마다 강제하지 않고 장마다 하나 이상 둔다. 적은 세력이 아니라 장르의 적이어도 된다. 전투 설계는 인용할 수 없다.
-test('장에 전장이 있는 지역이 없으면 거부하고, 세력 없는 전장과 전장 없는 지역은 허용한다', () => {
-  const line = '전장: 쌓아 둔 재료와 짓다 만 구조물 사이에서 셈하는 사람들의 셈꾼들이 몫을 걷으러 재료 더미를 막아선다'
-  expect(check(replaceOnce(world, `${line}\n`, ''))).toEqual([`${lineOf('## 지역')}: 지역: 브리프의 장 '소년'에 전장이 있는 지역이 없다`])
-  expect(world.split('\n').filter((text) => text.startsWith('전장:'))).toHaveLength(3)
-  expect(check(replaceOnce(world, line, `${line} [combat:전투 방식]`)))
-    .toEqual([`${lineOf(line)}: [combat:전투 방식] — 이 문서는 [brief:]·[identity:]만 인용한다`])
+// #121·#123: 전장은 위협이 있는 지역에만 두고 세계 전체에 하나 이상 둔다. 장마다 강제하지 않는다. 적은 장르의 적이어도 된다. 전투 설계는 인용할 수 없다.
+test('전장이 있는 지역이 하나도 없으면 거부하고, 전장 없는 장은 허용한다', () => {
+  const battles = world.split('\n').filter((text) => text.startsWith('전장:'))
+  expect(battles).toHaveLength(3)
+  expect(check(replaceOnce(world, `${battles[0]}\n`, ''))).toEqual([])
+  const peaceful = battles.reduce((text, line) => replaceOnce(text, `${line}\n`, ''), world)
+  expect(check(peaceful)).toEqual([`${lineOf('## 지역')}: 지역: 전장이 있는 지역이 없다`])
+  expect(check(replaceOnce(world, battles[0], `${battles[0]} [combat:전투 방식]`)))
+    .toEqual([`${lineOf(battles[0])}: [combat:전투 방식] — 이 문서는 [brief:]·[identity:]만 인용한다`])
 })
 
 test('기호를 직역한 지역 이름과 없는 인용 대상을 거부한다', () => {
-  const literal = replaceOnce(world, '### 셈하는 마을', '### 무곡의 장부 도시')
-  expect(check(literal)).toEqual([`${lineOf('### 셈하는 마을')}: 차트 명칭 '무곡'`])
+  const literal = replaceOnce(world, '### 스승의 작업장', '### 무곡의 장부 도시')
+  expect(check(literal)).toEqual([`${lineOf('### 스승의 작업장')}: 차트 명칭 '무곡'`])
   const unknown = replaceOnce(world, '근거: [brief:장년] [brief:비어 있던 자리]', '근거: [brief:장년] [brief:없는 퀘스트]')
   expect(check(unknown)).toEqual([`${lineOf('근거: [brief:장년] [brief:비어 있던 자리]')}: [brief:없는 퀘스트] — 인용 대상 문서에 없는 항목`])
 })
