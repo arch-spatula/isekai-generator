@@ -11,6 +11,8 @@ import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
+/** 동료와 갈라지는 모양. 장이 바뀌어도 조용히 사라지지 않게 한다(#117) */
+const PARTINGS = ['떠나보냄', '갈라섬', '잃음', '남겨 둠', '끝까지 함께']
 const SECTIONS = ['주인공', '주인공 능력', '생업', '동료', '배경', '장', '갈림길', '동기와 퀘스트', '옮기지 않은 인물']
 /** 주인공 절의 항목과 각각 인용해야 하는 life.md 항목 */
 const PROTAGONIST = ['축', '반복되는 실패']
@@ -149,7 +151,17 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
       if (candidate == null) report(item.line, `${where}: 동료 후보가 아니다 (후보: ${expected})`)
       else chosen.add(item.name)
       // 재주는 life.md 인물 사전의 다루는 것이다. 전투 단계가 동료의 행동을 만드는 재료다.
-      const fields = fieldsOf(where, item, ['동행하는 장', '재주', '함께 하는 일', '근거'])
+      // 합류와 이별은 관계의 단절과 합류를 사건으로 남긴다. 이별은 정해진 모양 하나로 시작한다(#117).
+      const fields = fieldsOf(where, item, ['동행하는 장', '재주', '함께 하는 일', '합류', '이별', '근거'])
+      const parting = fields.get('이별')
+      if (parting != null && parting.value !== '') {
+        const shape = PARTINGS.find((name) => parting.value.startsWith(`${name} — `))
+        if (shape == null) report(parting.line, `${where}: 이별은 '<${PARTINGS.join(' | ')}> — <어떻게>'이다`)
+        // 끝까지 함께하는 동료는 브리프의 마지막 장까지 동행한다.
+        const last = chapterNames.at(-1)
+        const joined = fields.get('동행하는 장')?.value.split(',').map((part) => part.trim()) ?? []
+        if (shape === '끝까지 함께' && last != null && !joined.includes(last)) report(parting.line, `${where}: 끝까지 함께하는 동료는 마지막 장 '${last}'까지 동행한다`)
+      }
       const stages = fields.get('동행하는 장')
       for (const stage of stages?.value.split(',').map((part) => part.trim()).filter(Boolean) ?? []) {
         if (!STAGE_NAMES.includes(stage)) report(stages!.line, `${where}: '${stage}'는 생애 단계 이름이 아니다`)

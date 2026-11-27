@@ -249,3 +249,19 @@ test('life.md에 갈림길이 없으면 빈 갈림길 절이 통과한다', () =
   const changed = brief.replace(forks, '## 갈림길\n\n').replace('재료: [life:경쟁자·적대자] [life:노년의 길]', '재료: [life:경쟁자·적대자] [life:노년]')
   expect(check({ brief: changed, life: noForks })).toEqual([])
 })
+
+// #117: 동료마다 합류와 이별을 사건으로 쓴다. 이별은 정해진 모양 하나로 시작해 장이 바뀌어도 조용히 사라지지 않게 한다.
+test('동료에 합류나 이별이 없거나 이별의 모양이 목록 밖이면 거부한다', () => {
+  const join = '합류: 소년의 장에 솜씨를 알아보고 부모의 반대를 무릅쓴 주인공을 제자로 거둔다'
+  expect(check({ brief: replaceOnce(brief, `${join}\n`, '') })).toEqual([`${lineOf('### 스승·후원자')}: 동료 > 스승·후원자: 합류 필드가 없다`])
+  const parting = '이별: 떠나보냄 — 청년의 장으로 넘어갈 때 더 가르칠 것이 없다며 주인공을 세상으로 내보낸다'
+  expect(check({ brief: replaceOnce(brief, parting, '이별: 청년이 되자 떠난다') })).toEqual([
+    `${lineOf(parting)}: 동료 > 스승·후원자: 이별은 '<떠나보냄 | 갈라섬 | 잃음 | 남겨 둠 | 끝까지 함께> — <어떻게>'이다`,
+  ])
+})
+
+test('끝까지 함께하는 동료는 마지막 장까지 동행한다', () => {
+  const parting = '이별: 갈라섬 — 청년의 끝에 터를 두고 크게 엇갈려 각자의 길로 갈라선다'
+  const together = replaceOnce(brief, parting, '이별: 끝까지 함께 — 엇갈림을 지나 마지막까지 곁에 남는다')
+  expect(check({ brief: together })).toEqual([`${lineOf(parting)}: 동료 > 연인·배우자: 끝까지 함께하는 동료는 마지막 장 '장년'까지 동행한다`])
+})

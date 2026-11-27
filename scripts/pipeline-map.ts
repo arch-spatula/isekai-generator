@@ -91,6 +91,8 @@ export const STAGES: StageSpec[] = [
       { key: '동료 > 동행하는 장', from: ['life:인물 사전 > 곁에 있던 시기'] },
       { key: '동료 > 재주', from: ['life:인물 사전 > 다루는 것'] },
       { key: '동료 > 함께 하는 일', from: ['life:인물 사전 > 함께 한 일'] },
+      { key: '동료 > 합류', from: ['life:인물 사전 > 관계의 변화', 'life:인물 사전 > 곁에 있던 시기', 'life:생애 연표 > 전환점'] },
+      { key: '동료 > 이별', from: ['life:인물 사전 > 관계의 변화', 'life:갈림길 > *', 'life:상처와 회복 > 내용'] },
       { key: '동료 > 혼자', from: ['life:인물 사전 > 영향'], optional: true },
       { key: '배경 > 터전', from: ['life:배경 > 터전'] },
       { key: '배경 > 가세', from: ['life:배경 > 가세'] },
@@ -179,7 +181,7 @@ export const STAGES: StageSpec[] = [
     fields: [
       { key: '게임 개요 > 본문', from: ['combat:전투 방식 > 핵심 행동', 'brief:주인공 > 내용', 'external:genre'] },
       { key: '주인공 > 본문', from: ['brief:배경 > *', 'identity:클래스 > 하는 일', 'identity:속성 > 판단', 'identity:부직업 > 하는 일', 'brief:주인공 > 내용'] },
-      { key: '동료 > 본문', from: ['brief:동료 > 동행하는 장', 'brief:동료 > 함께 하는 일', 'combat:동료의 행동 > 행동'] },
+      { key: '동료 > 본문', from: ['brief:동료 > 동행하는 장', 'brief:동료 > 함께 하는 일', 'brief:동료 > 합류', 'brief:동료 > 이별', 'combat:동료의 행동 > 행동'] },
       { key: '세계와 장 > 본문', from: ['world:장 > 지역', 'world:지역 > *', 'brief:장 > 사건', 'identity:부직업 > 의뢰'] },
       { key: '전투 > 본문', from: ['combat:전투 방식 > *'] },
       { key: '런과 성장 > 본문', from: ['combat:콘텐츠 모드 > 런', 'combat:전투 방식 > 런 한 번', 'combat:전투 방식 > 런 중 보상', 'combat:전투 방식 > 런 밖 성장', 'combat:끌림 > 쌓는 행동', 'combat:장별 끌림 > 의미', 'identity:부직업 > 의뢰'] },
