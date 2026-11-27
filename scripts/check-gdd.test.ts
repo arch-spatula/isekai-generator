@@ -78,7 +78,7 @@ test('제외 메커니즘, 차트 명칭, life 인용, 없는 인용 대상을 �
   expect(check({ gdd: replaceOnce(gdd, '[brief:축].\n\n## 주인공', '[brief:축] [life:축].\n\n## 주인공') })).toEqual([
     `${lineOf('## 주인공') - 2}: [life:축] — 이 문서는 [brief:]·[identity:]·[combat:]·[world:]만 인용한다`,
   ])
-  expect(check({ gdd: replaceOnce(gdd, '[world:새 터전]. 같은', '[world:없는 땅]. 같은') })).toContain(`${lineOf('### 청년') + 1}: [world:없는 땅] — 인용 대상 문서에 없는 항목`)
+  expect(check({ gdd: replaceOnce(gdd, '[world:새 터전]. 런은', '[world:없는 땅]. 런은') })).toContain(`${lineOf('### 청년') + 1}: [world:없는 땅] — 인용 대상 문서에 없는 항목`)
 })
 
 // #86: 주인공 절은 정체성 단계의 클래스와 부직업을 잇는다.
@@ -107,6 +107,12 @@ test('선택 장면이 브리프의 갈림길과 다르거나 그 갈림길을 �
   expect(check({ gdd: replaceOnce(gdd, '동료는 남아 달라고 말한다 [brief:노년의 길].', '동료는 남아 달라고 말한다 [world:혼자 정한 터].') })).toEqual([
     `${lineOf('### 노년의 길')}: 선택 장면 > 노년의 길: [brief:노년의 길]을 인용하지 않았다`,
   ])
+})
+
+// #107: 장 문단은 브리프 그 장의 여정을 잇는다.
+test('세계와 장의 장 문단이 브리프의 그 장을 인용하지 않으면 거부한다', () => {
+  const changed = replaceOnce(gdd, ' [brief:청년]', '')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('### 청년')}: 세계와 장 > 청년: 브리프의 장 [brief:청년]을 인용하지 않았다`])
 })
 
 // #112·#114: 끌림 시스템은 런과 성장에 나오고, 크레딧은 플레이어용 이름마다 설계용 이름과 출처를 밝힌다.

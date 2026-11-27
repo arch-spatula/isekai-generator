@@ -103,7 +103,7 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
     }
   }
 
-  // 세계와 장: 브리프의 장마다 항목 하나를 순서대로, 그 장의 지역을 인용한다.
+  // 세계와 장: 브리프의 장마다 항목 하나를 순서대로, 그 장의 지역과 브리프의 그 장을 인용한다.
   const chapters = sectionItemNames(brief, '장')
   const regions = chapterRegions(world)
   const worldBlock = block('세계와 장')
@@ -113,6 +113,8 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
     for (const item of worldBlock.items) {
       if (!chapters.includes(item.name)) continue
       if (!cites(item.text, 'world').includes(regions.get(item.name) ?? '')) report(item.line, `세계와 장 > ${item.name}: 이 장의 지역을 [world:<지역>]으로 인용하지 않았다`)
+      // 장 문단은 브리프 그 장의 여정(고민 → 부름 → 문턱 → 시련 → 귀환)을 잇는다(#107).
+      if (!cites(item.text, 'brief').includes(item.name)) report(item.line, `세계와 장 > ${item.name}: 브리프의 장 [brief:${item.name}]을 인용하지 않았다`)
     }
   }
 

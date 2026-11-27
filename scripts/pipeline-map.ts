@@ -43,6 +43,7 @@ export interface StageSpec {
 /** 외부 재료: 저장소에 고정된 표나 장르 계약 */
 export const EXTERNAL: Record<string, string> = {
   'combat-axes': '전투 원형 일곱 축의 값 목록(docs/ADR/2026-11-03-personalized-combat-archetype-selection.md)',
+  'hero-journey': '영웅의 여정 국면 목록: 장 안의 한 바퀴와 일생의 열두 단계(docs/ADR/2026-11-27-hero-journey.md)',
   genre: '장르 계약: 픽셀 그래픽, 빠른 실시간 액션, 로그라이트(docs/ADR/2026-11-23-claude-gdd-flow.md 결정 5)',
 }
 
@@ -105,6 +106,10 @@ export const STAGES: StageSpec[] = [
       { key: '장 > 사건', from: ['life:생애 연표 > 전환점'] },
       { key: '장 > 고민', from: ['life:생애 연표 > 주제'] },
       { key: '장 > 시련', from: ['life:생애 연표 > 시련'] },
+      { key: '장 > 일생 국면', from: ['life:생애 연표 > 주제', 'life:생애 연표 > 시련', 'life:일생의 축 > 내용', 'external:hero-journey'] },
+      { key: '장 > 부름', from: ['life:생애 연표 > 전환점', 'life:생애 연표 > 인연'] },
+      { key: '장 > 문턱', from: ['life:생애 연표 > 전환점', 'life:생애 연표 > 잃는 것'] },
+      { key: '장 > 귀환', from: ['life:생애 연표 > 얻는 것', 'life:생애 연표 > 성격 변화'] },
       { key: '갈림길 > 본선', from: ['life:갈림길 > *'] },
       { key: '갈림길 > 다른 길', from: ['life:갈림길 > *'] },
       { key: '갈림길 > 갈리는 조건', from: ['life:갈림길 > *'] },
@@ -188,7 +193,7 @@ export const STAGES: StageSpec[] = [
       { key: '게임 개요 > 본문', from: ['combat:전투 방식 > 핵심 행동', 'brief:주인공 > 내용', 'external:genre'] },
       { key: '주인공 > 본문', from: ['brief:배경 > *', 'identity:클래스 > 하는 일', 'identity:속성 > 판단', 'identity:부직업 > 하는 일', 'brief:주인공 > 내용'] },
       { key: '동료 > 본문', from: ['brief:동료 > 동행하는 장', 'brief:동료 > 함께 하는 일', 'brief:동료 > 합류', 'brief:동료 > 이별', 'combat:동료의 행동 > 행동'] },
-      { key: '세계와 장 > 본문', from: ['world:장 > 지역', 'world:지역 > *', 'brief:장 > 사건', 'identity:부직업 > 의뢰'] },
+      { key: '세계와 장 > 본문', from: ['world:장 > 지역', 'world:지역 > *', 'brief:장 > *', 'identity:부직업 > 의뢰'] },
       { key: '전투 > 본문', from: ['combat:전투 방식 > *'] },
       { key: '런과 성장 > 본문', from: ['combat:콘텐츠 모드 > 런', 'combat:전투 방식 > 기술 얻기', 'combat:전투 방식 > 런 한 번', 'combat:전투 방식 > 런 중 보상', 'combat:전투 방식 > 런 밖 성장', 'combat:끌림 > 쌓는 행동', 'combat:장별 끌림 > 의미', 'identity:부직업 > 의뢰'] },
       { key: '선택 장면 > 본문', from: ['brief:갈림길 > 장', 'brief:갈림길 > 상황', 'brief:갈림길 > 선택지', 'brief:갈림길 > 본선', 'brief:갈림길 > 다른 길'] },

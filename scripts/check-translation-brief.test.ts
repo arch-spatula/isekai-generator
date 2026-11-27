@@ -128,16 +128,16 @@ test('주인공 절은 축과 반복되는 실패를 같은 이름의 life.md �
 })
 
 test('장은 생애 단계를 연표 순서로 쓰고 그 단계를 인용한다', () => {
-  const swapped = replaceOnce(brief, '### 소년\n사건:', '### 소년_\n사건:').replace('### 장년\n사건:', '### 소년\n사건:').replace('### 소년_\n사건:', '### 장년\n사건:')
+  const swapped = replaceOnce(brief, '### 소년\n일생 국면:', '### 소년_\n일생 국면:').replace('### 장년\n일생 국면:', '### 소년\n일생 국면:').replace('### 소년_\n일생 국면:', '### 장년\n일생 국면:')
   expect(check({ brief: swapped })).toContain(`${lineOf('## 장')}: 장: 생애 단계는 연표 순서로 한 번씩 쓴다 (실제: 장년, 청년, 소년)`)
-  const notStage = replaceOnce(brief, '### 장년\n사건:', '### 중년\n사건:')
+  const notStage = replaceOnce(brief, '### 장년\n일생 국면:', '### 중년\n일생 국면:')
   expect(check({ brief: notStage })).toContain(`${lineOf('### 장년')}: 장 > 중년: 생애 단계 이름이 아니다`)
   const basis = replaceOnce(brief, '근거: [life:장년]', '근거: [life:노년]')
   expect(check({ brief: basis })).toEqual([`${lineOf('근거: [life:장년]')}: 장 > 장년: 근거에 [life:장년]이 없다`])
 })
 
 test('동료의 동행하는 장이 브리프의 장에 없으면 거부한다', () => {
-  const noYouth = brief.replace(/### 청년\n사건:[^#]*/, '')
+  const noYouth = brief.replace(/### 청년\n일생 국면:[^#]*/, '')
   expect(check({ brief: noYouth })).toEqual([`${lineOf('동행하는 장: 청년')}: 동료 > 연인·배우자: 청년는 브리프의 장이 아니다`])
 })
 
@@ -300,4 +300,24 @@ test('선택지가 하나뿐이거나 결과가 본선·다른 길이 아니거�
 
 test('선택 장면의 장이 브리프의 장이 아니면 거부한다', () => {
   expect(check({ brief: replaceOnce(brief, '장: 장년\n상황:', '장: 노년\n상황:') })).toEqual([`${lineOf('장: 장년')}: 갈림길 > 노년의 길: 장 '노년'는 브리프의 장이 아니다`])
+})
+
+// #107: 장 하나가 여정 한 바퀴(고민 → 부름 → 문턱 → 시련 → 귀환)이고, 장마다 일생 여정의 서로 다른 국면을 연표 순서로 맡는다.
+test('장에 부름·문턱·귀환이 없으면 거부한다', () => {
+  const threshold = '문턱: 스승 곁을 떠나 함께 사는 사람과 새 터를 꾸린다\n'
+  expect(check({ brief: replaceOnce(brief, threshold, '') })).toEqual([`${lineOf('### 청년')}: 장 > 청년: 문턱 필드가 없다`])
+})
+
+test('일생 국면이 목록 밖이거나 앞 장과 같거나 앞서면 거부한다', () => {
+  const phase = '일생 국면: 시험과 동맹'
+  expect(check({ brief: replaceOnce(brief, phase, '일생 국면: 방황') })).toEqual([
+    `${lineOf(phase)}: 장 > 청년: 일생 국면은 일상 세계 | 모험에의 부름 | 부름의 거부 | 스승과의 만남 | 첫 문턱 | 시험과 동맹 | 가장 깊은 동굴 | 시련 | 보상 | 귀환의 길 | 부활 | 영약을 들고 귀환 가운데 하나다`,
+  ])
+  expect(check({ brief: replaceOnce(brief, phase, '일생 국면: 모험에의 부름') })).toEqual([
+    `${lineOf(phase)}: 장 > 청년: 일생 국면은 장마다 다르고 앞 장보다 뒤의 국면이다 (앞 장: 모험에의 부름)`,
+  ])
+  expect(check({ brief: replaceOnce(brief, phase, '일생 국면: 일상 세계') })).toEqual([
+    `${lineOf(phase)}: 장 > 청년: 일생 국면은 장마다 다르고 앞 장보다 뒤의 국면이다 (앞 장: 모험에의 부름)`,
+  ])
+  expect(check({ brief: replaceOnce(brief, phase, '일생 국면: 가장 깊은 동굴') })).toEqual([])
 })

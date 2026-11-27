@@ -11,6 +11,8 @@ import { isLivelihood, readLifeItems } from './life-document.ts'
 import { LIFE_STAGES } from './life-stages.ts'
 
 const TITLE = '# 일생 번역 브리프'
+/** 일생 전체를 여정 한 바퀴로 볼 때의 국면. 보글러가 정리한 영웅의 여정 열두 단계(#107) */
+export const LIFE_JOURNEY = ['일상 세계', '모험에의 부름', '부름의 거부', '스승과의 만남', '첫 문턱', '시험과 동맹', '가장 깊은 동굴', '시련', '보상', '귀환의 길', '부활', '영약을 들고 귀환']
 /** 힘을 얻은 길. 스승에게 배움, 받은 축복, 혼자 길러냄(#118) */
 export const POWER_PATHS = ['스승', '축복', '길러냄']
 /** 동료와 갈라지는 모양. 장이 바뀌어도 조용히 사라지지 않게 한다(#117) */
@@ -113,11 +115,21 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
     if (known.join() !== [...known].sort((a, b) => STAGE_NAMES.indexOf(a) - STAGE_NAMES.indexOf(b)).join() || new Set(known).size !== known.length) {
       report(chapters.line, `장: 생애 단계는 연표 순서로 한 번씩 쓴다 (실제: ${chapterNames.join(', ')})`)
     }
+    let lastPhase = -1
     for (const item of chapters.items) {
       const where = `장 > ${item.name}`
       if (!STAGE_NAMES.includes(item.name)) report(item.line, `${where}: 생애 단계 이름이 아니다`)
-      const basis = fieldsOf(where, item, ['사건', '고민', '시련', '근거']).get('근거')
+      // 장 하나가 여정 한 바퀴다: 고민(일상) → 부름 → 문턱 → 시련 → 귀환. 일생 국면은 이 장이 일생의 여정에서 맡는 자리다(#107).
+      const fields = fieldsOf(where, item, ['일생 국면', '사건', '고민', '부름', '문턱', '시련', '귀환', '근거'])
+      const basis = fields.get('근거')
       if (basis != null && basis.value !== '' && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `${where}: 근거에 [life:${item.name}]이 없다`)
+      const phase = fields.get('일생 국면')
+      if (phase != null && phase.value !== '') {
+        const index = LIFE_JOURNEY.indexOf(phase.value)
+        if (index === -1) report(phase.line, `${where}: 일생 국면은 ${LIFE_JOURNEY.join(' | ')} 가운데 하나다`)
+        else if (index <= lastPhase) report(phase.line, `${where}: 일생 국면은 장마다 다르고 앞 장보다 뒤의 국면이다 (앞 장: ${LIFE_JOURNEY[lastPhase]})`)
+        else lastPhase = index
+      }
     }
   }
 
