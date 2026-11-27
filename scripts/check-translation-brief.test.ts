@@ -285,3 +285,19 @@ test('주인공 능력에 꽃피는 시기가 없으면 거부한다', () => {
   const bloom = '꽃피는 시기: 유년에 익혀 장년에 제자를 기르며 쓴다\n'
   expect(check({ brief: replaceOnce(brief, bloom, '') })).toEqual([`${lineOf('### 고칠 곳을 짚는 눈')}: 주인공 능력 > 고칠 곳을 짚는 눈: 꽃피는 시기 필드가 없다`])
 })
+
+// #113: 갈림길은 플레이어의 선택이 된다. 선택지는 주인공의 행동이고 본선과 다른 길로 하나 이상씩 간다. 장면은 브리프의 장에 놓인다.
+test('선택지가 하나뿐이거나 결과가 본선·다른 길이 아니거나 한쪽으로만 가면 거부한다', () => {
+  const options = '선택지: 자리를 내려놓고 먼 길을 나선다 → 본선 / 남아서 등을 돌렸던 벗을 먼저 찾아간다 → 다른 길'
+  const format = `${lineOf(options)}: 갈림길 > 노년의 길: 선택지는 '<주인공의 행동> → <본선 | 다른 길>'을 ' / '로 둘 이상 잇는다`
+  expect(check({ brief: replaceOnce(brief, options, '선택지: 자리를 내려놓고 먼 길을 나선다 → 본선') })).toEqual([format])
+  expect(check({ brief: replaceOnce(brief, options, '선택지: 먼 길을 나선다 → 떠남 / 남는다 → 다른 길') })).toEqual([format])
+  expect(check({ brief: replaceOnce(brief, options, '선택지: 먼 길을 나선다 → 본선 / 혼자 떠난다 → 본선') })).toEqual([
+    `${lineOf(options)}: 갈림길 > 노년의 길: 선택지는 본선과 다른 길로 가는 행동을 하나 이상씩 둔다`,
+  ])
+  expect(check({ brief: replaceOnce(brief, options, `${options} / 편지를 태우고 아무에게도 답하지 않는다 → 다른 길`) })).toEqual([])
+})
+
+test('선택 장면의 장이 브리프의 장이 아니면 거부한다', () => {
+  expect(check({ brief: replaceOnce(brief, '장: 장년\n상황:', '장: 노년\n상황:') })).toEqual([`${lineOf('장: 장년')}: 갈림길 > 노년의 길: 장 '노년'는 브리프의 장이 아니다`])
+})

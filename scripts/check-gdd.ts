@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { checkCitationsAndNames, citationsIn, headingNames, itemNames, parseGameDocument, sectionItemNames, type Report } from './game-document.ts'
 
-const SECTIONS = ['게임 개요', '주인공', '동료', '세계와 장', '전투', '런과 성장', '서사의 변화', '대표 장면', '크레딧']
+const SECTIONS = ['게임 개요', '주인공', '동료', '세계와 장', '전투', '런과 성장', '서사의 변화', '선택 장면', '대표 장면', '크레딧']
 const BACKGROUND = ['출신지', '성장 환경', '가족 구조', '떠남의 계기']
 
 interface Block { name: string; line: number; text: string; items: { name: string; line: number; text: string }[] }
@@ -130,6 +130,17 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
   const story = block('서사의 변화')
   if (story != null && !cites(story.text, 'brief').some((target) => quests.includes(target)) && !cites(story.text, 'world').some((target) => conflicts.includes(target))) {
     report(story.line, '서사의 변화: [brief:<퀘스트>]나 [world:<서사 갈등>] 인용이 없다')
+  }
+
+  // 선택 장면: 브리프의 갈림길마다 항목 하나를 순서대로 두고 그 갈림길을 인용한다. 결말은 플레이어의 선택으로 갈린다(#113).
+  const forks = sectionItemNames(brief, '갈림길')
+  const choices = block('선택 장면')
+  if (choices != null) {
+    const written = choices.items.map(({ name }) => name)
+    if (written.join() !== forks.join()) report(choices.line, `선택 장면: 항목은 브리프의 갈림길 ${forks.join(', ') || '없음'} 순서여야 한다 (실제: ${written.join(', ') || '없음'})`)
+    for (const item of choices.items) {
+      if (forks.includes(item.name) && !cites(item.text, 'brief').includes(item.name)) report(item.line, `선택 장면 > ${item.name}: [brief:${item.name}]을 인용하지 않았다`)
+    }
   }
 
   // 끌림 시스템은 런과 성장에 나온다(#112). 크레딧은 플레이어용 이름마다 설계 항목을 인용해 출처를 밝힌다(#114).

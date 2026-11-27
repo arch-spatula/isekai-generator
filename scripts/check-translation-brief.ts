@@ -129,7 +129,18 @@ export function checkTranslationBrief({ brief, life }: BriefTexts): string[] {
       const where = `갈림길 > ${item.name}`
       const known = lifeForks.includes(item.name)
       if (!known) report(item.line, `${where}: life.md의 갈림길이 아니다`)
-      const basis = fieldsOf(where, item, ['본선', '다른 길', '갈리는 조건', '근거']).get('근거')
+      // 갈림길은 플레이어의 선택이 된다. 선택지는 주인공의 행동이고, 행동마다 본선이나 다른 길로 간다. 본선이 끌리는 쪽이다(#113).
+      const fields = fieldsOf(where, item, ['본선', '다른 길', '갈리는 조건', '장', '상황', '선택지', '근거'])
+      const scene = fields.get('장')
+      if (scene != null && scene.value !== '' && chapters != null && !chapterNames.includes(scene.value)) report(scene.line, `${where}: 장 '${scene.value}'는 브리프의 장이 아니다`)
+      const options = fields.get('선택지')
+      if (options != null && options.value !== '') {
+        const parsed = options.value.split(' / ').map((option) => option.match(/^(.+\S) → (본선|다른 길)$/))
+        const targets = new Set(parsed.map((match) => match?.[2]))
+        if (parsed.length < 2 || parsed.some((match) => match == null)) report(options.line, `${where}: 선택지는 '<주인공의 행동> → <본선 | 다른 길>'을 ' / '로 둘 이상 잇는다`)
+        else if (!targets.has('본선') || !targets.has('다른 길')) report(options.line, `${where}: 선택지는 본선과 다른 길로 가는 행동을 하나 이상씩 둔다`)
+      }
+      const basis = fields.get('근거')
       if (known && basis != null && basis.value !== '' && !lifeTargets(basis.value).includes(item.name)) report(basis.line, `${where}: 근거에 [life:${item.name}]이 없다`)
     }
     const written = new Set(forks.items.map(({ name }) => name))
