@@ -156,3 +156,11 @@ test('장별 끌림이 브리프의 장과 다르거나 그 장을 인용하지 
   const basis = '근거: [brief:청년]'
   expect(check({ combat: replaceOnce(combat, basis, '근거: [brief:장년]') })).toEqual([`${lineOf(basis)}: 장별 끌림 > 청년: 근거에 [brief:청년]이 없다`])
 })
+
+// #115: 속성은 정체성이 정하고, 전투는 그 속성이 핵심 행동에서 어떻게 드러나는지 쓴다.
+test('속성이 없거나 정체성의 속성을 인용하지 않으면 거부한다', () => {
+  const line = '속성: 빚은 구조를 무너뜨릴 때 바람이 일어 파편을 적 쪽으로 밀어 보낸다 [identity:바람]'
+  expect(check({ combat: replaceOnce(combat, `${line}\n`, '') })).toEqual([`${lineOf('## 전투 방식')}: 전투 방식: 속성 필드가 없다`])
+  expect(check({ combat: replaceOnce(combat, line, '속성: 바람이 인다') })).toEqual([`${lineOf(line)}: 전투 방식: 속성에 정체성의 속성 [identity:바람] 인용이 없다`])
+  expect(check({ combat: replaceOnce(combat, line, '속성: 바람이 인다 [identity:결 새김꾼]') })).toEqual([`${lineOf(line)}: 전투 방식: 속성에 정체성의 속성 [identity:바람] 인용이 없다`])
+})

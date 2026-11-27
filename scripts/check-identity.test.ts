@@ -31,8 +31,8 @@ test('클래스의 재료로 고른 주인공 능력을 읽는다', () => {
 
 test('섹션이 빠지거나 클래스가 둘이면 거부한다', () => {
   const start = identity.indexOf('## 부직업'), end = identity.indexOf('## 출신지')
-  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신지 순서여야 한다 (실제: 클래스 후보, 클래스, 출신지)'])
-  const two = replaceOnce(identity, '\n## 부직업', '### 두 번째 클래스\n재료: [brief:고칠 곳을 짚는 눈]\n하는 일: 틈을 짚는다\n판단: 비교용\n\n## 부직업')
+  expect(check(identity.slice(0, start) + identity.slice(end))).toEqual(['섹션은 클래스 후보, 클래스, 속성, 부직업, 출신지 순서여야 한다 (실제: 클래스 후보, 클래스, 속성, 출신지)'])
+  const two = replaceOnce(identity, '\n## 속성', '### 두 번째 클래스\n재료: [brief:고칠 곳을 짚는 눈]\n하는 일: 틈을 짚는다\n판단: 비교용\n\n## 속성')
   expect(check(two)).toEqual([`${classLine}: 클래스: 항목은 하나다 (실제: 2개)`])
 })
 
@@ -91,7 +91,7 @@ test('출신지에 형태·생활이 없거나 출신지를 인용하지 않으�
 // #123: 장의 무대는 세계 단계가 정한다. 정체성에는 장별 세계를 두지 않는다.
 test('장별 세계 섹션을 쓰면 거부한다', () => {
   const eras = `${identity}\n## 장별 세계\n### 소년\n세계: 강가 작업장\n근거: [brief:소년]\n`
-  expect(check(eras)).toEqual(['섹션은 클래스 후보, 클래스, 부직업, 출신지 순서여야 한다 (실제: 클래스 후보, 클래스, 부직업, 출신지, 장별 세계)'])
+  expect(check(eras)).toEqual(['섹션은 클래스 후보, 클래스, 속성, 부직업, 출신지 순서여야 한다 (실제: 클래스 후보, 클래스, 속성, 부직업, 출신지, 장별 세계)'])
 })
 
 test('브리프 밖 인용과 차트 명칭을 거부한다', () => {
@@ -131,4 +131,21 @@ test('부직업이 없으면 거부하고, 여러 개와 의뢰는 허용한다'
 test('부직업의 의뢰 값이 비면 거부한다', () => {
   const changed = replaceOnce(identity, '의뢰: 연장을 배우러 온 젊은 손들이 고향의 무너진 작업장을 고쳐 달라는 일을 가져온다', '의뢰:')
   expect(check(changed)).toEqual([`${lineOf('의뢰: 연장을 배우러 온 젊은 손들이 고향의 무너진 작업장을 고쳐 달라는 일을 가져온다')}: 부직업 > 공방 선생: 의뢰 값이 비었다`])
+})
+
+// #115: 속성은 기운 사실과 직업 특성을 함께 보고 정한다. 직업 특성 쪽은 브리프의 능력·생업 인용으로 남는다.
+test('속성의 재료에 브리프의 능력이나 생업이 없으면 거부한다', () => {
+  const line = '재료: [brief:고칠 곳을 짚는 눈] [brief:성질을 읽고 빚는 손]'
+  expect(identity.split(line)).toHaveLength(3)
+  const attributeLine = identity.indexOf('## 속성')
+  const changed = identity.slice(0, attributeLine) + identity.slice(attributeLine).replace(line, '재료: [brief:출신지]')
+  expect(check(changed)).toEqual([`${lineOf(line, lineOf('## 속성'))}: 속성 > 바람: 재료에 [brief:<주인공 능력>]이나 [brief:<생업>]이 없다`])
+  expect(check(changed.replace('재료: [brief:출신지]', '재료: [brief:목수]'))).toEqual([])
+})
+
+test('속성은 하나이고 기운과 판단을 쓴다', () => {
+  const reading = '기운: 서양 네 원소에서 공기가 다섯으로 가장 많고 움직임도 변화가 여섯이라, 한자리에 머물지 않고 흐르는 기운이 두드러진다\n'
+  expect(check(replaceOnce(identity, reading, ''))).toEqual([`${lineOf('### 바람')}: 속성 > 바람: 기운 필드가 없다`])
+  const two = replaceOnce(identity, '\n## 부직업', '### 무속성\n기운: 고르다\n재료: [brief:목수]\n판단: 비교용\n\n## 부직업')
+  expect(check(two)).toEqual([`${lineOf('## 속성')}: 속성: 항목은 하나다 (실제: 2개)`])
 })

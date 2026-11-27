@@ -108,7 +108,7 @@ export const STAGES: StageSpec[] = [
     ],
   },
   {
-    id: 'identity', by: '/design-identity', reads: ['translation-brief.md'], readsStages: ['brief'], fixture: 'scripts/fixtures/identity/identity.md',
+    id: 'identity', by: '/design-identity', reads: ['translation-brief.md', 'saju-facts.md', 'ziwei-facts.md', 'natal-facts.md'], readsStages: ['brief', 'chart'], fixture: 'scripts/fixtures/identity/identity.md',
     fields: [
       { key: '클래스 후보 > 영역', from: ['brief:주인공 능력 > 다루는 것'] },
       { key: '클래스 후보 > 이세계의 힘', from: ['클래스 후보 > 영역', 'brief:주인공 능력 > 하는 일'],
@@ -118,6 +118,9 @@ export const STAGES: StageSpec[] = [
       { key: '클래스 > 하는 일', from: ['클래스 후보 > 이세계의 힘', 'brief:주인공 능력 > 다루는 것', 'brief:주인공 능력 > 하는 일'] },
       { key: '클래스 > 판단', from: ['클래스 후보 > 판단', 'brief:주인공 능력 > 다루는 것'] },
       { key: '클래스 > 플레이어용 이름', from: ['클래스 > 하는 일'], invented: '설계와 같은 구조를 장르 어휘로 부른다(#114)' },
+      // 속성의 차트 재료는 attribute-facts 스크립트가 사실 파일에서 판정 없이 계산한 기운 사실뿐이다(#115, 칸 ADR 결정 1의 예외)
+      { key: '속성 > 기운', from: ['chart'] },
+      { key: '속성 > 판단', from: ['속성 > 기운', 'brief:주인공 능력 > 하는 일', 'brief:생업 > 내용', '클래스 > 하는 일'] },
       { key: '부직업 > 하는 일', from: ['brief:생업 > 내용', 'brief:주인공 능력 > 하는 일'] },
       { key: '부직업 > 의뢰', from: ['부직업 > 하는 일', 'brief:생업 > 내용'], invented: '그 일을 찾아오는 사람과 일감을 지어낸다(#120)' },
       { key: '출신지 > 형태', from: ['brief:배경 > 터전', 'brief:배경 > 가세'], invented: '조건에 맞는 장르의 터전(도시·마을·배·유목 무리 등)을 고른다(#121, #122)' },
@@ -152,6 +155,7 @@ export const STAGES: StageSpec[] = [
       { key: '후보 > 판단', from: ['후보 > 플레이', 'identity:클래스 > 하는 일'] },
       { key: '전투 방식 > 채택', from: ['후보 > 판단'] },
       { key: '전투 방식 > 핵심 행동', from: ['후보 > 플레이'] },
+      { key: '전투 방식 > 속성', from: ['identity:속성 > 판단', '전투 방식 > 핵심 행동'] },
       { key: '전투 방식 > 약점', from: ['brief:주인공 능력 > 약점'] },
       { key: '전투 방식 > 적', from: ['world:세력 > 목적', 'world:지역 > 전장', '후보 > 플레이'] },
       { key: '전투 방식 > 런 한 번', from: ['external:genre'], invented: '장르 계약 안에서 지어낸다' },
@@ -171,7 +175,7 @@ export const STAGES: StageSpec[] = [
     id: 'gdd', by: '/write-gdd', reads: ['translation-brief.md', 'identity.md', 'combat.md', 'world.md'], readsStages: ['brief', 'identity', 'combat', 'world'], fixture: 'scripts/fixtures/gdd/gdd.md',
     fields: [
       { key: '게임 개요 > 본문', from: ['combat:전투 방식 > 핵심 행동', 'brief:주인공 > 내용', 'external:genre'] },
-      { key: '주인공 > 본문', from: ['brief:배경 > *', 'identity:클래스 > 하는 일', 'identity:부직업 > 하는 일', 'brief:주인공 > 내용'] },
+      { key: '주인공 > 본문', from: ['brief:배경 > *', 'identity:클래스 > 하는 일', 'identity:속성 > 판단', 'identity:부직업 > 하는 일', 'brief:주인공 > 내용'] },
       { key: '동료 > 본문', from: ['brief:동료 > 동행하는 장', 'brief:동료 > 함께 하는 일', 'combat:동료의 행동 > 행동'] },
       { key: '세계와 장 > 본문', from: ['world:장 > 지역', 'world:지역 > *', 'brief:장 > 사건', 'identity:부직업 > 의뢰'] },
       { key: '전투 > 본문', from: ['combat:전투 방식 > *'] },

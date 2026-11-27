@@ -1,7 +1,8 @@
 /**
- * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·부직업·출신지, 인용, 차트 명칭을 검사한다.
+ * 이세계 정체성(`identity.md`)의 클래스 후보·클래스·속성·부직업·출신지, 인용, 차트 명칭을 검사한다.
  * 계약: docs/spec/claude-game-design-flow.md 5.5절, docs/ADR/2026-11-24-isekai-identity-design.md 2번, docs/ADR/2026-11-25-class-candidates.md,
- * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md, docs/ADR/2026-11-26-open-origin.md, docs/ADR/2026-11-27-world-before-chapters.md
+ * docs/ADR/2026-11-26-genre-names-and-sub-jobs.md, docs/ADR/2026-11-26-open-origin.md, docs/ADR/2026-11-27-world-before-chapters.md,
+ * docs/ADR/2026-11-27-attribute.md
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -10,7 +11,7 @@ import {
 } from './game-document.ts'
 
 const TITLE = '# 이세계 정체성'
-const SECTIONS = ['클래스 후보', '클래스', '부직업', '출신지']
+const SECTIONS = ['클래스 후보', '클래스', '속성', '부직업', '출신지']
 /** 제외한 후보의 갈래가 남는 자리 */
 const LEFTOVER = /^(클래스|부직업|동료|퀘스트) — \S/
 /** 다루는 것을 기능 영역으로 올려 이세계의 힘으로 옮긴 후보를 견준다 */
@@ -89,6 +90,17 @@ export function checkIdentity({ identity, brief }: IdentityTexts): string[] {
     }
     if (livelihoods.includes(klass.name)) report(klass.line, `${where}: 생업 이름을 그대로 클래스로 쓰지 않는다`)
     if (adopted.length === 1 && klass.name !== adopted[0]) report(klass.line, `${where}: 클래스는 후보에서 채택한 '${adopted[0]}'이다`)
+  }
+
+  // 속성: 세 체계의 기운 사실(attribute-facts)과 직업 특성(브리프의 재능·생업)을 함께 보고 해석한다. 어느 한쪽만으로 정하지 않는다(#115).
+  // 기운 사실을 어떻게 읽었는지는 `기운`에, 직업 특성은 `재료`의 인용으로 남긴다. 오행 밖의 속성과 무속성도 된다.
+  const attribute = single(section('속성'))
+  if (attribute != null) {
+    const where = `속성 > ${attribute.name}`
+    const material = fieldsOf(where, attribute, ['기운', '재료', '판단'], report).get('재료')
+    if (material != null && !targetsOf(material.value, 'brief').some((target) => abilities.includes(target) || livelihoods.includes(target))) {
+      report(material.line, `${where}: 재료에 [brief:<주인공 능력>]이나 [brief:<생업>]이 없다`)
+    }
   }
 
   // 부직업: 싸움 밖에서 하는 일. 브리프의 생업이나 능력을 재료로 하고, 여러 개 둘 수 있다(#120).

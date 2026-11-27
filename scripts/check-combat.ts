@@ -27,7 +27,7 @@ export const AXES: Record<string, string[]> = {
 const CANDIDATE_COUNT = 3
 /** 후보 쌍마다 달라야 하는 축의 최소 수 */
 const MIN_DIFFERENT_AXES = 3
-const STYLE_FIELDS = ['채택', '핵심 행동', '약점', '적', '런 한 번', '런 중 보상', '런 밖 성장']
+const STYLE_FIELDS = ['채택', '핵심 행동', '속성', '약점', '적', '런 한 번', '런 중 보상', '런 밖 성장']
 
 export interface CombatTexts { combat: string; brief: string; identity: string; world: string }
 
@@ -98,6 +98,12 @@ export function checkCombat({ combat, brief, identity, world }: CombatTexts): st
     const fields = fieldsOf('전투 방식', style, STYLE_FIELDS, report)
     const chosen = fields.get('채택')
     if (chosen != null && chosen.value !== '' && adopted.length === 1 && chosen.value !== adopted[0]) report(chosen.line, `전투 방식: 채택 '${chosen.value}' — 후보에서 채택한 것은 '${adopted[0]}'`)
+    // 속성은 정체성 단계가 정한다. 전투는 그 속성이 핵심 행동에서 어떻게 드러나는지 쓰고 인용한다(#115).
+    const attribute = fields.get('속성')
+    const attributes = sectionItemNames(identity, '속성')
+    if (attribute != null && attribute.value !== '' && !targetsOf(attribute.value, 'identity').some((target) => attributes.includes(target))) {
+      report(attribute.line, `전투 방식: 속성에 정체성의 속성 [identity:${attributes[0] ?? '<속성>'}] 인용이 없다`)
+    }
     // 적은 세계 단계가 정한 세력이나 지역에서 나온다. 세계가 전투보다 먼저 만들어진다. 장르의 적이면 그 지역을 인용한다(#121).
     const enemy = fields.get('적')
     const sources = [...sectionItemNames(world, '세력'), ...sectionItemNames(world, '지역')]

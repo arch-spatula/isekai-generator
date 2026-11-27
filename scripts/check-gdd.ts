@@ -70,7 +70,7 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
     else if (citationsIn(text).length === 0) report(line, `${name}: [brief:]·[identity:]·[combat:]·[world:] 인용이 없다`)
   }
 
-  // 주인공: 배경 네 항목과 정체성의 클래스·부직업을 모두 인용한다(#86).
+  // 주인공: 배경 네 항목과 정체성의 클래스·속성·부직업을 모두 인용한다(#86, #115).
   const protagonist = block('주인공')
   if (protagonist != null) {
     const cited = cites(protagonist.text, 'brief')
@@ -78,6 +78,8 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
     const role = cites(protagonist.text, 'identity')
     const classes = sectionItemNames(identity, '클래스')
     if (!classes.some((name) => role.includes(name))) report(protagonist.line, `주인공: 클래스 [identity:${classes[0] ?? '<클래스>'}]를 인용하지 않았다`)
+    const attributes = sectionItemNames(identity, '속성')
+    if (!attributes.some((name) => role.includes(name))) report(protagonist.line, `주인공: 속성 [identity:${attributes[0] ?? '<속성>'}]을 인용하지 않았다`)
     // 부직업은 여러 개일 수 있고, 그 조합이 이 사람다움이므로 모두 잇는다(#120).
     for (const name of sectionItemNames(identity, '부직업')) if (!role.includes(name)) report(protagonist.line, `주인공: 부직업 [identity:${name}]를 인용하지 않았다`)
   }

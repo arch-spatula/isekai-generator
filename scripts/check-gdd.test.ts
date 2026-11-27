@@ -87,6 +87,12 @@ test('주인공 절이 클래스나 부직업을 인용하지 않으면 거부�
   expect(check({ gdd: changed })).toEqual([`${lineOf('## 주인공')}: 주인공: 부직업 [identity:수레 고치는 사람]를 인용하지 않았다`])
 })
 
+// #115: 주인공 절은 정체성의 속성을 잇는다.
+test('주인공 절이 속성을 인용하지 않으면 거부한다', () => {
+  const changed = replaceOnce(gdd, ' [identity:바람]', '')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 주인공')}: 주인공: 속성 [identity:바람]을 인용하지 않았다`])
+})
+
 // #112·#114: 끌림 시스템은 런과 성장에 나오고, 크레딧은 플레이어용 이름마다 설계용 이름과 출처를 밝힌다.
 test('런과 성장이 끌림을 인용하지 않으면 거부한다', () => {
   const changed = replaceOnce(gdd, ' [combat:혼자 정하는 손] [combat:장별 끌림]', ' [combat:장별 끌림]')
