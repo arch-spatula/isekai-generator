@@ -93,6 +93,12 @@ test('주인공 절이 속성을 인용하지 않으면 거부한다', () => {
   expect(check({ gdd: changed })).toEqual([`${lineOf('## 주인공')}: 주인공: 속성 [identity:바람]을 인용하지 않았다`])
 })
 
+// #116: 런과 성장은 콘텐츠 모드를 모두 잇는다.
+test('런과 성장이 콘텐츠 모드를 인용하지 않으면 거부한다', () => {
+  const changed = replaceOnce(gdd, ' [combat:몫 겨루기]', '')
+  expect(check({ gdd: changed })).toEqual([`${lineOf('## 런과 성장')}: 런과 성장: 콘텐츠 모드 [combat:몫 겨루기] 인용이 없다`])
+})
+
 // #112·#114: 끌림 시스템은 런과 성장에 나오고, 크레딧은 플레이어용 이름마다 설계용 이름과 출처를 밝힌다.
 test('런과 성장이 끌림을 인용하지 않으면 거부한다', () => {
   const changed = replaceOnce(gdd, ' [combat:혼자 정하는 손] [combat:장별 끌림]', ' [combat:장별 끌림]')

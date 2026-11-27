@@ -124,6 +124,8 @@ export function checkGdd({ gdd, brief, combat, world, identity }: GddTexts): str
   if (run != null) {
     if (cites(run.text, 'combat').length === 0) report(run.line, '런과 성장: [combat:<제목>] 인용이 없다')
     if (!cites(run.text, 'brief').some((target) => abilities.includes(target))) report(run.line, '런과 성장: 성장의 출처인 [brief:<주인공 능력>] 인용이 없다')
+    // 콘텐츠 모드마다 런의 모양이 다르므로 모두 잇는다(#116).
+    for (const mode of sectionItemNames(combat, '콘텐츠 모드')) if (!cites(run.text, 'combat').includes(mode)) report(run.line, `런과 성장: 콘텐츠 모드 [combat:${mode}] 인용이 없다`)
   }
   const story = block('서사의 변화')
   if (story != null && !cites(story.text, 'brief').some((target) => quests.includes(target)) && !cites(story.text, 'world').some((target) => conflicts.includes(target))) {

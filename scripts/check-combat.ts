@@ -1,5 +1,5 @@
 /**
- * 전투 설계(`combat.md`)의 후보 비교, 출처, 동료의 행동, 인용, 차트 명칭과 제외 메커니즘을 검사한다.
+ * 전투 설계(`combat.md`)의 후보 비교, 출처, 콘텐츠 모드, 동료의 행동, 인용, 차트 명칭과 제외 메커니즘을 검사한다.
  * 계약: docs/spec/claude-game-design-flow.md 4·5.2·6절, 축과 차이 기준: docs/ADR/2026-11-03-personalized-combat-archetype-selection.md 2.1·2.2
  */
 import { readFileSync } from 'node:fs'
@@ -10,7 +10,7 @@ import {
 } from './game-document.ts'
 
 const TITLE = '# 전투 설계'
-const SECTIONS = ['후보', '전투 방식', '끌림', '장별 끌림', '동료의 행동']
+const SECTIONS = ['후보', '전투 방식', '콘텐츠 모드', '끌림', '장별 끌림', '동료의 행동']
 /** 끌림 시스템의 필드. 반복되는 실패를 위험과 보상의 구조로 옮기고, 게임이 남기는 기록으로 스토리와 잇는다(#112) */
 const DRAW_FIELDS = ['재료', '플레이어용 이름', '쌓는 행동', '보상', '대가', '기록', '극복']
 /** 게임플레이 성향 축과 허용값 */
@@ -111,6 +111,22 @@ export function checkCombat({ combat, brief, identity, world }: CombatTexts): st
     for (const key of ['약점', '런 밖 성장']) {
       const field = fields.get(key)
       if (field != null && field.value !== '' && !targetsOf(field.value, 'brief').some((target) => abilities.has(target))) report(field.line, `전투 방식: ${key}에 [brief:<주인공 능력>] 인용이 없다`)
+    }
+  }
+
+  // 콘텐츠 모드: 그 세계에서 주인공이 반복해서 하는 활동과 그 활동의 런. 일생 해석에는 재료가 없어 세계의 지역·세력에서 지어내고
+  // 출처를 인용한다. 장르 어휘 목록에서 고르지 않는다(#116, 칸 ADR 배정 규칙 3).
+  const modes = section('콘텐츠 모드')
+  if (modes != null) {
+    for (const field of modes.fields) report(field.line, `콘텐츠 모드: 허용하지 않는 필드 '${field.key}'`)
+    if (modes.items.length === 0) report(modes.line, '콘텐츠 모드: 항목이 하나 이상 있어야 한다 (실제: 0개)')
+    const places = [...sectionItemNames(world, '지역'), ...sectionItemNames(world, '세력')]
+    for (const item of modes.items) {
+      const where = `콘텐츠 모드 > ${item.name}`
+      const source = fieldsOf(where, item, ['활동', '런', '출처'], report).get('출처')
+      if (source != null && source.value !== '' && !targetsOf(source.value, 'world').some((target) => places.includes(target))) {
+        report(source.line, `${where}: 출처에 [world:<지역>]이나 [world:<세력>] 인용이 없다`)
+      }
     }
   }
 

@@ -164,3 +164,18 @@ test('속성이 없거나 정체성의 속성을 인용하지 않으면 거부�
   expect(check({ combat: replaceOnce(combat, line, '속성: 바람이 인다') })).toEqual([`${lineOf(line)}: 전투 방식: 속성에 정체성의 속성 [identity:바람] 인용이 없다`])
   expect(check({ combat: replaceOnce(combat, line, '속성: 바람이 인다 [identity:결 새김꾼]') })).toEqual([`${lineOf(line)}: 전투 방식: 속성에 정체성의 속성 [identity:바람] 인용이 없다`])
 })
+
+// #116: 콘텐츠 모드는 세계의 지역·세력에서 지어내고 그 출처를 인용한다. 일생 해석에는 재료가 없다.
+test('콘텐츠 모드가 없거나 세계의 지역·세력을 인용하지 않으면 거부한다', () => {
+  const start = combat.indexOf('### 터 지키기'), end = combat.indexOf('\n## 끌림')
+  expect(check({ combat: combat.slice(0, start) + combat.slice(end + 1) })).toEqual([`${lineOf('## 콘텐츠 모드')}: 콘텐츠 모드: 항목이 하나 이상 있어야 한다 (실제: 0개)`])
+  const line = '출처: [world:새 터전]'
+  expect(check({ combat: replaceOnce(combat, line, '출처: 밤마다 습격이 잦은 땅') })).toEqual([`${lineOf(line)}: 콘텐츠 모드 > 터 지키기: 출처에 [world:<지역>]이나 [world:<세력>] 인용이 없다`])
+  expect(check({ combat: replaceOnce(combat, line, '출처: [world:혼자 정한 터]') })).toEqual([`${lineOf(line)}: 콘텐츠 모드 > 터 지키기: 출처에 [world:<지역>]이나 [world:<세력>] 인용이 없다`])
+  expect(check({ combat: replaceOnce(combat, line, '출처: [world:셈하는 사람들]') })).toEqual([])
+})
+
+test('콘텐츠 모드에 런이 없으면 거부한다', () => {
+  const line = '런: 해가 지면 시작해 밤새 몰려오는 무리를 버티고, 동이 틀 때 무너지지 않은 구조의 수로 끝난다\n'
+  expect(check({ combat: replaceOnce(combat, line, '') })).toEqual([`${lineOf('### 터 지키기')}: 콘텐츠 모드 > 터 지키기: 런 필드가 없다`])
+})
