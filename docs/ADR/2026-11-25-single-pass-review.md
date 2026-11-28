@@ -1,9 +1,9 @@
 # ADR: 게임 설계 단계의 검토를 한 번으로 줄이고 재료 없는 요구를 없앤다
 
-* **Status:** Accepted — 구현 #100
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-25
 * **Decision Owners:** Project Owner
-* **관련:** [이세계 정체성 설계](2026-11-24-isekai-identity-design.md) 결정 5, [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 4.7,
+* **관련:** [이세계 정체성 설계](2026-11-24-isekai-identity-design.md) 결정 5,
   [검토 반복 인시던트](../incidents/2026-11-24-design-review-retry-loop.md), #100, #72, #92~#96
 
 ## 배경
@@ -52,6 +52,6 @@ Codex 흐름도 생성 뒤 수정·방어 편집·리뷰를 겹겹이 쌓아 재
 
 ## 결과
 
-- 바뀐 계약: [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 4.7, 정체성·전투·세계 스킬 5절, 검토 에이전트 2·3절, `check-review`.
+- 바뀐 계약: Claude 게임 설계 흐름 4.7, 정체성·전투·세계 스킬 5절, 검토 에이전트 2·3절, `check-review`.
 - 이 결정으로 #93(일부만 지적)·#94(상한 위반)·#95(회귀)는 재검토가 없어져 해당 구조가 사라진다. #92(전투 제외 이유 기준 충돌)와 #96(첫 시도 위반)은 권고로 낮아졌지만 기준 자체는 남는다.
 - 판정은 같은 조건으로 생성한 여러 명식에서 검토 회차, 필수 지적 수, 반복 지적 자리를 전후로 비교하고, 목표에 닿았는지는 산출물을 열어 따로 본다.

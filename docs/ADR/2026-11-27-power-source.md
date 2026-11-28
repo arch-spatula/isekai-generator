@@ -1,10 +1,10 @@
 # ADR: 힘의 출처를 번역 브리프의 능력마다 정하고 전투가 그에 맞는 기술 획득 방식을 쓴다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
-* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(스킬 출처 칸)·배정 규칙 2, [일생 번역 명세](../spec/life-to-game-translation.md) 5,
-  [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.2·5.4·6, #118(이 결정), #111, #112
+* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(스킬 출처 칸)·배정 규칙 2,
+  #118(이 결정), #111, #112
 
 ## 배경
 

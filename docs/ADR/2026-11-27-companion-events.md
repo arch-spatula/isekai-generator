@@ -1,10 +1,10 @@
 # ADR: 동료의 합류와 이별을 번역 브리프에서 사건으로 정하고 GDD가 장면으로 잇는다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
-* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(동료 이벤트 칸), [일생 번역 명세](../spec/life-to-game-translation.md) 3.2·5,
-  [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.4, #117(이 결정), #109, #113
+* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(동료 이벤트 칸),
+  #117(이 결정), #109, #113
 
 ## 배경
 

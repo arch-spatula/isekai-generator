@@ -1,9 +1,9 @@
 # ADR: 차트부터 GDD까지 하나의 Claude 흐름으로 만든다
 
-* **Status:** Accepted — 문서 결정, 구현 전
+* **Status:** Accepted — `life.md` 다음의 게임 설계 단계는 [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)로 대체
 * **Date:** 2026-11-23
 * **Decision Owners:** Project Owner
-* **관련:** [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md), [인물과 환경 해석 구분](2026-11-10-person-environment-world-story.md), #55
+* **관련:** [인물과 환경 해석 구분](2026-11-10-person-environment-world-story.md), #55
 
 ## 배경
 
@@ -56,7 +56,7 @@ chart-report → saju·ziwei·natal judgment → derived facts → saju·ziwei·
 
 ## 결과
 
-- [게임 번역 명세](../spec/life-to-game-translation.md)의 열린 질문 "두 생성 흐름을 잇는 방법"은 이 결정으로 정리된다. 흐름은 하나다.
+- 게임 번역 명세의 열린 질문 "두 생성 흐름을 잇는 방법"은 이 결정으로 정리된다. 흐름은 하나다.
 - 기존 GDD 템플릿(`docs/legacy/prompts/personalized-action-rpg-concept.md`)은 쓰지 않는다. GDD의 절은 번역 브리프와 앞 단계가 넘기는 것에서 새로 정한다
-  ([Claude 게임 설계 흐름](../spec/claude-game-design-flow.md)).
+  (Claude 게임 설계 흐름).
 - 이전 직역 개선 계획의 원칙(표면 명사 제거 → 행동 패턴 변환)은 세계관과 배경까지 넓혀 적용한다.

@@ -5,7 +5,7 @@
 * **Decision Owners:** Project Owner
 * **관련:** [차트 배경 해석](2026-11-24-chart-background-interpretation.md), [인물과 환경 구분](2026-11-10-person-environment-world-story.md),
   [출신지 열기](2026-11-26-open-origin.md), [일생 해석](../spec/life-narrative-interpretation.md) 3절, [일생 통합](../spec/life-integration.md),
-  [번역](../spec/life-to-game-translation.md), #122(이 결정), #97
+  #122(이 결정), #97
 
 ## 배경
 

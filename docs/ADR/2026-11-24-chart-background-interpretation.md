@@ -5,7 +5,7 @@
 * **Decision Owners:** Project Owner
 * **관련:** [인물과 주변 환경의 해석을 구분](2026-11-10-person-environment-world-story.md), [차트부터 GDD까지 하나의 Claude 흐름](2026-11-23-claude-gdd-flow.md) 결정 3,
   [이세계 정체성 설계](2026-11-24-isekai-identity-design.md), [일생 해석](../spec/life-narrative-interpretation.md) 3절, [세 체계 일생 통합](../spec/life-integration.md),
-  [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md) 3.4, #97
+  #97
 
 ## 배경
 
@@ -74,7 +74,7 @@
 ## 결과
 
 - 바뀐 계약: [일생 해석](../spec/life-narrative-interpretation.md) 3·5절, [세 체계 일생 통합](../spec/life-integration.md) 4·5·7절,
-  [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md) 3.4·5절, [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 1·5.5절.
+  일생 해석의 게임 번역 규칙 3.4·5절, Claude 게임 설계 흐름 1·5.5절.
 - 바뀐 검증기: `check-life-document`, `assemble-life-material`, `check-life-integration`, `check-translation-brief`, `check-identity`. 합성 fixture에 정상 사례와
   거부 사례(다른 기둥에서 읽은 뿌리, 본인 자리를 인용한 배경, 배경을 인용하지 않은 출신지)를 둔다.
 - 이 변경 전에 만든 체계별 일생 해석은 배경 절이 없어 새 검증기를 통과하지 못한다. 그 폴더는 일생 해석부터 다시 만든다.

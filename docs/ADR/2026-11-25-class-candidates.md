@@ -1,9 +1,9 @@
 # ADR: 클래스를 정하기 전에 영역을 이세계의 힘으로 옮긴 후보를 견준다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-25
 * **Decision Owners:** Project Owner
-* **관련:** [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 4.7·5.5절, [이세계 정체성 설계](2026-11-24-isekai-identity-design.md), #106
+* **관련:** [이세계 정체성 설계](2026-11-24-isekai-identity-design.md), #106
 
 ## 배경
 

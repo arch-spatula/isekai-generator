@@ -1,10 +1,10 @@
 # ADR: 갈림길을 번역 브리프에서 주인공의 행동으로 갈리는 선택으로 옮기고 GDD가 선택 장면으로 쓴다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
-* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(선택 장면 칸), [일생 번역 명세](../spec/life-to-game-translation.md) 5,
-  [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.4·6, #113(이 결정), #109, #107, #117
+* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(선택 장면 칸),
+  #113(이 결정), #109, #107, #117
 
 ## 배경
 

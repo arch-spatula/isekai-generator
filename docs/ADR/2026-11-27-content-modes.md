@@ -1,10 +1,10 @@
 # ADR: 콘텐츠 모드는 전투 단계가 세계의 지역·세력에서 지어내고 GDD 런과 성장이 잇는다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
 * **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(콘텐츠 모드 칸)·배정 규칙 3, [세계와 장의 분리](2026-11-27-world-before-chapters.md),
-  [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.2·5.4·6, #116(이 결정), #111
+  #116(이 결정), #111
 
 ## 배경
 

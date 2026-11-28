@@ -104,11 +104,6 @@ end
 - 문서를 바꾼 뒤 `bun run check:docs`를 실행하고 `--review` 후보는 의미를 검토하세요.
 - 자세한 기준은 `docs/spec/local-artifact-document-boundary.md`를 따르세요.
 
-## 7-1. 생성 흐름의 재료 지도
-
-- 스킬·명세·검증기의 필드나 입력을 바꾸면 `scripts/pipeline-map.ts`의 지도를 함께 고치고 `bun run check:pipeline`을 통과시키세요.
-- 새 요구는 그 필드의 재료를 지도에 먼저 적어 보고, 적을 수 없으면 구현 전에 알리세요. 자세한 기준은 `docs/spec/pipeline-map.md`를 따르세요.
-
 ## 8. 다중 에이전트와 oh-my-claudecode(OMC)
 
 - 이 레포는 `.claude/settings.json`에서 OMC 플러그인(`oh-my-claudecode@omc`)을 활성화합니다. 하위 에이전트 위임과 OMC 모드(`/autopilot`, `/team`, `ralph` 등)는 OMC 지침을 따르세요.

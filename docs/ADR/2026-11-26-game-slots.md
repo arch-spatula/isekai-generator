@@ -1,10 +1,10 @@
 # ADR: 게임 설계의 칸 목록과 재료 배정 규칙을 정한다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-26
 * **Decision Owners:** Project Owner
 * **관련:** [이세계 정체성 설계](2026-11-24-isekai-identity-design.md), [재능과 기질](2026-11-25-talent-temperament.md), [Claude GDD 흐름](2026-11-23-claude-gdd-flow.md) 결정 1,
-  [생성 흐름의 재료 지도](../spec/pipeline-map.md), #111(이 결정), #108(상위), #75, #107, #109, #110, #112, #113, #114, #115, #116, #117, #118
+  #111(이 결정), #108(상위), #75, #107, #109, #110, #112, #113, #114, #115, #116, #117, #118
 
 ## 배경
 

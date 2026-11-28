@@ -1,10 +1,10 @@
 # ADR: 반복되는 실패를 플레이 시스템으로 옮기고 플레이어용 이름을 따로 둔다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-26
 * **Decision Owners:** Project Owner
 * **관련:** [게임 칸 목록](2026-11-26-game-slots.md), [Claude GDD 흐름](2026-11-23-claude-gdd-flow.md), [재능과 기질](2026-11-25-talent-temperament.md),
-  [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.2·5.4·5.5, #112, #114, #108(상위), #109
+  #112, #114, #108(상위), #109
 
 ## 배경
 

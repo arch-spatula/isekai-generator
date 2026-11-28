@@ -1,10 +1,10 @@
 # ADR: 세계를 생애의 장과 따로 먼저 세우고, 장은 그 안에서 일어날 지역을 고른다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
 * **관련:** [출신지를 도시로 못 박지 않는다](2026-11-26-open-origin.md) 3·4번(일부 대체), [배경 조건](2026-11-26-background-conditions.md),
-  [게임 칸](2026-11-26-game-slots.md), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 4.2·5.3·5.5·6, #123(이 결정), #121, #122, #116, #107
+  [게임 칸](2026-11-26-game-slots.md), #123(이 결정), #121, #122, #116, #107
 
 ## 배경
 

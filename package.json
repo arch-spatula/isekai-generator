@@ -6,8 +6,7 @@
   "scripts": {
     "report": "bun scripts/chart-report.ts",
     "test": "bun test ./scripts ./.agents && bun scripts/check-document-artifacts.ts",
-    "check:docs": "bun scripts/check-document-artifacts.ts",
-    "check:pipeline": "bun scripts/pipeline-map.ts"
+    "check:docs": "bun scripts/check-document-artifacts.ts"
   },
   "dependencies": {
     "@orrery/core": "^0.5.0"

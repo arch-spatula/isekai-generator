@@ -1,9 +1,9 @@
 # ADR: 재료 지도가 드러낸 재료 부족을 정리한다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-25
 * **Decision Owners:** Project Owner
-* **관련:** [생성 흐름의 재료 지도](../spec/pipeline-map.md), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md), [한 번 검토](2026-11-25-single-pass-review.md),
+* **관련:** [한 번 검토](2026-11-25-single-pass-review.md),
   [재능과 기질](2026-11-25-talent-temperament.md), #100, #99, #75
 
 ## 배경

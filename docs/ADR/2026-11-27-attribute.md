@@ -1,9 +1,9 @@
 # ADR: 속성은 세 체계의 기운 사실과 하는 일을 함께 읽어 정체성에서 정한다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
-* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 1·2(속성 칸), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.2·5.4·5.5·6, #115(이 결정), #111
+* **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 1·2(속성 칸), #115(이 결정), #111
 
 ## 배경
 

@@ -1,10 +1,10 @@
 # ADR: 장르의 흔한 이름과 여러 부직업을 허용하고 클래스 하나에 독창성을 몰지 않는다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-26
 * **Decision Owners:** Project Owner
 * **관련:** [클래스 후보](2026-11-25-class-candidates.md) 결정 5, [반복되는 실패와 플레이어용 이름](2026-11-26-draw-system-and-player-names.md) 결정 4,
-  [게임 칸 목록](2026-11-26-game-slots.md), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.4·5.5·6, #120(이 결정), #119, #110, #114
+  [게임 칸 목록](2026-11-26-game-slots.md), #120(이 결정), #119, #110, #114
 
 ## 배경
 

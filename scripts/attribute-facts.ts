@@ -1,7 +1,7 @@
 /**
  * 세 체계의 사실 파일에서 속성의 재료가 되는 기운 사실을 계산한다. 판정하지 않고, 차트 명칭 없이 일상어로 낸다.
- * 정체성 스킬이 이 출력을 읽고 브리프의 재능·생업과 함께 해석해 속성을 정한다.
- * 계약: docs/ADR/2026-11-27-attribute.md, docs/ADR/2026-11-26-game-slots.md 결정 1
+ * `/write-gdd`가 이 출력을 attribute-facts.txt로 저장하고 gdd-writer 에이전트가 life.md와 함께 읽는다.
+ * 계약: docs/ADR/2026-11-28-minimal-gdd-agent.md
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'

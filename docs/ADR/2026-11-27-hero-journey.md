@@ -1,10 +1,10 @@
 # ADR: 영웅의 여정을 장 안과 일생에 두 겹으로 두고, 국면은 번역 브리프에서 처음 정한다
 
-* **Status:** Accepted
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-27
 * **Decision Owners:** Project Owner
 * **관련:** [게임 칸](2026-11-26-game-slots.md) 결정 2(장의 여정 칸), [세계와 장의 분리](2026-11-27-world-before-chapters.md), [선택 장면](2026-11-27-choice-scenes.md),
-  [일생 번역 명세](../spec/life-to-game-translation.md) 5, [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 5.2·5.4·6, #107(이 결정), #109, #69
+  #107(이 결정), #109, #69
 
 ## 배경
 

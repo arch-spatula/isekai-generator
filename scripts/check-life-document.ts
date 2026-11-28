@@ -23,7 +23,7 @@ export const TIMELINE: LifeSection = {
 }
 /**
  * 뿌리와 자란 집의 조건 값. 집안의 생업을 쓰지 않는다. 별의 뜻을 생업으로 쓰면 같은 별에서 나온 재능과 거울이 된다(#122).
- * 구체적인 터전과 일은 정체성 단계가 이 조건에 맞게 지어낸다.
+ * 구체적인 터전과 일은 GDD 단계가 이 조건에 맞게 지어낸다.
  */
 export const BACKGROUND_CONDITIONS: Record<string, string[]> = { 터전: ['머묾', '오감'], 가세: ['넉넉함', '보통', '궁핍', '기복'] }
 /**

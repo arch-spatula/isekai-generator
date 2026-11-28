@@ -4,7 +4,7 @@
 * **Date:** 2026-11-25
 * **Decision Owners:** Project Owner
 * **관련:** [배경 해석](2026-11-24-chart-background-interpretation.md), [일생 해석](../spec/life-narrative-interpretation.md) 3절,
-  [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md) 3.1, [전투 수렴 인시던트](../incidents/2026-11-24-claude-combat-style-convergence.md), #99, #70, #71
+  [전투 수렴 인시던트](../incidents/2026-11-24-claude-combat-style-convergence.md), #99, #70, #71
 
 ## 배경
 
