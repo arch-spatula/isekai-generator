@@ -1,9 +1,9 @@
 # ADR: 차트부터 GDD까지 하나의 Claude 흐름으로 만든다
 
-* **Status:** Accepted — 문서 결정, 구현 전
+* **Status:** Accepted — `life.md` 다음의 게임 설계 단계는 [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)로 대체
 * **Date:** 2026-11-23
 * **Decision Owners:** Project Owner
-* **관련:** [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md), [인물과 환경 해석 구분](2026-11-10-person-environment-world-story.md), #55
+* **관련:** [인물과 환경 해석 구분](2026-11-10-person-environment-world-story.md), #55
 
 ## 배경
 
@@ -35,6 +35,8 @@ chart-report → saju·ziwei·natal judgment → derived facts → saju·ziwei·
 2. **기호 명칭 금지:** 게임 단계의 산출물에 별·궁·십신·천간·지지·행성·사인·하우스 같은 차트 명칭이 나오면 검증기가 거부한다. 명칭 목록은 계산기 상수에서 만든다.
 3. **배경 해석:** 번역 브리프가 출신지·성장 환경·가족 구조·떠남의 계기를 `life.md`에서 해석한다. 배경과 세계의 요소마다
    "삶의 사실 → 반복되는 행동·감정 → 장소·세계의 성격" 해석 경로와 출처를 남긴다.
+   — 2026-11-24 대체: 이 결정은 `life.md`에 배경이 있다는 확인하지 않은 전제에 기댔다. 배경은 체계별 일생 해석이 차트의 환경 자리에서 읽는다
+   ([배경 해석 ADR](2026-11-24-chart-background-interpretation.md), #97).
 4. **세계와 배경은 환경에 관한 사실에서, 서사 갈등은 인물과 환경이 만나는 곳에서 세운다.** [인물과 환경 해석 구분 ADR](2026-11-10-person-environment-world-story.md)을
    따른다. 출신지·공동체·세력·지역의 성격은 `life.md`의 환경에 관한 사실(가족과 공동체가 준 지원·기대·제약, 생활 기반, 떠남의 조건, 그 시기의
    사건)에서 만든다. 주인공의 `축`·`반복되는 실패`·재능은 주인공의 작동 방식으로 쓰고, 그것이 환경의 지원·요구·저항과 만나는 지점에서 사건과
@@ -54,7 +56,7 @@ chart-report → saju·ziwei·natal judgment → derived facts → saju·ziwei·
 
 ## 결과
 
-- [게임 번역 명세](../spec/life-to-game-translation.md)의 열린 질문 "두 생성 흐름을 잇는 방법"은 이 결정으로 정리된다. 흐름은 하나다.
+- 게임 번역 명세의 열린 질문 "두 생성 흐름을 잇는 방법"은 이 결정으로 정리된다. 흐름은 하나다.
 - 기존 GDD 템플릿(`docs/legacy/prompts/personalized-action-rpg-concept.md`)은 쓰지 않는다. GDD의 절은 번역 브리프와 앞 단계가 넘기는 것에서 새로 정한다
-  ([Claude 게임 설계 흐름](../spec/claude-game-design-flow.md)).
+  (Claude 게임 설계 흐름).
 - 이전 직역 개선 계획의 원칙(표면 명사 제거 → 행동 패턴 변환)은 세계관과 배경까지 넓혀 적용한다.

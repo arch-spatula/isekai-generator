@@ -5,7 +5,7 @@
 - 발견 경위: 서로 다른 명식 네 개로 끝까지 생성한 Claude 흐름 결과 6개의 비교(2026-11-23~24)
 - 자료 성격: 아래 사례 A~F는 로컬 생성 결과의 요약이며 원본은 저장소에 포함되지 않는다. 같은 개인 입력이나 원본으로 독립 재검증할 수 있다고 주장하지 않는다.
 - 상태: 진단 기록, 해결 방향 미정
-- 관련: [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 4.4·5.2, [개인화 전투 원형을 후보 비교로 선택](../ADR/2026-11-03-personalized-combat-archetype-selection.md),
+- 관련: [개인화 전투 원형을 후보 비교로 선택](../ADR/2026-11-03-personalized-combat-archetype-selection.md),
   [개인화 GDD 전투 원형 수렴 이슈](2026-11-03-combat-archetype-convergence.md), #75, #70, #71
 
 ## 요약

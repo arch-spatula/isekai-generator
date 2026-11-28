@@ -1,10 +1,10 @@
 # ADR: 옮겨 적기 흐름에 생업·이세계 정체성 설계·검토 단계를 둔다
 
-* **Status:** Accepted — 문서 결정, 구현 전
+* **Status:** Superseded by [최소 지시 GDD 에이전트](2026-11-28-minimal-gdd-agent.md)
 * **Date:** 2026-11-24
 * **Decision Owners:** Project Owner
-* **관련:** [차트부터 GDD까지 하나의 Claude 흐름](2026-11-23-claude-gdd-flow.md), [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md),
-  [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md), [일생 해석](../spec/life-narrative-interpretation.md), [세 체계 일생 통합](../spec/life-integration.md),
+* **관련:** [차트부터 GDD까지 하나의 Claude 흐름](2026-11-23-claude-gdd-flow.md),
+  [일생 해석](../spec/life-narrative-interpretation.md), [세 체계 일생 통합](../spec/life-integration.md),
   #81, #72, #75
 
 ## 배경
@@ -77,7 +77,8 @@
 - 정체성·전투·세계 단계는 검증기를 통과한 뒤, 작성 에이전트와 다른 에이전트가 검토한다. 검토자는 작성자와 같은 입력과 산출물만 읽고, 작성자의 판단 과정은 받지 않는다.
 - 검토 항목은 3·4번의 목표와 경계다: 재해석됐는가, 투영이 없는가, 이세계다운가, 일생의 사실과 모순되지 않는가.
 - 검토자가 되돌리면 작성자가 지적된 부분을 고친다. 되돌림 횟수에 상한을 두고, 상한에 닿으면 남은 지적을 알리고 멈춘다.
-- 다른 run과 구별되는지는 이 검토가 보지 않는다. 다른 버전 폴더를 읽지 않는 규칙 때문이며, run 사이 비교는 [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md)
+  — 2026-11-25 대체: 검토는 한 번이고 모순·직역만 필수다([한 번 검토 ADR](2026-11-25-single-pass-review.md), #100).
+- 다른 run과 구별되는지는 이 검토가 보지 않는다. 다른 버전 폴더를 읽지 않는 규칙 때문이며, run 사이 비교는 Claude 게임 설계 흐름
   9절의 열린 질문으로 남긴다.
 
 ## 검토한 대안
@@ -98,5 +99,5 @@
 - 네 이슈가 끝난 뒤 고정 관찰 세트로 한 번 다시 생성한다. 판정은 #81의 세 기준(출신지·지역이 구체적인 장소인가, 직업이 명식마다 다른 이세계식
   조합인가, 채택 전투의 축 조합이 몇 가지로 갈리는가)이다.
 - 서사 구조 이슈(#67 · #68 · #69)는 정체성 단계가 장·세계 구조를 바꾸므로 그 뒤로 미룬다.
-- 고쳐야 할 명세: [일생 해석](../spec/life-narrative-interpretation.md), [세 체계 일생 통합](../spec/life-integration.md), [일생 해석의 게임 번역 규칙](../spec/life-to-game-translation.md)
-  3.4절, [Claude 게임 설계 흐름](../spec/claude-game-design-flow.md) 2·4.2·5·6절. 각 하위 이슈가 자기 층의 명세를 고친다.
+- 고쳐야 할 명세: [일생 해석](../spec/life-narrative-interpretation.md), [세 체계 일생 통합](../spec/life-integration.md), 일생 해석의 게임 번역 규칙
+  3.4절, Claude 게임 설계 흐름 2·4.2·5·6절. 각 하위 이슈가 자기 층의 명세를 고친다.

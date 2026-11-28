@@ -17,6 +17,8 @@ export interface LifeSection {
   fields: string[]
   /** 특정 항목에만 더 있는 필드 (항목 이름 → 필드) */
   itemFields?: Record<string, string[]>
+  /** 정해진 값 가운데 하나만 쓰는 필드 (필드 → 허용 값) */
+  values?: Record<string, string[]>
   /** 생애 단계 이름을 하나 이상 포함해야 하는 필드 */
   stageFields?: string[]
   /** `생업: <이름>` 항목을 하나 이상 둔다. 생업 항목은 fields 대신 LIVELIHOOD_FIELDS를 쓴다(#85). timeline이면 시기에 생애 단계를 쓴다 */
@@ -174,6 +176,10 @@ export function checkLifeDocument(text: string, spec: LifeSpec): string[] {
         if (entries.length === 0) report(null, `${where}: ${key} 필드가 없다`)
         for (const entry of entries.slice(1)) report(entry.line, `${where}: ${key} 필드가 두 번 이상 있다`)
         if (entries[0]?.value === '') report(entries[0].line, `${where}: ${key} 값이 비어 있다`)
+        const allowed = sectionSpec.values?.[key]
+        if (allowed != null && entries[0] != null && entries[0].value !== '' && !allowed.includes(entries[0].value)) {
+          report(entries[0].line, `${where}: ${key}은 ${allowed.join(', ')} 중 하나다 (실제: ${entries[0].value})`)
+        }
       }
       const field = (key: string) => fields.get(key)?.[0]
 

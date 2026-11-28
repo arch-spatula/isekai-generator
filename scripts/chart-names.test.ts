@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { LUCKY_STAR_NAMES, MAIN_STAR_NAMES, PALACE_NAMES, SHA_STAR_NAMES } from '@orrery/core/constants'
 import { chartNameErrors, ZIWEI_READINGS } from './chart-names.ts'
 
-// 기대값은 docs/spec/claude-game-design-flow.md 4.1의 표에서 정했다: 한자 표기·고유한 한글 독음·차트 문법은 거부하고,
+// 기대값은 지운 게임 설계 흐름 명세 4.1의 표(git 기록)에서 정했다: 한자 표기·고유한 한글 독음·차트 문법은 거부하고,
 // 일상어와 겹치는 말은 잡지 않는다. 문장은 직접 쓴 합성 예시다.
 const names = (text: string) => chartNameErrors(text).map((error) => error.split("'")[1])
 

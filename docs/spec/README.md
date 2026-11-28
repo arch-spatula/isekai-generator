@@ -14,8 +14,6 @@
 - [일생 서사용 2차 해석](life-narrative-interpretation.md)
 - [세 체계 일생 통합](life-integration.md)
 - [일생의 모양과 관계 상태를 서사보다 먼저 정하기](life-shape-and-relationship-status.md)
-- [일생 해석의 게임 번역 규칙](life-to-game-translation.md)
-- [Claude 게임 설계 흐름](claude-game-design-flow.md)
 - [구현·테스트 작성·테스트 리뷰의 3개 에이전트 작업 흐름](three-agent-implementation-workflow.md)
 
 Codex GDD 흐름의 명세는 2026-11-23 Codex 기반 제거 때 `docs/legacy/spec/`으로 옮겼다.
